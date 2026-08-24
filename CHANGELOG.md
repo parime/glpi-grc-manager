@@ -7,6 +7,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce p
 
 ## [Non publié]
 
+## [0.5.0] - 2026-08-24
+
 ### Added
 
 - **Risques fournisseurs/tiers** : nouveau registre dédié, `PluginGrcmanagerSupplierRisk`, avec
