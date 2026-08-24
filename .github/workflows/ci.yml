@@ -1,0 +1,246 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+permissions:
+  contents: read
+
+jobs:
+  detect:
+    name: Detect project state
+    runs-on: ubuntu-latest
+    outputs:
+      has_composer: ${{ steps.check.outputs.has_composer }}
+      has_lockfiles: ${{ steps.check.outputs.has_lockfiles }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Detect presence of PHP/JS manifests
+        id: check
+        run: |
+          if [ -f composer.json ]; then
+            echo "has_composer=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_composer=false" >> "$GITHUB_OUTPUT"
+          fi
+          if [ -f composer.lock ] || [ -f package-lock.json ]; then
+            echo "has_lockfiles=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_lockfiles=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  repo-hygiene:
+    name: Repository hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Validate plugin.json is valid JSON
+        run: python3 -c "import json; json.load(open('plugin.json'))"
+
+      - name: Check required community files are present
+        run: |
+          missing=0
+          for f in README.md LICENSE SECURITY.md CONTRIBUTING.md CODE_OF_CONDUCT.md CHANGELOG.md ROADMAP.md SUPPORT.md GOVERNANCE.md MAINTAINERS.md; do
+            if [ ! -f "$f" ]; then
+              echo "::error::Missing required file: $f"
+              missing=1
+            fi
+          done
+          exit $missing
+
+  secrets-scan:
+    name: Secret scanning (Gitleaks)
+    runs-on: ubuntu-latest
+    # Le CLI gitleaks est appele directement sur la plage de commits de la PR (pas gitleaks-action,
+    # qui appelle l'API GitHub pulls.listFiles et echoue systematiquement "403 Resource not
+    # accessible by integration" sur toute PR Dependabot : GitHub plafonne le GITHUB_TOKEN en
+    # lecture seule pour ce type de PR, quoi que le workflow demande dans son bloc `permissions`).
+    # Lecon reprise du plugin jumeau glpi-vulnerability-manager (meme auteur), deja corrigee la-bas
+    # en conditions reelles, appliquee ici des le premier commit.
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Scanne les secrets sur la plage de commits de la PR
+        run: |
+          docker run --rm -v "$(pwd):/repo" zricethezav/gitleaks:latest detect --source /repo --log-opts="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}" --redact --exit-code 1
+
+  sast-scan:
+    name: Static security analysis (Semgrep)
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v7
+      - run: semgrep ci --config auto
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+        continue-on-error: true
+
+  php-quality:
+    name: PHP quality (syntax, PHPStan, PHPCS)
+    needs: detect
+    if: needs.detect.outputs.has_composer == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          coverage: none
+
+      - name: Composer install
+        run: composer install --no-progress --prefer-dist
+
+      - name: PHP syntax check
+        run: find . -path ./vendor -prune -o -name "*.php" -print0 | xargs -0 -n1 php -l
+
+      - name: PHPStan
+        run: vendor/bin/phpstan analyse --no-progress
+
+      - name: PHP_CodeSniffer
+        run: vendor/bin/phpcs
+
+  tests:
+    name: Automated tests (PHPUnit)
+    needs: detect
+    if: needs.detect.outputs.has_composer == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          coverage: none
+
+      - name: Composer install
+        run: composer install --no-progress --prefer-dist
+
+      - name: PHPUnit (unit tests)
+        run: vendor/bin/phpunit --testsuite unit
+
+  dependency-scan:
+    name: Dependency vulnerability scan (Trivy)
+    needs: detect
+    if: needs.detect.outputs.has_lockfiles == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: CRITICAL,HIGH
+
+  real-glpi-install:
+    name: Installation reelle sur GLPI (Docker)
+    # Ne remplace pas les tests unitaires (job "tests" ci-dessus) : verifie ce qu'eux ne peuvent
+    # pas couvrir, a savoir que setup.php/hook.php/l'installeur fonctionnent reellement contre un
+    # GLPI qui boot pour de vrai. Approche et commandes reprises du plugin jumeau
+    # glpi-vulnerability-manager (meme auteur), deja validees manuellement contre glpi/glpi:11.0.8.
+    needs: detect
+    if: needs.detect.outputs.has_composer == 'true'
+    runs-on: ubuntu-latest
+    env:
+      GLPI_IMAGE: glpi/glpi:11.0.8
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Demarre MariaDB
+        run: |
+          docker network create grcmanager-ci
+          docker run -d --name mariadb --network grcmanager-ci \
+            -e MARIADB_ROOT_PASSWORD=glpi_password \
+            -e MARIADB_DATABASE=glpidb \
+            -e MARIADB_USER=glpi_user \
+            -e MARIADB_PASSWORD=glpi_password \
+            mariadb:11
+
+          echo "Attente que MariaDB accepte les connexions..."
+          for i in $(seq 1 30); do
+            docker exec mariadb mariadb-admin ping -h 127.0.0.1 -u root -pglpi_password --silent && break
+            sleep 2
+          done
+
+      - name: Demarre GLPI (auto-installation via l'image officielle)
+        run: |
+          docker run -d --name glpi --network grcmanager-ci \
+            -e TIMEZONE=Europe/Paris \
+            -e GLPI_DB_HOST=mariadb \
+            -e GLPI_DB_PORT=3306 \
+            -e GLPI_DB_NAME=glpidb \
+            -e GLPI_DB_USER=glpi_user \
+            -e GLPI_DB_PASSWORD=glpi_password \
+            "$GLPI_IMAGE"
+
+          echo "Attente que l'auto-installation de GLPI soit terminee..."
+          ready=0
+          for i in $(seq 1 60); do
+            docker exec glpi test -f /var/glpi/config/config_db.php && { ready=1; break; }
+            sleep 5
+          done
+          if [ "$ready" != "1" ]; then
+            echo "::error::GLPI n'a jamais termine son auto-installation (config_db.php absent)."
+            docker logs glpi --tail 200
+            exit 1
+          fi
+
+      - name: Copie le plugin dans le conteneur GLPI
+        run: |
+          docker exec glpi mkdir -p /var/www/glpi/plugins/grcmanager
+          docker cp ./. glpi:/var/www/glpi/plugins/grcmanager
+          docker exec -u root glpi chown -R www-data:www-data /var/www/glpi/plugins/grcmanager
+
+      - name: Installe les dependances de production du plugin
+        run: |
+          docker exec glpi sh -c '
+            export COMPOSER_HOME=/tmp/composer-home
+            mkdir -p "$COMPOSER_HOME"
+            cd /tmp
+            php -r "copy(\"https://getcomposer.org/installer\", \"composer-setup.php\");"
+            php composer-setup.php --install-dir=/tmp --filename=composer.phar
+          '
+          docker exec glpi sh -c '
+            export COMPOSER_HOME=/tmp/composer-home
+            cd /var/www/glpi/plugins/grcmanager
+            php /tmp/composer.phar install --no-interaction --prefer-dist --no-dev
+          '
+
+      - name: database:update (idempotent, absorbe la fin de l'auto-installation)
+        run: |
+          ready=0
+          for i in $(seq 1 12); do
+            if docker exec glpi php bin/console database:update --force --no-interaction; then
+              ready=1
+              break
+            fi
+            echo "database:update pas encore pret (tentative $i/12), nouvel essai dans 5s..."
+            sleep 5
+          done
+          if [ "$ready" != "1" ]; then
+            echo "::error::database:update a echoue apres 12 tentatives."
+            exit 1
+          fi
+
+      - name: Installe, active puis desinstalle le plugin (cycle complet)
+        run: |
+          docker exec glpi php bin/console plugin:install grcmanager --force --no-interaction
+          docker exec glpi php bin/console plugin:activate grcmanager --no-interaction
+          docker exec glpi php bin/console plugin:list --no-interaction
+          docker exec glpi php bin/console plugin:deactivate grcmanager --no-interaction
+          docker exec glpi php bin/console plugin:uninstall grcmanager --no-interaction
+
+      - name: Logs GLPI (en cas d'echec)
+        if: failure()
+        run: docker logs glpi --tail 200

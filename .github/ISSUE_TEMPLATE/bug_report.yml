@@ -1,0 +1,59 @@
+name: Bug report
+description: Signaler un dysfonctionnement non lié à la sécurité
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Merci de signaler ce bug. Pour une faille de sécurité, utilisez le canal privé listé
+        dans SECURITY.md plutôt que ce formulaire.
+
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Version du plugin
+      placeholder: ex. 0.1.0 ou commit sur dev
+    validations:
+      required: true
+
+  - type: input
+    id: glpi-version
+    attributes:
+      label: Version de GLPI
+      placeholder: ex. 11.0.2
+    validations:
+      required: true
+
+  - type: input
+    id: php-version
+    attributes:
+      label: Version de PHP
+      placeholder: ex. 8.2.10
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description du problème
+      description: Que se passe-t-il ? Que vous attendiez-vous à voir à la place ?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Étapes de reproduction
+      placeholder: |
+        1. Aller dans...
+        2. Cliquer sur...
+        3. Observer...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs pertinents
+      description: Logs GLPI/plugin (pensez à retirer toute donnée sensible ou secret).
+      render: shell

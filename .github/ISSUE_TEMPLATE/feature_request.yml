@@ -1,0 +1,33 @@
+name: Feature request
+description: Proposer une nouvelle fonctionnalité ou une évolution
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Avant de proposer une fonctionnalité majeure, jetez un œil à ROADMAP.md et
+        docs/design/DEVELOPMENT_PLAN.md — elle est peut-être déjà planifiée.
+
+  - type: textarea
+    id: need
+    attributes:
+      label: Besoin
+      description: Quel problème concret cette fonctionnalité résout-elle ?
+    validations:
+      required: true
+
+  - type: textarea
+    id: justification
+    attributes:
+      label: Justification
+      description: Pourquoi est-ce important ? Pour quel type d'utilisateur (admin GLPI, RSSI, auditeur...) ?
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact envisagé
+      description: >-
+        Impact sur l'architecture, la configuration, la performance ou la sécurité si vous en
+        avez une idée (voir docs/design/DEVELOPMENT_PLAN.md).
