@@ -128,3 +128,21 @@ msgstr "Description"
 
 msgid "Justification"
 msgstr "Justification"
+
+msgid "Configuration"
+msgstr "Configuration"
+
+msgid "Matrice de risque"
+msgstr "Risk matrix"
+
+msgid "Détermine automatiquement le niveau d'un risque (faible/moyen/élevé/critique) à partir de sa probabilité et de son impact. Les valeurs par défaut ci-dessous reproduisent exactement le comportement du registre avant que cet écran n'existe : aucun risque existant ne change de niveau tant que vous ne modifiez pas la grille."
+msgstr "Automatically determines a risk's level (low/medium/high/critical) from its probability and impact. The default values below reproduce exactly the register's behaviour before this screen existed: no existing risk changes level until you edit the grid."
+
+msgid "Mes risques"
+msgstr "My risks"
+
+msgid "Propriétaire du risque"
+msgstr "Risk owner"
+
+msgid "Revue de risque à échéance"
+msgstr "Risk review due"

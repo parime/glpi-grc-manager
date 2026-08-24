@@ -15,6 +15,8 @@
  * -------------------------------------------------------------------------
  */
 
+use GlpiPlugin\Grcmanager\Services\Risk\ReviewReminderService;
+use GlpiPlugin\Grcmanager\Services\Risk\RiskMatrixConfig;
 use GlpiPlugin\Grcmanager\Services\Risk\RiskScoringService;
 
 /**
@@ -26,6 +28,14 @@ use GlpiPlugin\Grcmanager\Services\Risk\RiskScoringService;
 class PluginGrcmanagerRisk extends CommonDBTM
 {
     public static $rightname = 'plugin_grcmanager';
+
+    /**
+     * GLPI notification event name (see inc/notificationtargetrisk.class.php and
+     * src/Services/Risk/ReviewReminderService.php), shared here as a single source of truth so
+     * the event string never drifts between the NotificationTarget, the reminder service, and the
+     * Cron entry point below.
+     */
+    public const REVIEW_DUE_EVENT = 'review_due';
 
     public static function getTable($classname = null)
     {
@@ -111,7 +121,7 @@ class PluginGrcmanagerRisk extends CommonDBTM
 
     /**
      * Keeps `computed_score`/`risk_level` derived from `probability`/`impact` at all times, see
-     * RiskScoringService — neither field is ever entered manually.
+     * RiskScoringService, neither field is ever entered manually.
      *
      * @param array<string, mixed> $input
      * @return array<string, mixed>|false
@@ -140,11 +150,13 @@ class PluginGrcmanagerRisk extends CommonDBTM
         $impact      = $input['impact'] ?? ($this->fields['impact'] ?? null);
 
         if ($probability !== null && $impact !== null) {
-            $scoringService = new RiskScoringService();
-            $score = $scoringService->score((string) $probability, (string) $impact);
+            // Sprint 2: the probability x impact -> risk_level mapping is now administrable (see
+            // front/config.php, RiskMatrixConfig), loaded fresh on every add/update so an admin's
+            // edit takes effect immediately, never just for risks saved after the edit.
+            $scoringService = new RiskScoringService(RiskMatrixConfig::load());
 
-            $input['computed_score'] = $score;
-            $input['risk_level']     = $scoringService->level($score);
+            $input['computed_score'] = $scoringService->score((string) $probability, (string) $impact);
+            $input['risk_level']     = $scoringService->level((string) $probability, (string) $impact);
         }
 
         return $input;
@@ -280,6 +292,49 @@ class PluginGrcmanagerRisk extends CommonDBTM
         return parent::getSpecificValueToDisplay($field, $values, $options);
     }
 
+    /**
+     * Renders a real `<select>` filter widget in the search form for every fixed-enum column
+     * (category/probability/impact/risk_level/treatment/status), instead of GLPI's default
+     * free-text box for `datatype => 'specific'` fields (confirmed by reading GLPI 11 core,
+     * src/Glpi/Search/Input/QueryBuilder.php: 'specific' falls through to the same generic
+     * text-input pattern as 'string' unless this hook is overridden). Sprint 1 shipped translated,
+     * color-coded values in the *list*, but left every one of these columns filterable only by
+     * typing the raw untranslated DB key (e.g. "third_party") into a text box, genuinely
+     * filterable in the sense that GLPI's search does apply it, but not self-explanatory for a
+     * non-technical user, and not what Sprint 2 asks for. Sorting was never affected (GLPI sorts
+     * by the raw SQL column for any datatype), only filtering needed this.
+     */
+    public static function getSpecificValueToSelect($field, $name = '', $values = '', array $options = [])
+    {
+        if (!is_array($values)) {
+            $values = [$field => $values];
+        }
+
+        $options['display'] = false;
+        $options['name']    = $name;
+        $options['value']   = $values[$field] ?? '';
+
+        switch ($field) {
+            case 'category':
+                return Dropdown::showFromArray($name, self::getCategories(), $options);
+
+            case 'probability':
+                return Dropdown::showFromArray($name, self::getProbabilities(), $options);
+
+            case 'impact':
+            case 'risk_level':
+                return Dropdown::showFromArray($name, self::getImpacts(), $options);
+
+            case 'treatment':
+                return Dropdown::showFromArray($name, self::getTreatments(), $options);
+
+            case 'status':
+                return Dropdown::showFromArray($name, self::getStatuses(), $options);
+        }
+
+        return parent::getSpecificValueToSelect($field, $name, $values, $options);
+    }
+
     private static function plainBadge(string $class, array $labels, ?string $value): string
     {
         $label = $labels[$value] ?? (string) $value;
@@ -403,5 +458,31 @@ class PluginGrcmanagerRisk extends CommonDBTM
         $this->showFormButtons($options);
 
         return true;
+    }
+
+    /**
+     * GLPI Cron entry point, registered via CronTask::Register() in the plugin installer
+     * (src/Install/Installer.php), same structure as the sibling plugin
+     * glpi-vulnerability-manager's own cronSynchronize() entry points. Finds risks whose review
+     * date has passed or is within the reminder window and raises a real GLPI Notification for
+     * each (see ReviewReminderService, inc/notificationtargetrisk.class.php); the dashboard card
+     * `grcmanager_risks_pending_review` (Sprint 1) already gives a permanent in-app signal
+     * regardless of whether GLPI notifications are enabled; this cron adds the active, per-risk
+     * one (email to the risk owner, when notifications are configured).
+     *
+     * @return int 0 if no risk was due, 1 otherwise
+     */
+    public static function cronReviewreminder(CronTask $task): int
+    {
+        $result = (new ReviewReminderService())->notify();
+
+        $task->addVolume($result->getNotified());
+        $task->log(sprintf(
+            '%d risque(s) en attente de revue, %d notification(s) déclenchée(s).',
+            $result->getDue(),
+            $result->getNotified()
+        ));
+
+        return $result->getDue() > 0 ? 1 : 0;
     }
 }

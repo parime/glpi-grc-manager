@@ -51,6 +51,14 @@ function plugin_init_grcmanager(): void
         'tools' => [PluginGrcmanagerRisk::class],
     ];
 
+    // Sprint 2 (matrice de risque administrable, front/config.php) : reachable via
+    // Configuration > Plugins > wrench icon on this plugin's row, same minimal-footprint pattern
+    // as the sibling plugin glpi-vulnerability-manager's own remise-glpi-inspired Config screen
+    // (its own setup.php notes it "likewise has no MENU_TOADD entry of its own"). Revisit with a
+    // dedicated menu entry only if a later sprint makes this screen something used daily rather
+    // than an occasional admin setting.
+    $PLUGIN_HOOKS[Hooks::CONFIG_PAGE]['grcmanager'] = 'front/config.php';
+
     // Dashboard KPI cards, kept accumulator-safe from the start (?array $cards = null, merged
     // onto rather than replacing): a bare no-argument signature returning only this plugin's own
     // cards would silently discard every other plugin's contribution when
