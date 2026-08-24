@@ -506,3 +506,97 @@ msgstr "Test information"
 msgid "Protection des systèmes d'information lors des tests d'audit"
 msgstr "Protection of information systems during audit testing"
 
+msgid "Audit interne"
+msgid_plural "Audits internes"
+msgstr[0] "Internal audit"
+msgstr[1] "Internal audits"
+
+msgid "Planifié"
+msgstr "Planned"
+
+msgid "Terminé"
+msgstr "Completed"
+
+msgid "Annulé"
+msgstr "Cancelled"
+
+msgid "Auditeur"
+msgstr "Auditor"
+
+msgid "Date planifiée"
+msgstr "Planned date"
+
+msgid "Date réalisée"
+msgstr "Actual date"
+
+msgid "Catégories de risque couvertes"
+msgstr "Risk categories covered"
+
+msgid "Périmètre"
+msgstr "Scope"
+
+msgid "Conclusion"
+msgstr "Conclusion"
+
+msgid "Contrôles Annexe A couverts"
+msgstr "Annex A controls covered"
+
+msgid "Description libre du périmètre audité (processus, sites, systèmes...)."
+msgstr "Free-text description of the audited scope (processes, sites, systems...)."
+
+msgid "Non-conformité"
+msgid_plural "Non-conformités"
+msgstr[0] "Non-conformity"
+msgstr[1] "Non-conformities"
+
+msgid "Mineure"
+msgstr "Minor"
+
+msgid "Majeure"
+msgstr "Major"
+
+msgid "Ouverte"
+msgstr "Open"
+
+msgid "Clôturée"
+msgstr "Closed"
+
+msgid "Vérifiée"
+msgstr "Verified"
+
+msgid "Sévérité"
+msgstr "Severity"
+
+msgid "Responsable"
+msgstr "Owner"
+
+msgid "Échéance"
+msgstr "Due date"
+
+msgid "Date de vérification de clôture"
+msgstr "Closure verification date"
+
+msgid "Une action corrective est obligatoire pour clôturer ou vérifier une non-conformité."
+msgstr "A corrective action is required to close or verify a non-conformity."
+
+msgid "Obligatoire pour clôturer ou vérifier cette non-conformité."
+msgstr "Required to close or verify this non-conformity."
+
+msgid "Responsable de la non-conformité"
+msgstr "Non-conformity owner"
+
+msgid "Action corrective/préventive en retard"
+msgstr "Overdue corrective/preventive action"
+
+msgid "Non-conformités ouvertes"
+msgstr "Open non-conformities"
+
+msgid "Actions correctives/préventives en retard"
+msgstr "Overdue corrective/preventive actions"
+
+msgid "Audits internes par statut"
+msgstr "Internal audits by status"
+
+msgid "Mes actions correctives/préventives"
+msgstr "My corrective/preventive actions"
+

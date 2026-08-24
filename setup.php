@@ -48,9 +48,15 @@ function plugin_init_grcmanager(): void
     // assetsign-glpi): a flat array of classes per menu category, keyed by GLPI's internal
     // category key ('tools'), not by its translated display label.
     // Sprint 3 (SoA, clause 6.1.3) adds PluginGrcmanagerControl alongside the risk register, same
-    // 'tools' category.
+    // 'tools' category. Sprint 4 (audits internes et CAPA, clause 9.2/10.2) adds
+    // PluginGrcmanagerAudit and PluginGrcmanagerNonconformity the same way.
     $PLUGIN_HOOKS[Hooks::MENU_TOADD]['grcmanager'] = [
-        'tools' => [PluginGrcmanagerRisk::class, PluginGrcmanagerControl::class],
+        'tools' => [
+            PluginGrcmanagerRisk::class,
+            PluginGrcmanagerControl::class,
+            PluginGrcmanagerAudit::class,
+            PluginGrcmanagerNonconformity::class,
+        ],
     ];
 
     // Sprint 2 (matrice de risque administrable, front/config.php) : reachable via

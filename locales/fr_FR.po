@@ -506,3 +506,97 @@ msgstr "Informations de test"
 msgid "Protection des systèmes d'information lors des tests d'audit"
 msgstr "Protection des systèmes d'information lors des tests d'audit"
 
+msgid "Audit interne"
+msgid_plural "Audits internes"
+msgstr[0] "Audit interne"
+msgstr[1] "Audits internes"
+
+msgid "Planifié"
+msgstr "Planifié"
+
+msgid "Terminé"
+msgstr "Terminé"
+
+msgid "Annulé"
+msgstr "Annulé"
+
+msgid "Auditeur"
+msgstr "Auditeur"
+
+msgid "Date planifiée"
+msgstr "Date planifiée"
+
+msgid "Date réalisée"
+msgstr "Date réalisée"
+
+msgid "Catégories de risque couvertes"
+msgstr "Catégories de risque couvertes"
+
+msgid "Périmètre"
+msgstr "Périmètre"
+
+msgid "Conclusion"
+msgstr "Conclusion"
+
+msgid "Contrôles Annexe A couverts"
+msgstr "Contrôles Annexe A couverts"
+
+msgid "Description libre du périmètre audité (processus, sites, systèmes...)."
+msgstr "Description libre du périmètre audité (processus, sites, systèmes...)."
+
+msgid "Non-conformité"
+msgid_plural "Non-conformités"
+msgstr[0] "Non-conformité"
+msgstr[1] "Non-conformités"
+
+msgid "Mineure"
+msgstr "Mineure"
+
+msgid "Majeure"
+msgstr "Majeure"
+
+msgid "Ouverte"
+msgstr "Ouverte"
+
+msgid "Clôturée"
+msgstr "Clôturée"
+
+msgid "Vérifiée"
+msgstr "Vérifiée"
+
+msgid "Sévérité"
+msgstr "Sévérité"
+
+msgid "Responsable"
+msgstr "Responsable"
+
+msgid "Échéance"
+msgstr "Échéance"
+
+msgid "Date de vérification de clôture"
+msgstr "Date de vérification de clôture"
+
+msgid "Une action corrective est obligatoire pour clôturer ou vérifier une non-conformité."
+msgstr "Une action corrective est obligatoire pour clôturer ou vérifier une non-conformité."
+
+msgid "Obligatoire pour clôturer ou vérifier cette non-conformité."
+msgstr "Obligatoire pour clôturer ou vérifier cette non-conformité."
+
+msgid "Responsable de la non-conformité"
+msgstr "Responsable de la non-conformité"
+
+msgid "Action corrective/préventive en retard"
+msgstr "Action corrective/préventive en retard"
+
+msgid "Non-conformités ouvertes"
+msgstr "Non-conformités ouvertes"
+
+msgid "Actions correctives/préventives en retard"
+msgstr "Actions correctives/préventives en retard"
+
+msgid "Audits internes par statut"
+msgstr "Audits internes par statut"
+
+msgid "Mes actions correctives/préventives"
+msgstr "Mes actions correctives/préventives"
+

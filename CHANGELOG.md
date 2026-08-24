@@ -9,6 +9,27 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce p
 
 ### Added
 
+- **Audits internes et CAPA (clauses 9.2 et 10.2 ISO/IEC 27001:2022)** : deux nouveaux itemtypes.
+  `PluginGrcmanagerAudit` porte le programme d'audit interne (titre, périmètre libre, catégories de
+  risque couvertes, contrôles Annexe A couverts via un lien many-to-many
+  `glpi_plugin_grcmanager_audits_controls`, auditeur, statut planifié/en cours/terminé/annulé, date
+  planifiée/réalisée avec auto-renseignement de la date réalisée dès le passage au statut
+  « Terminé », conclusion). `PluginGrcmanagerNonconformity` porte le cycle constat -> action
+  corrective/préventive -> clôture que la clause 10.2 impose : rattachement à un audit, sévérité
+  (mineure/majeure/critique), cause racine, action corrective, action préventive, responsable,
+  échéance, statut ouverte/en traitement/clôturée/vérifiée, date de vérification de clôture
+  (auto-renseignée à la date du jour dès le passage au statut « Vérifiée »). Validation serveur
+  réelle : impossible de clôturer ou vérifier une non-conformité sans action corrective renseignée
+  (vérifiée en direct). Nouvelle tâche Cron quotidienne
+  (`PluginGrcmanagerNonconformity::cronOverduecapa()`) qui notifie le responsable de chaque action
+  corrective/préventive dont l'échéance est dépassée et qui n'est ni clôturée ni vérifiée
+  (`OverdueCapaService`, `inc/notificationtargetnonconformity.class.php`), même mécanisme de
+  notification GLPI native que les rappels de revue de risque du Sprint 2. Listes filtrables avec
+  badges colorés traduits et lien cliquable (`front/audit.php`, `front/nonconformity.php`),
+  formulaires dédiés, vue « Mes actions correctives/préventives ». 3 nouvelles cartes de tableau de
+  bord : non-conformités ouvertes, actions correctives/préventives en retard, audits internes par
+  statut (`DashboardCardService`, même signature accumulateur-safe que les cartes précédentes).
+  Nouvelles chaînes traduites dans `locales/fr_FR.po`/`locales/en_GB.po`.
 - **Déclaration d'applicabilité (SoA, clause 6.1.3 ISO/IEC 27001:2022)** : nouvel itemtype
   `PluginGrcmanagerControl` portant les 93 mesures réelles de l'Annexe A (37 organisationnelles,
   8 humaines, 14 physiques, 34 technologiques), seedées de façon idempotente à l'installation

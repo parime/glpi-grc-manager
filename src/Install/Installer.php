@@ -42,6 +42,11 @@ final class Installer
     // `Left_Right` relation-table convention (e.g. glpi_documents_items).
     private const CONTROLS_RISKS_TABLE = 'glpi_plugin_grcmanager_controls_risks';
 
+    // Sprint 4 (audits internes et CAPA, clause 9.2/10.2), same table-name derivation rule.
+    private const AUDITS_TABLE = 'glpi_plugin_grcmanager_audits';
+    private const NONCONFORMITIES_TABLE = 'glpi_plugin_grcmanager_nonconformities';
+    private const AUDITS_CONTROLS_TABLE = 'glpi_plugin_grcmanager_audits_controls';
+
     public function install(Migration $migration): bool
     {
         global $DB;
@@ -152,9 +157,90 @@ final class Installer
             $DB->doQuery($query) or die($DB->error());
         }
 
+        // Sprint 4 (audits internes, clause 9.2) : un audit peut couvrir un ou plusieurs contrôles
+        // Annexe A (lien many-to-many, voir PluginGrcmanagerAudit::getLinkedControls()/
+        // syncLinkedControls()) et/ou une ou plusieurs catégories de risque (liste séparée par des
+        // virgules, résolue via PluginGrcmanagerRisk::getCategories(), jamais une seconde
+        // définition de cette énumération).
+        if (!$DB->tableExists(self::AUDITS_TABLE)) {
+            $query = "CREATE TABLE `" . self::AUDITS_TABLE . "` (
+                `id` int {$keySign} NOT NULL AUTO_INCREMENT,
+                `title` varchar(255) NOT NULL,
+                `scope` text,
+                `planned_date` date DEFAULT NULL,
+                `actual_date` date DEFAULT NULL,
+                `users_id` int {$keySign} NOT NULL DEFAULT 0 COMMENT 'Auditeur',
+                `status` varchar(16) NOT NULL DEFAULT 'planned'
+                    COMMENT 'planned, in_progress, completed, cancelled',
+                `conclusion` text,
+                `risk_categories` varchar(255) NOT NULL DEFAULT ''
+                    COMMENT 'Liste de categories PluginGrcmanagerRisk separees par des virgules',
+                `date_creation` timestamp NULL DEFAULT NULL,
+                `date_mod` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                KEY `status` (`status`),
+                KEY `users_id` (`users_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
+
+            $DB->doQuery($query) or die($DB->error());
+        }
+
+        // Many-to-many : contrôle(s) Annexe A dans le périmètre d'un audit (voir
+        // PluginGrcmanagerAudit::getLinkedControls()/syncLinkedControls()), même convention que
+        // CONTROLS_RISKS_TABLE ci-dessus.
+        if (!$DB->tableExists(self::AUDITS_CONTROLS_TABLE)) {
+            $query = "CREATE TABLE `" . self::AUDITS_CONTROLS_TABLE . "` (
+                `id` int {$keySign} NOT NULL AUTO_INCREMENT,
+                `plugin_grcmanager_audits_id` int {$keySign} NOT NULL,
+                `plugin_grcmanager_controls_id` int {$keySign} NOT NULL,
+                `date_creation` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `unicity_link` (`plugin_grcmanager_audits_id`, `plugin_grcmanager_controls_id`),
+                KEY `audits_id` (`plugin_grcmanager_audits_id`),
+                KEY `controls_id` (`plugin_grcmanager_controls_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
+
+            $DB->doQuery($query) or die($DB->error());
+        }
+
+        // Sprint 4 (non-conformités et CAPA, clause 10.2) : un constat (finding) rattaché à un
+        // audit, avec le cycle complet cause racine -> action corrective -> action préventive ->
+        // clôture vérifiée que la clause 10.2 impose. `plugin_grcmanager_audits_id` n'est pas une
+        // vraie clé étrangère GLPI (pas de ON DELETE CASCADE natif ici), résolue par
+        // PluginGrcmanagerNonconformity elle-même, même simplification assumée que le lien
+        // contrôle <-> risque du Sprint 3 (voir TECH_DEBT.md).
+        if (!$DB->tableExists(self::NONCONFORMITIES_TABLE)) {
+            $query = "CREATE TABLE `" . self::NONCONFORMITIES_TABLE . "` (
+                `id` int {$keySign} NOT NULL AUTO_INCREMENT,
+                `title` varchar(255) NOT NULL,
+                `description` text,
+                `plugin_grcmanager_audits_id` int {$keySign} NOT NULL DEFAULT 0,
+                `severity` varchar(16) NOT NULL DEFAULT 'minor' COMMENT 'minor, major, critical',
+                `root_cause` text,
+                `corrective_action` text,
+                `preventive_action` text,
+                `users_id` int {$keySign} NOT NULL DEFAULT 0 COMMENT 'Responsable',
+                `due_date` date DEFAULT NULL,
+                `status` varchar(16) NOT NULL DEFAULT 'open'
+                    COMMENT 'open, in_progress, closed, verified',
+                `closure_verification_date` date DEFAULT NULL,
+                `date_creation` timestamp NULL DEFAULT NULL,
+                `date_mod` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                KEY `plugin_grcmanager_audits_id` (`plugin_grcmanager_audits_id`),
+                KEY `severity` (`severity`),
+                KEY `status` (`status`),
+                KEY `users_id` (`users_id`),
+                KEY `due_date` (`due_date`)
+            ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
+
+            $DB->doQuery($query) or die($DB->error());
+        }
+
         $this->seedControls();
 
         $this->seedReviewReminderNotification();
+        $this->seedCapaOverdueNotification();
 
         // Sprint 2 (rappels de date de revue) : évalue chaque jour les risques dont la date de
         // revue est dépassée ou approche, et déclenche la notification GLPI seedée ci-dessus (voir
@@ -166,6 +252,21 @@ final class Installer
             [
                 'comment' => 'Notifie le propriétaire de chaque risque dont la date de revue est '
                     . 'dépassée ou approche',
+                'mode'    => CronTask::MODE_EXTERNAL,
+            ]
+        );
+
+        // Sprint 4 (CAPA en retard) : évalue chaque jour les non-conformités dont l'échéance est
+        // dépassée et qui ne sont ni clôturées ni vérifiées, et déclenche la notification GLPI
+        // seedée ci-dessus (voir PluginGrcmanagerNonconformity::cronOverduecapa(),
+        // src/Services/Capa/OverdueCapaService.php).
+        CronTask::Register(
+            'PluginGrcmanagerNonconformity',
+            'overduecapa',
+            DAY_TIMESTAMP,
+            [
+                'comment' => 'Notifie le responsable de chaque action corrective/préventive dont '
+                    . 'l\'échéance est dépassée',
                 'mode'    => CronTask::MODE_EXTERNAL,
             ]
         );
@@ -271,6 +372,76 @@ final class Installer
     }
 
     /**
+     * Same structure as seedReviewReminderNotification() above, for the Sprint 4 overdue-CAPA Cron
+     * task (PluginGrcmanagerNonconformity::cronOverduecapa(), event 'capa_overdue', see
+     * inc/notificationtargetnonconformity.class.php). Idempotent for the same reason.
+     */
+    private function seedCapaOverdueNotification(): void
+    {
+        global $DB;
+
+        $itemtype = 'PluginGrcmanagerNonconformity';
+        $event    = 'capa_overdue';
+
+        $alreadySeeded = $DB->request([
+            'FROM'  => 'glpi_notifications',
+            'WHERE' => ['itemtype' => $itemtype, 'event' => $event],
+        ])->count() > 0;
+
+        if ($alreadySeeded) {
+            return;
+        }
+
+        $template = new NotificationTemplate();
+        $templateId = $template->add([
+            'name'     => 'GRC Manager - Action corrective/préventive en retard',
+            'itemtype' => $itemtype,
+            'comment'  => 'Notification envoyée par la tâche automatique GRC Manager lorsqu\'une '
+                . 'non-conformité dépasse son échéance sans être clôturée ni vérifiée.',
+        ]);
+
+        $DB->insert('glpi_notificationtemplatetranslations', [
+            'notificationtemplates_id' => $templateId,
+            'language'                 => '',
+            'subject'                  => '##nc.action## : ##nc.title##',
+            'content_text'             => "##nc.action## : ##nc.title##\n\n"
+                . "Audit : ##nc.audit##\n"
+                . "Sévérité : ##nc.severity##\n"
+                . "Échéance : ##nc.duedate##\n\n"
+                . "Voir la non-conformité : ##nc.url##",
+            'content_html'             => '<p><strong>##nc.action## : ##nc.title##</strong></p>'
+                . '<p>Audit : ##nc.audit##<br>'
+                . 'Sévérité : ##nc.severity##<br>'
+                . 'Échéance : ##nc.duedate##</p>'
+                . '<p><a href="##nc.url##">Voir la non-conformité</a></p>',
+        ]);
+
+        $notification = new Notification();
+        $notificationId = $notification->add([
+            'name'         => 'GRC Manager - Action corrective/préventive en retard',
+            'entities_id'  => 0,
+            'is_recursive' => 1,
+            'itemtype'     => $itemtype,
+            'event'        => $event,
+            'is_active'    => 1,
+        ]);
+
+        $DB->insert('glpi_notifications_notificationtemplates', [
+            'notifications_id'         => $notificationId,
+            'mode'                     => 'mailing',
+            'notificationtemplates_id' => $templateId,
+        ]);
+
+        // Default recipient: the non-conformity's own responsible owner (`users_id`), same
+        // generic resolution as seedReviewReminderNotification() above.
+        $DB->insert('glpi_notificationtargets', [
+            'items_id'         => Notification::ITEM_USER,
+            'type'             => Notification::USER_TYPE,
+            'notifications_id' => $notificationId,
+        ]);
+    }
+
+    /**
      * Idempotent like seedSource() on the sibling plugin glpi-vulnerability-manager (same author,
      * same guard shape): each of the 93 controls is looked up by its unique `code` before
      * inserting, so re-running install() (upgrade path, `plugin:install --force`) never duplicates
@@ -342,7 +513,8 @@ final class Installer
         // les tâches Cron enregistrées par ce plugin.
         CronTask::Unregister('grcmanager');
 
-        $this->unseedReviewReminderNotification();
+        $this->unseedNotification('PluginGrcmanagerRisk');
+        $this->unseedNotification('PluginGrcmanagerNonconformity');
 
         // GLPI 11 forbids $DB->query() for direct queries ("Executing direct queries is not
         // allowed!"), same lesson learned live on the sibling plugin glpi-vulnerability-manager,
@@ -352,6 +524,9 @@ final class Installer
         $migration->dropTable(self::RISK_MATRIX_CONFIG_TABLE);
         $migration->dropTable(self::CONTROLS_RISKS_TABLE);
         $migration->dropTable(self::CONTROLS_TABLE);
+        $migration->dropTable(self::AUDITS_CONTROLS_TABLE);
+        $migration->dropTable(self::NONCONFORMITIES_TABLE);
+        $migration->dropTable(self::AUDITS_TABLE);
 
         $migration->executeMigration();
 
@@ -359,17 +534,17 @@ final class Installer
     }
 
     /**
-     * Purges (not soft-deletes) the Notification and NotificationTemplate seeded by
-     * seedReviewReminderNotification(): both classes' own cleanDBonPurge() cascades to
-     * glpi_notifications_notificationtemplates, glpi_notificationtargets and
-     * glpi_notificationtemplatetranslations (confirmed by reading GLPI 11 core,
-     * src/Notification.php and src/NotificationTemplate.php), so nothing is orphaned.
+     * Purges (not soft-deletes) the Notification and NotificationTemplate seeded for a given
+     * itemtype by seedReviewReminderNotification()/seedCapaOverdueNotification(): both classes'
+     * own cleanDBonPurge() cascades to glpi_notifications_notificationtemplates,
+     * glpi_notificationtargets and glpi_notificationtemplatetranslations (confirmed by reading
+     * GLPI 11 core, src/Notification.php and src/NotificationTemplate.php), so nothing is
+     * orphaned. Generalized from Sprint 2's single-itemtype version to also cover Sprint 4's
+     * PluginGrcmanagerNonconformity notification, called once per itemtype above.
      */
-    private function unseedReviewReminderNotification(): void
+    private function unseedNotification(string $itemtype): void
     {
         global $DB;
-
-        $itemtype = 'PluginGrcmanagerRisk';
 
         $notification = new Notification();
         foreach ($DB->request(['FROM' => 'glpi_notifications', 'WHERE' => ['itemtype' => $itemtype]]) as $row) {
