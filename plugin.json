@@ -1,0 +1,31 @@
+{
+  "name": "GLPI GRC Manager",
+  "key": "grcmanager",
+  "state": "alpha",
+  "version": "0.1.0",
+  "license": "GPL-3.0-or-later",
+  "homepage": "https://github.com/parime/glpi-grc-manager",
+  "download": "https://github.com/parime/glpi-grc-manager/releases",
+  "authors": [
+    {
+      "name": "Vincent GUILLOTTE",
+      "github": "parime"
+    }
+  ],
+  "requirements": {
+    "glpi": {
+      "min": "11.0.0",
+      "max": "11.99.99"
+    },
+    "php": {
+      "min": "8.1"
+    }
+  },
+  "description": {
+    "short": {
+      "fr_FR": "Plateforme GRC (gouvernance, risque, conformité) et ISO 27001 générique pour GLPI : registre de risques, SoA, audits, CAPA.",
+      "en_GB": "Generic GRC (governance, risk, compliance) and ISO 27001 platform for GLPI: risk register, SoA, audits, CAPA."
+    }
+  },
+  "note": "Sprint 1 terminé : squelette de plugin installable, validé contre GLPI réel, avec un registre de risques génériques (PluginGrcmanagerRisk) fonctionnel de bout en bout. Les champs version/download/screenshots seront complétés à la publication de la v1.0 (voir docs/design/DEVELOPMENT_PLAN.md)."
+}

@@ -1,0 +1,21 @@
+<?php
+
+declare(strict_types=1);
+
+namespace GlpiPlugin\Grcmanager\Services;
+
+/**
+ * Default search-result columns per admin itemtype, keyed by class name (search option IDs from
+ * each class's own rawSearchOptions()). Passed explicitly as `Search::showList()`'s
+ * `$forcedisplay` by front/risk.php, and also seeded once into `glpi_displaypreferences` at
+ * install (see Installer::seedDisplayPreferences()) so the "colonnes a afficher" GLPI dialog
+ * starts from a sensible, self-explanatory default rather than an empty list, matching the
+ * lesson learned on the sibling plugin glpi-vulnerability-manager (see its own
+ * DefaultSearchColumns.php docblock and TECH_DEBT.md).
+ */
+final class DefaultSearchColumns
+{
+    public const COLUMNS = [
+        'PluginGrcmanagerRisk' => [10, 1, 2, 5, 3, 4, 6, 7, 8, 9],
+    ];
+}

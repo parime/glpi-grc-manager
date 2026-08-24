@@ -1,0 +1,130 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: grcmanager\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: en_GB\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Risque"
+msgid_plural "Risques"
+msgstr[0] "Risk"
+msgstr[1] "Risks"
+
+msgid "GRC Manager"
+msgstr "GRC Manager"
+
+msgid "Risques ouverts"
+msgstr "Open risks"
+
+msgid "Risques par niveau"
+msgstr "Risks by level"
+
+msgid "Risques par catégorie"
+msgstr "Risks by category"
+
+msgid "Risques en attente de revue"
+msgstr "Risks pending review"
+
+msgid "Humain"
+msgstr "People"
+
+msgid "Processus"
+msgstr "Process"
+
+msgid "Physique"
+msgstr "Physical"
+
+msgid "Tiers / fournisseur"
+msgstr "Third party / supplier"
+
+msgid "Technique"
+msgstr "Technical"
+
+msgid "Rare"
+msgstr "Rare"
+
+msgid "Possible"
+msgstr "Possible"
+
+msgid "Probable"
+msgstr "Probable"
+
+msgid "Quasi certaine"
+msgstr "Almost certain"
+
+msgid "Faible"
+msgstr "Low"
+
+msgid "Moyen"
+msgstr "Medium"
+
+msgid "Élevé"
+msgstr "High"
+
+msgid "Critique"
+msgstr "Critical"
+
+msgid "Aucune décision"
+msgstr "No decision"
+
+msgid "Accepter"
+msgstr "Accept"
+
+msgid "Mitiger"
+msgstr "Mitigate"
+
+msgid "Transférer"
+msgstr "Transfer"
+
+msgid "Éviter"
+msgstr "Avoid"
+
+msgid "Identifié"
+msgstr "Identified"
+
+msgid "En traitement"
+msgstr "In treatment"
+
+msgid "Accepté"
+msgstr "Accepted"
+
+msgid "Clôturé"
+msgstr "Closed"
+
+msgid "Titre"
+msgstr "Title"
+
+msgid "Catégorie"
+msgstr "Category"
+
+msgid "Probabilité"
+msgstr "Probability"
+
+msgid "Impact"
+msgstr "Impact"
+
+msgid "Niveau de risque"
+msgstr "Risk level"
+
+msgid "Traitement"
+msgstr "Treatment"
+
+msgid "Propriétaire"
+msgstr "Owner"
+
+msgid "Statut"
+msgstr "Status"
+
+msgid "Date de revue"
+msgstr "Review date"
+
+msgid "Score"
+msgstr "Score"
+
+msgid "Description"
+msgstr "Description"
+
+msgid "Justification"
+msgstr "Justification"
