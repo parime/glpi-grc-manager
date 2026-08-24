@@ -290,4 +290,69 @@ final class DashboardCardService
             'icon' => 'ti ti-chart-pie',
         ];
     }
+
+    /**
+     * Sprint 5 (risques fournisseurs/tiers), same low/medium/high/critical breakdown as
+     * risksByLevel() above, for the dedicated supplier risk register table.
+     */
+    public static function supplierRisksByLevel(array $params = []): array
+    {
+        global $DB;
+
+        $countsByLevel = array_fill_keys(['low', 'medium', 'high', 'critical'], 0);
+
+        $rows = $DB->request([
+            'SELECT' => ['risk_level', new QueryExpression('COUNT(*) AS c')],
+            'FROM' => 'glpi_plugin_grcmanager_supplierrisks',
+            'GROUPBY' => 'risk_level',
+        ]);
+
+        foreach ($rows as $row) {
+            if (isset($countsByLevel[$row['risk_level']])) {
+                $countsByLevel[$row['risk_level']] = (int) $row['c'];
+            }
+        }
+
+        $data = [];
+        foreach ($countsByLevel as $level => $count) {
+            $data[] = ['label' => $level, 'number' => $count];
+        }
+
+        return [
+            'data' => $data,
+            'label' => $params['label'] ?? __('Risques fournisseurs par niveau', 'grcmanager'),
+            'icon' => 'ti ti-chart-pie',
+        ];
+    }
+
+    /**
+     * Number of distinct suppliers carrying at least one still-open (not accepted/closed)
+     * high/critical supplier risk, the same "open" definition risksByLevel()/openRisksCount()
+     * apply to the generic register: `identified`/`in_treatment` count, `accepted`/`closed` don't
+     * (an accepted or closed high risk is a risk the organization has already made a documented
+     * decision about, not one still needing attention on a dashboard).
+     */
+    public static function suppliersWithHighRiskCount(array $params = []): array
+    {
+        global $DB;
+
+        $count = (int) $DB->request([
+            'SELECT' => [new QueryExpression('COUNT(DISTINCT suppliers_id) AS c')],
+            'FROM' => 'glpi_plugin_grcmanager_supplierrisks',
+            'WHERE' => [
+                'risk_level' => ['high', 'critical'],
+                'status'     => ['identified', 'in_treatment'],
+                new QueryExpression('suppliers_id > 0'),
+            ],
+        ])->current()['c'];
+
+        return [
+            'number' => $count,
+            'label' => $params['label'] ?? __(
+                'Fournisseurs avec au moins un risque élevé/critique ouvert',
+                'grcmanager'
+            ),
+            'icon' => 'ti ti-building-warehouse',
+        ];
+    }
 }

@@ -103,6 +103,19 @@ function plugin_grcmanager_dashboard_cards(?array $cards = null): array
             'group' => $group,
             'provider' => DashboardCardService::class . '::auditsByStatus',
         ],
+        // Sprint 5 (risques fournisseurs/tiers).
+        'grcmanager_supplierrisks_by_level' => [
+            'widgettype' => ['multipleNumber', 'pie', 'donut', 'bar', 'hbar'],
+            'label' => __('Risques fournisseurs par niveau', 'grcmanager'),
+            'group' => $group,
+            'provider' => DashboardCardService::class . '::supplierRisksByLevel',
+        ],
+        'grcmanager_suppliers_with_high_risk' => [
+            'widgettype' => ['bigNumber'],
+            'label' => __('Fournisseurs avec au moins un risque élevé/critique ouvert', 'grcmanager'),
+            'group' => $group,
+            'provider' => DashboardCardService::class . '::suppliersWithHighRiskCount',
+        ],
     ];
 }
 

@@ -47,6 +47,9 @@ final class Installer
     private const NONCONFORMITIES_TABLE = 'glpi_plugin_grcmanager_nonconformities';
     private const AUDITS_CONTROLS_TABLE = 'glpi_plugin_grcmanager_audits_controls';
 
+    // Sprint 5 (risques fournisseurs/tiers), same table-name derivation rule.
+    private const SUPPLIER_RISKS_TABLE = 'glpi_plugin_grcmanager_supplierrisks';
+
     public function install(Migration $migration): bool
     {
         global $DB;
@@ -237,9 +240,59 @@ final class Installer
             $DB->doQuery($query) or die($DB->error());
         }
 
+        // Sprint 5 (risques fournisseurs/tiers) : même structure que RISKS_TABLE ci-dessus (mêmes
+        // colonnes de notation/traitement, voir GlpiPlugin\Grcmanager\Traits\RiskAssessmentTrait),
+        // avec en plus `suppliers_id`, une vraie clé étrangère vers le `Supplier` natif de GLPI
+        // (`glpi_suppliers`), jamais un concept fournisseur parallèle propre à ce plugin.
+        if (!$DB->tableExists(self::SUPPLIER_RISKS_TABLE)) {
+            $query = "CREATE TABLE `" . self::SUPPLIER_RISKS_TABLE . "` (
+                `id` int {$keySign} NOT NULL AUTO_INCREMENT,
+                `suppliers_id` int {$keySign} NOT NULL DEFAULT 0 COMMENT 'glpi_suppliers.id',
+                `title` varchar(255) NOT NULL,
+                `description` text,
+                `category` varchar(32) NOT NULL DEFAULT 'third_party'
+                    COMMENT 'people, process, physical, third_party, technical',
+                `probability` varchar(16) NOT NULL DEFAULT 'possible'
+                    COMMENT 'rare, possible, probable, certain',
+                `impact` varchar(16) NOT NULL DEFAULT 'medium'
+                    COMMENT 'low, medium, high, critical',
+                `risk_level` varchar(16) NOT NULL DEFAULT 'medium'
+                    COMMENT 'Derived from probability x impact, see RiskAssessmentTrait, never entered manually',
+                `computed_score` decimal(5,2) NOT NULL DEFAULT 0,
+                `treatment` varchar(16) NOT NULL DEFAULT ''
+                    COMMENT 'accept, mitigate, transfer, avoid, empty = no decision yet',
+                `users_id` int {$keySign} NOT NULL DEFAULT 0 COMMENT 'Risk owner',
+                `justification` text,
+                `review_date` date DEFAULT NULL,
+                `status` varchar(16) NOT NULL DEFAULT 'identified'
+                    COMMENT 'identified, in_treatment, accepted, closed',
+                `date_creation` timestamp NULL DEFAULT NULL,
+                `date_mod` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                KEY `suppliers_id` (`suppliers_id`),
+                KEY `category` (`category`),
+                KEY `risk_level` (`risk_level`),
+                KEY `status` (`status`),
+                KEY `users_id` (`users_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
+
+            $DB->doQuery($query) or die($DB->error());
+        }
+
         $this->seedControls();
 
-        $this->seedReviewReminderNotification();
+        $this->seedReviewReminderNotification(
+            'PluginGrcmanagerRisk',
+            'risk',
+            'Revue de risque à échéance',
+            'risque'
+        );
+        $this->seedReviewReminderNotification(
+            'PluginGrcmanagerSupplierRisk',
+            'supplierrisk',
+            'Revue de risque fournisseur à échéance',
+            'risque fournisseur'
+        );
         $this->seedCapaOverdueNotification();
 
         // Sprint 2 (rappels de date de revue) : évalue chaque jour les risques dont la date de
@@ -252,6 +305,23 @@ final class Installer
             [
                 'comment' => 'Notifie le propriétaire de chaque risque dont la date de revue est '
                     . 'dépassée ou approche',
+                'mode'    => CronTask::MODE_EXTERNAL,
+            ]
+        );
+
+        // Sprint 5 (risques fournisseurs/tiers) : même mécanisme de rappel de revue que le
+        // registre générique ci-dessus (voir GlpiPlugin\Grcmanager\Services\Risk\ReviewReminderService,
+        // partagée par les deux tâches Cron), mais une tâche dédiée : le modèle de tâche Cron de
+        // GLPI enregistre/déclenche un point d'entrée statique par itemtype, une seule tâche ne
+        // peut donc pas couvrir les deux tables elle-même (voir
+        // PluginGrcmanagerSupplierRisk::cronReviewreminder()).
+        CronTask::Register(
+            'PluginGrcmanagerSupplierRisk',
+            'reviewreminder',
+            DAY_TIMESTAMP,
+            [
+                'comment' => 'Notifie le propriétaire de chaque risque fournisseur dont la date de '
+                    . 'revue est dépassée ou approche',
                 'mode'    => CronTask::MODE_EXTERNAL,
             ]
         );
@@ -296,19 +366,30 @@ final class Installer
     }
 
     /**
-     * Seeds the Notification/NotificationTemplate/translation/target rows the review-date
-     * reminder Cron task (PluginGrcmanagerRisk::cronReviewreminder()) needs to actually send
-     * something via NotificationEvent::raiseEvent('review_due', ...), see
-     * inc/notificationtargetrisk.class.php for the NotificationTarget class and the tag list.
-     * Idempotent: skipped entirely if a Notification for this itemtype/event already exists (an
-     * admin may have edited the template's wording since, never overwritten here).
+     * Seeds the Notification/NotificationTemplate/translation/target rows a review-date reminder
+     * Cron task (PluginGrcmanagerRisk::cronReviewreminder(), and since Sprint 5
+     * PluginGrcmanagerSupplierRisk::cronReviewreminder()) needs to actually send something via
+     * NotificationEvent::raiseEvent('review_due', ...), see inc/notificationtargetrisk.class.php /
+     * inc/notificationtargetsupplierrisk.class.php for the NotificationTarget classes and their tag
+     * lists. Idempotent per itemtype: skipped entirely if a Notification for that itemtype/event
+     * already exists (an admin may have edited the template's wording since, never overwritten
+     * here). Generalized at Sprint 5 (was PluginGrcmanagerRisk-only before) so both review-reminder
+     * itemtypes are seeded from the exact same implementation, only their tag prefix/wording differ.
+     *
+     * @param string $itemtype  'PluginGrcmanagerRisk' or 'PluginGrcmanagerSupplierRisk'.
+     * @param string $tagPrefix Matches the NotificationTarget's own tag prefix ('risk'/'supplierrisk').
+     * @param string $name      Human-readable Notification/NotificationTemplate name suffix.
+     * @param string $noun      French noun used in the seeded comment ('risque'/'risque fournisseur').
      */
-    private function seedReviewReminderNotification(): void
-    {
+    private function seedReviewReminderNotification(
+        string $itemtype,
+        string $tagPrefix,
+        string $name,
+        string $noun
+    ): void {
         global $DB;
 
-        $itemtype = 'PluginGrcmanagerRisk';
-        $event    = 'review_due';
+        $event = 'review_due';
 
         $alreadySeeded = $DB->request([
             'FROM'  => 'glpi_notifications',
@@ -321,31 +402,31 @@ final class Installer
 
         $template = new NotificationTemplate();
         $templateId = $template->add([
-            'name'     => 'GRC Manager - Revue de risque à échéance',
+            'name'     => 'GRC Manager - ' . $name,
             'itemtype' => $itemtype,
             'comment'  => 'Notification envoyée par la tâche automatique GRC Manager lorsqu\'un '
-                . 'risque atteint ou dépasse sa date de revue.',
+                . $noun . ' atteint ou dépasse sa date de revue.',
         ]);
 
         $DB->insert('glpi_notificationtemplatetranslations', [
             'notificationtemplates_id' => $templateId,
             'language'                 => '',
-            'subject'                  => '##risk.action## : ##risk.title##',
-            'content_text'             => "##risk.action## : ##risk.title##\n\n"
-                . "Catégorie : ##risk.category##\n"
-                . "Niveau de risque : ##risk.risklevel##\n"
-                . "Date de revue : ##risk.reviewdate##\n\n"
-                . "Voir le risque : ##risk.url##",
-            'content_html'             => '<p><strong>##risk.action## : ##risk.title##</strong></p>'
-                . '<p>Catégorie : ##risk.category##<br>'
-                . 'Niveau de risque : ##risk.risklevel##<br>'
-                . 'Date de revue : ##risk.reviewdate##</p>'
-                . '<p><a href="##risk.url##">Voir le risque</a></p>',
+            'subject'                  => "##{$tagPrefix}.action## : ##{$tagPrefix}.title##",
+            'content_text'             => "##{$tagPrefix}.action## : ##{$tagPrefix}.title##\n\n"
+                . "Catégorie : ##{$tagPrefix}.category##\n"
+                . "Niveau de risque : ##{$tagPrefix}.risklevel##\n"
+                . "Date de revue : ##{$tagPrefix}.reviewdate##\n\n"
+                . "Voir le " . $noun . " : ##{$tagPrefix}.url##",
+            'content_html'             => "<p><strong>##{$tagPrefix}.action## : ##{$tagPrefix}.title##</strong></p>"
+                . '<p>Catégorie : ' . "##{$tagPrefix}.category##<br>"
+                . 'Niveau de risque : ' . "##{$tagPrefix}.risklevel##<br>"
+                . 'Date de revue : ' . "##{$tagPrefix}.reviewdate##</p>"
+                . "<p><a href=\"##{$tagPrefix}.url##\">Voir le " . $noun . '</a></p>',
         ]);
 
         $notification = new Notification();
         $notificationId = $notification->add([
-            'name'         => 'GRC Manager - Revue de risque à échéance',
+            'name'         => 'GRC Manager - ' . $name,
             'entities_id'  => 0,
             'is_recursive' => 1,
             'itemtype'     => $itemtype,
@@ -361,9 +442,9 @@ final class Installer
 
         // Default recipient: the risk's own owner (Notification::ITEM_USER, resolved generically
         // by GLPI core from the `users_id` field, see NotificationTarget::addItemOwner() and
-        // inc/notificationtargetrisk.class.php::addAdditionalTargets()). Without this row,
-        // NotificationEvent::raiseEvent() finds the Notification above but no configured
-        // recipient and silently sends nothing.
+        // inc/notificationtargetrisk.class.php / inc/notificationtargetsupplierrisk.class.php's
+        // own addAdditionalTargets()). Without this row, NotificationEvent::raiseEvent() finds the
+        // Notification above but no configured recipient and silently sends nothing.
         $DB->insert('glpi_notificationtargets', [
             'items_id'         => Notification::ITEM_USER,
             'type'             => Notification::USER_TYPE,
@@ -514,6 +595,7 @@ final class Installer
         CronTask::Unregister('grcmanager');
 
         $this->unseedNotification('PluginGrcmanagerRisk');
+        $this->unseedNotification('PluginGrcmanagerSupplierRisk');
         $this->unseedNotification('PluginGrcmanagerNonconformity');
 
         // GLPI 11 forbids $DB->query() for direct queries ("Executing direct queries is not
@@ -521,6 +603,7 @@ final class Installer
         // see its TECH_DEBT.md. Migration's own dropTable() is the sanctioned way to drop a table
         // outside doQuery()/QueryBuilder.
         $migration->dropTable(self::RISKS_TABLE);
+        $migration->dropTable(self::SUPPLIER_RISKS_TABLE);
         $migration->dropTable(self::RISK_MATRIX_CONFIG_TABLE);
         $migration->dropTable(self::CONTROLS_RISKS_TABLE);
         $migration->dropTable(self::CONTROLS_TABLE);

@@ -49,10 +49,13 @@ function plugin_init_grcmanager(): void
     // category key ('tools'), not by its translated display label.
     // Sprint 3 (SoA, clause 6.1.3) adds PluginGrcmanagerControl alongside the risk register, same
     // 'tools' category. Sprint 4 (audits internes et CAPA, clause 9.2/10.2) adds
-    // PluginGrcmanagerAudit and PluginGrcmanagerNonconformity the same way.
+    // PluginGrcmanagerAudit and PluginGrcmanagerNonconformity the same way. Sprint 5 (risques
+    // fournisseurs/tiers) adds PluginGrcmanagerSupplierRisk right after the generic risk register
+    // it mirrors.
     $PLUGIN_HOOKS[Hooks::MENU_TOADD]['grcmanager'] = [
         'tools' => [
             PluginGrcmanagerRisk::class,
+            PluginGrcmanagerSupplierRisk::class,
             PluginGrcmanagerControl::class,
             PluginGrcmanagerAudit::class,
             PluginGrcmanagerNonconformity::class,

@@ -92,3 +92,32 @@ Journal des limites connues et compromis assumés, tenu à jour à chaque sprint
   enum de ce plugin ; le filtre de liste associé (`getSpecificValueToSelect()`) ne permet de
   filtrer que sur une seule catégorie à la fois (recherche « contient »), pas une combinaison
   ET/OU de plusieurs catégories.
+
+## Sprint 5 (Risques fournisseurs/tiers)
+
+- **`showForm()` en HTML/PHP manuel, pas en Twig**, même choix assumé que tous les formulaires
+  précédents de ce plugin (voir Sprint 1 ci-dessus) : pas de bascule JS conditionnelle sur le champ
+  Fournisseur bien qu'il soit obligatoire côté serveur (`PluginGrcmanagerSupplierRisk::
+  validateSupplierAndComputeRiskLevel()`), seulement une aide textuelle (`form-hint`) et un message
+  d'erreur réel si l'enregistrement est tenté sans fournisseur, vérifié en direct.
+- **Pas de déduplication du rappel de revue**, même limite assumée qu'au Sprint 2 pour le registre
+  générique (voir `ReviewReminderService` ci-dessus, désormais partagée par les deux tâches Cron
+  `PluginGrcmanagerRisk::cronReviewreminder()` et `PluginGrcmanagerSupplierRisk::cronReviewreminder()`) :
+  un risque fournisseur resté en retard plusieurs jours génère une notification à chaque exécution
+  quotidienne, pas une seule fois.
+- **Le champ `category` reste l'énumération générique du registre principal**
+  (people/process/physical/third_party/technical), y compris sur ce registre dédié aux tiers, où
+  `third_party` est donc à la fois le nom du registre et une valeur possible du champ (une entrée
+  ici peut tout autant être catégorisée "technique" ou "processus" que "tiers/fournisseur" au sens
+  strict) : assumé pour respecter la consigne « mêmes champs catégorie/probabilité/impact que
+  PluginGrcmanagerRisk » plutôt que d'introduire une seconde énumération plus étroite ; à
+  réévaluer si l'usage réel montre que la valeur "third_party" du champ catégorie n'apporte plus
+  d'information utile sur ce registre spécifique.
+- **`RiskAssessmentTrait` extrait au Sprint 5** (`src/Traits/RiskAssessmentTrait.php`) : les
+  énumérations catégorie/probabilité/impact/traitement/statut et le calcul
+  `computed_score`/`risk_level` étaient dupliqués mot pour mot entre `PluginGrcmanagerRisk` (Sprint
+  1-2) et le nouveau `PluginGrcmanagerSupplierRisk`. Regroupés dans un trait plutôt que laissés
+  dupliqués, pour que la matrice de notation ne puisse jamais diverger entre les deux registres.
+  Non couvert par PHPStan (`phpstan.neon.dist`) comme le reste du code dépendant du runtime GLPI
+  (`RiskMatrixConfig::load()`, `Dropdown`, `__()`), même raison que
+  `src/Services/Risk/RiskMatrixConfig.php`.
