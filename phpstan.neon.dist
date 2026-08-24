@@ -1,0 +1,29 @@
+parameters:
+    level: 6
+    tmpDir: .phpstan-cache
+    # Scope limited to pure-PHP logic that has no runtime dependency on GLPI core classes
+    # (CommonDBTM, Migration, ProfileRight, DBmysql, global $DB/$PLUGIN_HOOKS...). Those are only
+    # available inside a running GLPI instance and are not yet stubbed for static analysis, same
+    # exclusion rationale as the sibling plugin glpi-vulnerability-manager (same author). Extend
+    # `paths` as GLPI-independent services are added under src/.
+    paths:
+        - src/Compatibility
+        - src/Services/Risk
+        - src/Services/Control
+        - src/Services/Capa
+    excludePaths:
+        # Depends on GLPI's legacy global-namespace CommonDBTM classes (PluginGrcmanager*), not
+        # available for static analysis, see above. src/Install/ is entirely GLPI-dependent and
+        # stays out of `paths` altogether for the same reason.
+        - src/Services/DefaultSearchColumns.php
+        - src/Services/Dashboard/DashboardCardService.php
+        # Sprint 2: reads GLPI's runtime global $DB (RiskMatrixConfig) or depends on GLPI core
+        # classes NotificationEvent/PluginGrcmanagerRisk (ReviewReminderService), same rationale.
+        # RiskMatrixDefaults.php and ReviewReminderResult.php in the same directory stay in scope:
+        # both are pure PHP with no GLPI dependency.
+        - src/Services/Risk/RiskMatrixConfig.php
+        - src/Services/Risk/ReviewReminderService.php
+        # Sprint 4: depends on GLPI core classes NotificationEvent/PluginGrcmanagerNonconformity,
+        # same rationale as ReviewReminderService above. OverdueCapaResult.php in the same
+        # directory stays in scope: pure PHP with no GLPI dependency.
+        - src/Services/Capa/OverdueCapaService.php

@@ -1,0 +1,32 @@
+# Dependencies
+/vendor/
+/node_modules/
+
+# Environment / secrets — never commit
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build / cache
+/build/
+/cache/
+*.cache
+/.phpstan-cache/
+/.phpunit-cache/
+/.phpcs-cache
+
+# Test artifacts
+/coverage/
+.phpunit.result.cache
+
+# Logs
+*.log

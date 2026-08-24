@@ -1,0 +1,156 @@
+name: Release
+
+# Déclenche sur un tag de version (vX.Y.Z) : installe les dépendances de production, construit
+# l'archive de distribution du plugin, vérifie qu'elle s'installe réellement sur une instance GLPI
+# fraîche (mêmes conteneurs que ci.yml), puis publie la GitHub Release avec cette archive en pièce
+# jointe et un changelog généré automatiquement à partir des Pull Requests fusionnées depuis le
+# tag précédent. Repris et adapté du release.yml du plugin jumeau glpi-vulnerability-manager (même
+# auteur) : ce plugin n'a, pour l'instant, aucune dépendance de production (voir composer.json),
+# `composer install --no-dev` reste néanmoins exécuté par cohérence et pour rester prêt le jour où
+# une dépendance de production sera ajoutée.
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  # Permet a auto-tag.yml de declencher explicitement cette release apres avoir tague : un push de
+  # tag effectue avec le GITHUB_TOKEN (comme le fait auto-tag.yml) ne declenche PAS les autres
+  # workflows par defaut (protection anti-boucle de GitHub Actions) - seul un declenchement
+  # explicite via workflow_dispatch (appele avec --ref sur ce meme tag, cf. auto-tag.yml) contourne
+  # cette limite. github.ref_name vaut alors le tag cible, comme pour un push classique.
+  workflow_dispatch:
+
+env:
+  GLPI_IMAGE: glpi/glpi:11.0.8
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Récupère le code du plugin
+        uses: actions/checkout@v7
+
+      - name: Vérifie que le tag correspond à PLUGIN_GRCMANAGER_VERSION
+        # Empêche une release qui ne correspondrait pas à la version réellement écrite dans le
+        # code (ex : tag poussé avant/après avoir oublié de mettre à jour setup.php) — ferait
+        # cohabiter une archive et un numéro de version incohérents.
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          CODE_VERSION="$(grep -oP "define\('PLUGIN_GRCMANAGER_VERSION', '\K[^']+" setup.php)"
+          echo "Tag : $TAG_VERSION -- setup.php : $CODE_VERSION"
+          if [ "$TAG_VERSION" != "$CODE_VERSION" ]; then
+            echo "::error::Le tag $GITHUB_REF_NAME ne correspond pas à PLUGIN_GRCMANAGER_VERSION ($CODE_VERSION) dans setup.php."
+            exit 1
+          fi
+
+      - name: Installe PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          coverage: none
+
+      - name: Installe les dépendances de production (sans les outils de dev)
+        run: composer install --no-dev --no-progress --prefer-dist --optimize-autoloader
+
+      - name: Construit l'archive de distribution
+        # git archive (pas un simple zip du checkout) : construit exactement à partir du contenu
+        # commité au tag, exclut automatiquement ce qui est marqué `export-ignore` dans
+        # .gitattributes (tests/, .github/, config CI/qualité...). `vendor/` n'est pas versionné
+        # (voir .gitignore) donc git archive ne peut pas l'inclure — on le copie explicitement
+        # depuis l'install de production ci-dessus après extraction de l'archive source. Préfixe
+        # `grcmanager/` : l'archive s'extrait directement sous `plugins/` sur une instance GLPI
+        # (structure exigée par le cœur GLPI).
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          ARCHIVE_NAME="glpi-grc-manager-${VERSION}.zip"
+          # $GITHUB_ENV n'est lu qu'à partir de l'étape SUIVANTE, jamais dans celle qui l'écrit —
+          # on garde donc aussi une variable shell locale pour l'utiliser plus bas dans cette même
+          # étape.
+          echo "ARCHIVE_NAME=${ARCHIVE_NAME}" >> "$GITHUB_ENV"
+
+          mkdir -p /tmp/staging/grcmanager
+          git archive "$GITHUB_REF_NAME" | tar -x -C /tmp/staging/grcmanager
+          cp -r vendor /tmp/staging/grcmanager/vendor
+
+          (cd /tmp/staging && zip -qr "$GITHUB_WORKSPACE/${ARCHIVE_NAME}" grcmanager)
+
+      - name: Démarre MariaDB
+        run: |
+          docker network create grcmgr-ci
+          docker run -d --name mariadb --network grcmgr-ci \
+            -e MARIADB_ROOT_PASSWORD=glpi_password \
+            -e MARIADB_DATABASE=glpidb \
+            -e MARIADB_USER=glpi_user \
+            -e MARIADB_PASSWORD=glpi_password \
+            mariadb:11
+
+          echo "Attente que MariaDB accepte les connexions..."
+          for i in $(seq 1 30); do
+            docker exec mariadb mariadb-admin ping -h 127.0.0.1 -u root -pglpi_password --silent && break
+            sleep 2
+          done
+
+      - name: Démarre GLPI (auto-installation via l'image officielle)
+        run: |
+          docker run -d --name glpi --network grcmgr-ci \
+            -e TIMEZONE=Europe/Paris \
+            -e GLPI_DB_HOST=mariadb \
+            -e GLPI_DB_PORT=3306 \
+            -e GLPI_DB_NAME=glpidb \
+            -e GLPI_DB_USER=glpi_user \
+            -e GLPI_DB_PASSWORD=glpi_password \
+            "$GLPI_IMAGE"
+
+          echo "Attente que l'auto-installation de GLPI soit terminée..."
+          ready=0
+          for i in $(seq 1 60); do
+            docker exec glpi test -f /var/glpi/config/config_db.php && { ready=1; break; }
+            sleep 5
+          done
+          if [ "$ready" != "1" ]; then
+            echo "::error::GLPI n'a jamais terminé son auto-installation (config_db.php absent)."
+            docker logs glpi --tail 200
+            exit 1
+          fi
+
+      - name: Valide la structure de l'archive sur une vraie instance GLPI
+        # Validation la plus fiable de "cette archive est une structure GLPI valide" : l'extraire
+        # tel quel (comme le ferait un administrateur GLPI) sous plugins/, et vérifier que
+        # plugin:install/plugin:activate réussissent réellement — pas une simple vérification
+        # heuristique de présence de fichiers.
+        run: |
+          mkdir -p /tmp/archive-extraite
+          unzip -q "$ARCHIVE_NAME" -d /tmp/archive-extraite
+          docker cp /tmp/archive-extraite/grcmanager glpi:/var/www/glpi/plugins/grcmanager
+          docker exec -u root glpi chown -R www-data:www-data /var/www/glpi/plugins/grcmanager
+
+          ready=0
+          for i in $(seq 1 12); do
+            if docker exec glpi php bin/console database:update --force --no-interaction; then
+              ready=1
+              break
+            fi
+            sleep 5
+          done
+          if [ "$ready" != "1" ]; then
+            echo "::error::database:update a échoué après 12 tentatives."
+            exit 1
+          fi
+          docker exec glpi php bin/console plugin:install grcmanager --force --no-interaction
+          docker exec glpi php bin/console plugin:activate grcmanager --no-interaction
+
+      - name: Logs GLPI (en cas d'échec)
+        if: failure()
+        run: docker logs glpi --tail 200
+
+      - name: Publie la GitHub Release
+        # --generate-notes : changelog automatique à partir des titres des Pull Requests
+        # fusionnées depuis le tag précédent (fonctionnalité native GitHub) plutôt qu'un script
+        # maison de parsing de commits.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "$ARCHIVE_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes

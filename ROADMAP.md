@@ -1,0 +1,45 @@
+# Roadmap publique
+
+Cette roadmap donne la vision produit par version majeure. Le détail sprint par sprint de la
+version en cours se trouve dans
+[docs/design/DEVELOPMENT_PLAN.md](docs/design/DEVELOPMENT_PLAN.md). Périmètre initial issu de la
+décision prise dans l'issue [#89 du plugin jumeau glpi-vulnerability-manager](https://github.com/parime/glpi-vulnerability-manager/issues/89).
+
+## Version 1.0 : Première version utilisable
+
+Objectif : une plateforme GRC/ISO 27001 générique fonctionnelle de bout en bout.
+
+- Registre de risques génériques (clause 6.1.2/8.2 ISO 27001), avec matrice probabilité x impact
+  administrable
+- Déclaration d'Applicabilité (SoA), 93 contrôles Annexe A ISO 27001:2022 (clause 6.1.3)
+- Acceptation de risque avec propriétaire, justification, date de revue
+- Programme d'audit interne : non-conformités, actions correctives et préventives (CAPA)
+- Registre de risques fournisseurs/tiers
+- Suivi des formations de sensibilisation à la sécurité
+- Revues de direction
+- Dashboards technique et RSSI de base
+- Documentation utilisateur, administrateur et développeur complète
+
+## Version 1.5
+
+- Rapports exportables (PDF, CSV) pour audit externe
+- Import/export de la SoA au format standard
+- Workflow d'approbation multi-niveaux pour l'acceptation de risque
+- API REST publique documentée (OpenAPI)
+
+## Version 2.0
+
+- Cartographie des risques (heatmap probabilité x impact interactive)
+- Bibliothèque de contrôles étendue (ISO 27002, NIST CSF, CIS Controls) en complément de
+  l'Annexe A ISO 27001
+- Intégration bidirectionnelle avec le plugin jumeau
+  [glpi-vulnerability-manager](https://github.com/parime/glpi-vulnerability-manager) : un risque
+  cyber accepté/mitigé côté vulnérabilités peut alimenter le registre de risques générique, sans
+  fusionner les deux plateformes
+
+## Suivi
+
+L'avancement réel (issues, PR, jalons) est suivi sur le
+[GitHub Project](https://github.com/parime/glpi-grc-manager) du repository une fois celui-ci
+activé. Les priorités peuvent évoluer en fonction des retours communautaires : voir
+[GOVERNANCE.md](GOVERNANCE.md) pour le processus de décision.

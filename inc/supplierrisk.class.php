@@ -1,0 +1,375 @@
+<?php
+
+/**
+ * -------------------------------------------------------------------------
+ * GLPI GRC Manager plugin for GLPI
+ * Copyright (C) 2026 Vincent GUILLOTTE
+ * https://github.com/parime/glpi-grc-manager
+ * -------------------------------------------------------------------------
+ * LICENSE
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version. See LICENSE for the full text.
+ * -------------------------------------------------------------------------
+ */
+
+use GlpiPlugin\Grcmanager\Services\Risk\ReviewReminderService;
+use GlpiPlugin\Grcmanager\Traits\RiskAssessmentTrait;
+
+/**
+ * Supplier/third-party risk register (ISO 27001 clause 6.1.2/8.2 applied specifically to
+ * suppliers, see also Annex A controls A.5.19-A.5.22 covered by the SoA), Sprint 5. Each row is
+ * one risk tied to a real GLPI core `Supplier` (`suppliers_id`, GLPI's own native supplier
+ * itemtype, never a parallel supplier concept of this plugin's own), with the exact same
+ * probability x impact scoring and accept/mitigate/transfer/avoid treatment workflow as the
+ * generic risk register (PluginGrcmanagerRisk): both share RiskAssessmentTrait so that scoring can
+ * never drift between the two registers, see its docblock.
+ */
+class PluginGrcmanagerSupplierRisk extends CommonDBTM
+{
+    use RiskAssessmentTrait;
+
+    public static $rightname = 'plugin_grcmanager';
+
+    /**
+     * GLPI notification event name (see inc/notificationtargetsupplierrisk.class.php and
+     * src/Services/Risk/ReviewReminderService.php), same single-source-of-truth pattern as
+     * PluginGrcmanagerRisk::REVIEW_DUE_EVENT. Deliberately the same event name as the generic risk
+     * register: both itemtypes raise 'review_due' on their own NotificationTarget class, GLPI
+     * dispatches by the notified item's own get_class(), so reusing the string is safe and keeps a
+     * single vocabulary ("review due") across both registers rather than inventing a second one.
+     */
+    public const REVIEW_DUE_EVENT = 'review_due';
+
+    public static function getTable($classname = null)
+    {
+        return 'glpi_plugin_grcmanager_supplierrisks';
+    }
+
+    public static function getTypeName($nb = 0)
+    {
+        return _n('Risque fournisseur', 'Risques fournisseurs', $nb, 'grcmanager');
+    }
+
+    public static function getIcon()
+    {
+        return 'ti ti-truck';
+    }
+
+    /**
+     * The one validation this class adds on top of RiskAssessmentTrait's shared scoring: a
+     * supplier risk without a linked Supplier would defeat the whole point of a dedicated
+     * register (it would just be a generic risk with a "third_party" category, already possible
+     * on PluginGrcmanagerRisk since Sprint 1). Delegates the actual probability x impact scoring
+     * to the trait's own computeRiskLevel() so this override never duplicates that logic.
+     *
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>|false
+     */
+    public function prepareInputForAdd($input)
+    {
+        return $this->validateSupplierAndComputeRiskLevel($input);
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>|false
+     */
+    public function prepareInputForUpdate($input)
+    {
+        return $this->validateSupplierAndComputeRiskLevel($input);
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>|false
+     */
+    private function validateSupplierAndComputeRiskLevel(array $input)
+    {
+        $suppliersId = (int) ($input['suppliers_id'] ?? ($this->fields['suppliers_id'] ?? 0));
+
+        if ($suppliersId <= 0) {
+            Session::addMessageAfterRedirect(
+                __('Un fournisseur est obligatoire pour un risque fournisseur.', 'grcmanager'),
+                false,
+                ERROR
+            );
+
+            return false;
+        }
+
+        return $this->computeRiskLevel($input);
+    }
+
+    public function rawSearchOptions()
+    {
+        $tab = [];
+
+        $tab[] = [
+            'id'   => 'common',
+            'name' => self::getTypeName(1),
+        ];
+
+        $tab[] = [
+            'id'       => 1,
+            'table'    => $this->getTable(),
+            'field'    => 'title',
+            'name'     => __('Titre', 'grcmanager'),
+            'datatype' => 'string',
+        ];
+
+        // Real GLPI-native dropdown join to the core Supplier itemtype (unlike the control<->risk
+        // and audit<->control links of Sprints 3-4, deliberately kept simple with a direct-access
+        // helper, see TECH_DEBT.md): a genuine `datatype => 'dropdown'` search option on
+        // `glpi_suppliers` gives a real filter/search-by-supplier combo box and a native join for
+        // free, exactly what this sprint's requirement ("filtres... par le Fournisseur lié") asks
+        // for, confirmed against a real GLPI 11 instance the same way the `users_id` (owner) column
+        // already does for `glpi_users` below.
+        $tab[] = [
+            'id'       => 2,
+            'table'    => 'glpi_suppliers',
+            'field'    => 'name',
+            'name'     => Supplier::getTypeName(1),
+            'datatype' => 'dropdown',
+        ];
+
+        $tab[] = [
+            'id'       => 3,
+            'table'    => $this->getTable(),
+            'field'    => 'category',
+            'name'     => __('Catégorie', 'grcmanager'),
+            'datatype' => 'specific',
+        ];
+
+        $tab[] = [
+            'id'       => 4,
+            'table'    => $this->getTable(),
+            'field'    => 'probability',
+            'name'     => __('Probabilité', 'grcmanager'),
+            'datatype' => 'specific',
+        ];
+
+        $tab[] = [
+            'id'       => 5,
+            'table'    => $this->getTable(),
+            'field'    => 'impact',
+            'name'     => __('Impact', 'grcmanager'),
+            'datatype' => 'specific',
+        ];
+
+        $tab[] = [
+            'id'       => 6,
+            'table'    => $this->getTable(),
+            'field'    => 'risk_level',
+            'name'     => __('Niveau de risque', 'grcmanager'),
+            'datatype' => 'specific',
+        ];
+
+        $tab[] = [
+            'id'       => 7,
+            'table'    => $this->getTable(),
+            'field'    => 'treatment',
+            'name'     => __('Traitement', 'grcmanager'),
+            'datatype' => 'specific',
+        ];
+
+        $tab[] = [
+            'id'       => 8,
+            'table'    => 'glpi_users',
+            'field'    => 'name',
+            'name'     => __('Propriétaire', 'grcmanager'),
+            'datatype' => 'dropdown',
+            'right'    => 'all',
+        ];
+
+        $tab[] = [
+            'id'       => 9,
+            'table'    => $this->getTable(),
+            'field'    => 'status',
+            'name'     => __('Statut', 'grcmanager'),
+            'datatype' => 'specific',
+        ];
+
+        $tab[] = [
+            'id'       => 10,
+            'table'    => $this->getTable(),
+            'field'    => 'review_date',
+            'name'     => __('Date de revue', 'grcmanager'),
+            'datatype' => 'date',
+        ];
+
+        // Row link, same "a list with no way back to showForm() is not self-explanatory" lesson
+        // already applied throughout this plugin family, see PluginGrcmanagerRisk::rawSearchOptions().
+        $tab[] = [
+            'id'       => 11,
+            'table'    => $this->getTable(),
+            'field'    => 'id',
+            'name'     => __('ID'),
+            'datatype' => 'itemlink',
+            'itemtype' => self::class,
+        ];
+
+        return $tab;
+    }
+
+    /**
+     * Every enum column here (category/probability/impact/risk_level/treatment/status) is shared
+     * with the generic risk register, see RiskAssessmentTrait::commonValueToDisplay(). No
+     * class-specific field needs a badge: `suppliers_id` renders through GLPI's own generic
+     * dropdown resolution (the search option above is a real join, not `datatype => 'specific'`).
+     */
+    public static function getSpecificValueToDisplay($field, $values, array $options = [])
+    {
+        if (!is_array($values)) {
+            $values = [$field => $values];
+        }
+
+        $common = self::commonValueToDisplay($field, $values[$field] ?? null);
+        if ($common !== null) {
+            return $common;
+        }
+
+        return parent::getSpecificValueToDisplay($field, $values, $options);
+    }
+
+    /**
+     * Same dispatch as PluginGrcmanagerRisk::getSpecificValueToSelect(), see
+     * RiskAssessmentTrait::commonValueToSelect(). `suppliers_id` is left to GLPI core's own default
+     * for a `datatype => 'dropdown'` search option (a real supplier picker), not overridden here.
+     */
+    public static function getSpecificValueToSelect($field, $name = '', $values = '', array $options = [])
+    {
+        if (!is_array($values)) {
+            $values = [$field => $values];
+        }
+
+        $options['display'] = false;
+        $options['name']    = $name;
+        $options['value']   = $values[$field] ?? '';
+
+        $common = self::commonValueToSelect($field, $name, $options);
+        if ($common !== null) {
+            return $common;
+        }
+
+        return parent::getSpecificValueToSelect($field, $name, $values, $options);
+    }
+
+    public function showForm($ID, array $options = []): bool
+    {
+        $this->initForm($ID, $options);
+        $this->showFormHeader($options);
+
+        echo '<tr class="tab_bg_1"><td>' . __('Titre', 'grcmanager') . '</td>';
+        echo '<td colspan="3">';
+        echo Html::input('title', ['value' => $this->fields['title'] ?? '', 'size' => 80]);
+        echo '</td></tr>';
+
+        echo '<tr class="tab_bg_1"><td>' . Supplier::getTypeName(1) . '</td><td>';
+        Supplier::dropdown([
+            'name'  => 'suppliers_id',
+            'value' => $this->fields['suppliers_id'] ?? 0,
+        ]);
+        echo '<small class="form-hint">' . __(
+            'Obligatoire : ce registre est dédié aux risques liés à un fournisseur.',
+            'grcmanager'
+        ) . '</small>';
+        echo '</td>';
+
+        echo '<td>' . __('Catégorie', 'grcmanager') . '</td><td>';
+        Dropdown::showFromArray('category', self::getCategories(), [
+            'value' => $this->fields['category'] ?? 'third_party',
+        ]);
+        echo '</td></tr>';
+
+        echo '<tr class="tab_bg_1"><td>' . __('Propriétaire', 'grcmanager') . '</td><td>';
+        User::dropdown([
+            'name'  => 'users_id',
+            'value' => $this->fields['users_id'] ?? 0,
+            'right' => 'all',
+        ]);
+        echo '</td>';
+
+        echo '<td>' . __('Probabilité', 'grcmanager') . '</td><td>';
+        Dropdown::showFromArray('probability', self::getProbabilities(), [
+            'value' => $this->fields['probability'] ?? 'possible',
+        ]);
+        echo '</td></tr>';
+
+        echo '<tr class="tab_bg_1"><td>' . __('Impact', 'grcmanager') . '</td><td>';
+        Dropdown::showFromArray('impact', self::getImpacts(), [
+            'value' => $this->fields['impact'] ?? 'medium',
+        ]);
+        echo '</td>';
+
+        if ($this->isNewID($ID) === false) {
+            echo '<td>' . __('Niveau de risque', 'grcmanager') . '</td><td>';
+            echo self::riskLevelBadge($this->fields['risk_level'] ?? null);
+            echo '</td></tr>';
+
+            echo '<tr class="tab_bg_1"><td>' . __('Score', 'grcmanager') . '</td><td>';
+            echo htmlescape((string) ($this->fields['computed_score'] ?? '0'));
+            echo '</td><td colspan="2"></td></tr>';
+        } else {
+            echo '<td colspan="2"></td></tr>';
+        }
+
+        echo '<tr class="tab_bg_1"><td>' . __('Traitement', 'grcmanager') . '</td><td>';
+        Dropdown::showFromArray('treatment', self::getTreatments(), [
+            'value' => $this->fields['treatment'] ?? '',
+        ]);
+        echo '</td>';
+
+        echo '<td>' . __('Statut', 'grcmanager') . '</td><td>';
+        Dropdown::showFromArray('status', self::getStatuses(), [
+            'value' => $this->fields['status'] ?? 'identified',
+        ]);
+        echo '</td></tr>';
+
+        echo '<tr class="tab_bg_1"><td>' . __('Date de revue', 'grcmanager') . '</td><td>';
+        Html::showDateField('review_date', ['value' => $this->fields['review_date'] ?? '']);
+        echo '</td><td colspan="2"></td></tr>';
+
+        echo '<tr class="tab_bg_1"><td>' . __('Description', 'grcmanager') . '</td>';
+        echo '<td colspan="3">';
+        echo '<textarea name="description" class="form-control" rows="4">'
+            . htmlescape($this->fields['description'] ?? '') . '</textarea>';
+        echo '</td></tr>';
+
+        echo '<tr class="tab_bg_1"><td>' . __('Justification', 'grcmanager') . '</td>';
+        echo '<td colspan="3">';
+        echo '<textarea name="justification" class="form-control" rows="4">'
+            . htmlescape($this->fields['justification'] ?? '') . '</textarea>';
+        echo '</td></tr>';
+
+        $this->showFormButtons($options);
+
+        return true;
+    }
+
+    /**
+     * GLPI Cron entry point, same structure as PluginGrcmanagerRisk::cronReviewreminder() and
+     * registered the same way in src/Install/Installer.php (a second dedicated CronTask entry,
+     * `PluginGrcmanagerSupplierRisk`/`reviewreminder`: GLPI's Cron task model registers/dispatches
+     * one static entry point per itemtype, so a single task cannot itself cover two different
+     * itemtypes, see ReviewReminderService's own docblock for why the underlying query/notify logic
+     * is shared instead of duplicated).
+     *
+     * @return int 0 if no supplier risk was due, 1 otherwise
+     */
+    public static function cronReviewreminder(CronTask $task): int
+    {
+        $result = (new ReviewReminderService(self::class))->notify();
+
+        $task->addVolume($result->getNotified());
+        $task->log(sprintf(
+            '%d risque(s) fournisseur en attente de revue, %d notification(s) déclenchée(s).',
+            $result->getDue(),
+            $result->getNotified()
+        ));
+
+        return $result->getDue() > 0 ? 1 : 0;
+    }
+}
