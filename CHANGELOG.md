@@ -9,6 +9,20 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce p
 
 ### Added
 
+- **Déclaration d'applicabilité (SoA, clause 6.1.3 ISO/IEC 27001:2022)** : nouvel itemtype
+  `PluginGrcmanagerControl` portant les 93 mesures réelles de l'Annexe A (37 organisationnelles,
+  8 humaines, 14 physiques, 34 technologiques), seedées de façon idempotente à l'installation
+  (`Installer::seedControls()`, comptées en direct sur une instance GLPI 11 réelle : 93/93). Pour
+  chaque mesure : applicabilité (applicable/non applicable/partiellement applicable), justification
+  obligatoire dès que la mesure n'est pas pleinement applicable (validation serveur réelle,
+  vérifiée en direct), statut de mise en œuvre (non démarré/en cours/mis en œuvre/vérifié), lien
+  many-to-many vers le registre de risques (`glpi_plugin_grcmanager_controls_risks`). Liste
+  filtrable par thème/applicabilité/statut avec badges colorés traduits et lien cliquable
+  (`front/control.php`), formulaire dédié (`front/control.form.php`). 3 nouvelles cartes de
+  tableau de bord : contrôles SoA revus, par applicabilité, par état de mise en œuvre
+  (`DashboardCardService`, même signature accumulateur-safe que les cartes du registre de
+  risques). 93 nouvelles chaînes traduites (thèmes, statuts, et l'intitulé officiel de chacune des
+  93 mesures) dans `locales/fr_FR.po`/`locales/en_GB.po`.
 - **Matrice de risque administrable** (`front/config.php`, onglet unique pour l'instant) : la
   grille probabilité x impact utilisée par `RiskScoringService` pour calculer `risk_level` n'est
   plus codée en dur, elle est éditable depuis l'interface GLPI (5x4 menus déroulants colorés) et

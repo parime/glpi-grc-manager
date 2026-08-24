@@ -65,6 +65,25 @@ function plugin_grcmanager_dashboard_cards(?array $cards = null): array
             'group' => $group,
             'provider' => DashboardCardService::class . '::risksPendingReviewCount',
         ],
+        // Sprint 3 (SoA, clause 6.1.3).
+        'grcmanager_soa_reviewed' => [
+            'widgettype' => ['bigNumber'],
+            'label' => __('Contrôles SoA revus', 'grcmanager'),
+            'group' => $group,
+            'provider' => DashboardCardService::class . '::soaReviewedCount',
+        ],
+        'grcmanager_soa_by_applicability' => [
+            'widgettype' => ['multipleNumber', 'pie', 'donut', 'bar', 'hbar'],
+            'label' => __('Contrôles SoA par applicabilité', 'grcmanager'),
+            'group' => $group,
+            'provider' => DashboardCardService::class . '::soaByApplicability',
+        ],
+        'grcmanager_soa_by_implementation_status' => [
+            'widgettype' => ['multipleNumber', 'pie', 'donut', 'bar', 'hbar'],
+            'label' => __('Contrôles SoA par état de mise en œuvre', 'grcmanager'),
+            'group' => $group,
+            'provider' => DashboardCardService::class . '::soaByImplementationStatus',
+        ],
     ];
 }
 

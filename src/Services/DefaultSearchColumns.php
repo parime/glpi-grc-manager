@@ -16,6 +16,9 @@ namespace GlpiPlugin\Grcmanager\Services;
 final class DefaultSearchColumns
 {
     public const COLUMNS = [
-        'PluginGrcmanagerRisk' => [10, 1, 2, 5, 3, 4, 6, 7, 8, 9],
+        'PluginGrcmanagerRisk'    => [10, 1, 2, 5, 3, 4, 6, 7, 8, 9],
+        // Sprint 3 (SoA) : id-then-theme-then-code first, same "clickable row first" convention
+        // as the risk register above.
+        'PluginGrcmanagerControl' => [8, 2, 1, 3, 4, 6, 7],
     ];
 }
