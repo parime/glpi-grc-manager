@@ -6,6 +6,7 @@ namespace GlpiPlugin\Grcmanager\Install;
 
 use CronTask;
 use DBConnection;
+use GlpiPlugin\Grcmanager\Services\Control\ControlCatalogDefaults;
 use GlpiPlugin\Grcmanager\Services\DefaultSearchColumns;
 use GlpiPlugin\Grcmanager\Services\Risk\RiskMatrixDefaults;
 use Migration;
@@ -32,6 +33,14 @@ final class Installer
 
     // Sprint 2 (matrice de risque administrable), same derivation rule.
     private const RISK_MATRIX_CONFIG_TABLE = 'glpi_plugin_grcmanager_riskmatrixconfig';
+
+    // Sprint 3 (Déclaration d'Applicabilité / SoA, clause 6.1.3), same derivation rule.
+    private const CONTROLS_TABLE = 'glpi_plugin_grcmanager_controls';
+
+    // Many-to-many link table, `<left>_<right>` naming after the `glpi_plugin_grcmanager_` prefix
+    // (both sides already lowercased+concatenated class-name suffixes), matching GLPI core's own
+    // `Left_Right` relation-table convention (e.g. glpi_documents_items).
+    private const CONTROLS_RISKS_TABLE = 'glpi_plugin_grcmanager_controls_risks';
 
     public function install(Migration $migration): bool
     {
@@ -96,6 +105,54 @@ final class Installer
                 'date_mod' => date('Y-m-d H:i:s'),
             ]);
         }
+
+        // Sprint 3 (SoA, clause 6.1.3) : les 93 mesures Annexe A ISO/IEC 27001:2022, une ligne par
+        // mesure. Seule la donnée stable (code, thème) est seedée, jamais l'intitulé traduit (voir
+        // PluginGrcmanagerControl::getControlTitles()), sur le même principe que les enums
+        // catégorie/probabilité/impact du registre de risques.
+        if (!$DB->tableExists(self::CONTROLS_TABLE)) {
+            $query = "CREATE TABLE `" . self::CONTROLS_TABLE . "` (
+                `id` int {$keySign} NOT NULL AUTO_INCREMENT,
+                `code` varchar(8) NOT NULL COMMENT 'Identifiant ISO/IEC 27001:2022 Annexe A, ex. A.5.1',
+                `theme` varchar(32) NOT NULL
+                    COMMENT 'organizational, people, physical, technological',
+                `applicability` varchar(16) NOT NULL DEFAULT 'yes' COMMENT 'yes, no, partial',
+                `justification` text
+                    COMMENT 'Obligatoire si applicability != yes, voir PluginGrcmanagerControl',
+                `implementation_status` varchar(16) NOT NULL DEFAULT 'not_started'
+                    COMMENT 'not_started, in_progress, implemented, verified',
+                `is_reviewed` tinyint NOT NULL DEFAULT 0
+                    COMMENT 'Mis a 1 des la premiere sauvegarde explicite via le formulaire',
+                `date_creation` timestamp NULL DEFAULT NULL,
+                `date_mod` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `unicity_code` (`code`),
+                KEY `theme` (`theme`),
+                KEY `applicability` (`applicability`),
+                KEY `implementation_status` (`implementation_status`)
+            ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
+
+            $DB->doQuery($query) or die($DB->error());
+        }
+
+        // Many-to-many : risque(s) du registre justifiant ou pilotant la mise en oeuvre d'une
+        // mesure Annexe A (voir PluginGrcmanagerControl::getLinkedRisks()/syncLinkedRisks()).
+        if (!$DB->tableExists(self::CONTROLS_RISKS_TABLE)) {
+            $query = "CREATE TABLE `" . self::CONTROLS_RISKS_TABLE . "` (
+                `id` int {$keySign} NOT NULL AUTO_INCREMENT,
+                `plugin_grcmanager_controls_id` int {$keySign} NOT NULL,
+                `plugin_grcmanager_risks_id` int {$keySign} NOT NULL,
+                `date_creation` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `unicity_link` (`plugin_grcmanager_controls_id`, `plugin_grcmanager_risks_id`),
+                KEY `controls_id` (`plugin_grcmanager_controls_id`),
+                KEY `risks_id` (`plugin_grcmanager_risks_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
+
+            $DB->doQuery($query) or die($DB->error());
+        }
+
+        $this->seedControls();
 
         $this->seedReviewReminderNotification();
 
@@ -213,6 +270,39 @@ final class Installer
         ]);
     }
 
+    /**
+     * Idempotent like seedSource() on the sibling plugin glpi-vulnerability-manager (same author,
+     * same guard shape): each of the 93 controls is looked up by its unique `code` before
+     * inserting, so re-running install() (upgrade path, `plugin:install --force`) never duplicates
+     * a row nor overwrites an admin's own applicability/justification/status edits on an existing
+     * one.
+     */
+    private function seedControls(): void
+    {
+        global $DB;
+
+        foreach (ControlCatalogDefaults::CONTROLS as $code => $theme) {
+            $exists = $DB->request([
+                'FROM'  => self::CONTROLS_TABLE,
+                'WHERE' => ['code' => $code],
+            ])->count() > 0;
+
+            if ($exists) {
+                continue;
+            }
+
+            $DB->insert(self::CONTROLS_TABLE, [
+                'code'                  => $code,
+                'theme'                 => $theme,
+                'applicability'         => 'yes',
+                'implementation_status' => 'not_started',
+                'is_reviewed'           => 0,
+                'date_creation'         => date('Y-m-d H:i:s'),
+                'date_mod'              => date('Y-m-d H:i:s'),
+            ]);
+        }
+    }
+
     private function seedDisplayPreferences(): void
     {
         global $DB;
@@ -260,6 +350,8 @@ final class Installer
         // outside doQuery()/QueryBuilder.
         $migration->dropTable(self::RISKS_TABLE);
         $migration->dropTable(self::RISK_MATRIX_CONFIG_TABLE);
+        $migration->dropTable(self::CONTROLS_RISKS_TABLE);
+        $migration->dropTable(self::CONTROLS_TABLE);
 
         $migration->executeMigration();
 

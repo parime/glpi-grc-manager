@@ -1,6 +1,6 @@
 # Plan de développement
 
-Statut : Sprint 2 terminé. Ce document découpe la Version 1.0 (voir [ROADMAP.md](../../ROADMAP.md))
+Statut : Sprint 3 terminé. Ce document découpe la Version 1.0 (voir [ROADMAP.md](../../ROADMAP.md))
 en itérations livrables, et liste les risques techniques identifiés. Il est mis à jour à chaque
 fin de sprint.
 
@@ -20,7 +20,7 @@ pure-PHP testable sous `src/Services/`, installeur sous `src/Install/`, écrans 
 |---|---|---|---|
 | **1. Infrastructure plugin** | ✅ Terminé | Squelette installable | `setup.php`, `hook.php`, migration initiale (`src/Install/Installer.php`), droit GLPI dédié (`plugin_grcmanager`), vérification version GLPI/PHP, désinstallation propre, premier registre de risques génériques (`PluginGrcmanagerRisk`) fonctionnel de bout en bout (liste avec badges colorés traduits et lien cliquable, formulaire, calcul automatique du niveau de risque via `RiskScoringService`) ; **validé de bout en bout contre GLPI 11 réel** |
 | **2. Registre de risques génériques (v2)** | ✅ Terminé | Matrice administrable | Matrice probabilité x impact configurable depuis l'interface GLPI (`front/config.php`, `RiskMatrixConfig`, au lieu de la matrice fixe du Sprint 1, voir `TECH_DEBT.md`), filtres réellement fonctionnels par catégorie/probabilité/impact/niveau/traitement/statut et vue « Mes risques » par propriétaire, rappels de date de revue (tâche Cron `cronReviewreminder()` + notification GLPI native) ; **validé de bout en bout contre GLPI 11 réel** |
-| **3. Déclaration d'Applicabilité (SoA)** | ⏳ À venir | Clause 6.1.3 | Modèle de données des 93 contrôles Annexe A ISO 27001:2022, statut d'applicabilité par contrôle, justification, lien vers les risques traités |
+| **3. Déclaration d'Applicabilité (SoA)** | ✅ Terminé | Clause 6.1.3 | Les 93 contrôles Annexe A ISO/IEC 27001:2022 réels (`PluginGrcmanagerControl`, seedés à l'installation, 4 thèmes 37/8/14/34), applicabilité (oui/non/partielle) avec justification obligatoire si non pleinement applicable, statut de mise en œuvre, lien many-to-many vers le registre de risques, liste filtrable par thème/applicabilité/statut avec badges traduits, 3 cartes de tableau de bord (contrôles revus, par applicabilité, par état de mise en œuvre) ; **validé de bout en bout contre GLPI 11 réel** |
 | **4. Audits internes et CAPA** | ⏳ À venir | Programme d'audit | Programme d'audit interne, non-conformités, actions correctives et préventives (CAPA), suivi de clôture |
 | **5. Risques fournisseurs/tiers** | ⏳ À venir | Registre dédié | Registre de risques fournisseurs/tiers, avec les mêmes mécanismes d'acceptation/traitement que le registre générique |
 | **6. Formations et revues de direction** | ⏳ À venir | Suivi organisationnel | Suivi des formations de sensibilisation à la sécurité, enregistrement des revues de direction |

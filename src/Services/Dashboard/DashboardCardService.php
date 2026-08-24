@@ -116,4 +116,97 @@ final class DashboardCardService
             'icon' => 'ti ti-calendar-due',
         ];
     }
+
+    /**
+     * SoA completion progress (Sprint 3, clause 6.1.3): "X/93 contrôles revus", a control counts
+     * as reviewed as soon as it has been explicitly saved once through the form (see
+     * PluginGrcmanagerControl::validateAndMarkReviewed()), regardless of the applicability chosen.
+     */
+    public static function soaReviewedCount(array $params = []): array
+    {
+        global $DB;
+
+        $total = (int) $DB->request([
+            'COUNT' => 'c',
+            'FROM'  => 'glpi_plugin_grcmanager_controls',
+        ])->current()['c'];
+
+        $reviewed = (int) $DB->request([
+            'COUNT' => 'c',
+            'FROM'  => 'glpi_plugin_grcmanager_controls',
+            'WHERE' => ['is_reviewed' => 1],
+        ])->current()['c'];
+
+        return [
+            'number' => $reviewed,
+            'label' => $params['label'] ?? sprintf(
+                __('Contrôles SoA revus (%d au total)', 'grcmanager'),
+                $total
+            ),
+            'icon' => 'ti ti-checklist',
+        ];
+    }
+
+    public static function soaByApplicability(array $params = []): array
+    {
+        global $DB;
+
+        $countsByApplicability = array_fill_keys(['yes', 'no', 'partial'], 0);
+
+        $rows = $DB->request([
+            'SELECT' => ['applicability', new QueryExpression('COUNT(*) AS c')],
+            'FROM' => 'glpi_plugin_grcmanager_controls',
+            'GROUPBY' => 'applicability',
+        ]);
+
+        foreach ($rows as $row) {
+            if (isset($countsByApplicability[$row['applicability']])) {
+                $countsByApplicability[$row['applicability']] = (int) $row['c'];
+            }
+        }
+
+        $data = [];
+        foreach ($countsByApplicability as $applicability => $count) {
+            $data[] = ['label' => $applicability, 'number' => $count];
+        }
+
+        return [
+            'data' => $data,
+            'label' => $params['label'] ?? __('Contrôles SoA par applicabilité', 'grcmanager'),
+            'icon' => 'ti ti-chart-pie',
+        ];
+    }
+
+    public static function soaByImplementationStatus(array $params = []): array
+    {
+        global $DB;
+
+        $countsByStatus = array_fill_keys(
+            ['not_started', 'in_progress', 'implemented', 'verified'],
+            0
+        );
+
+        $rows = $DB->request([
+            'SELECT' => ['implementation_status', new QueryExpression('COUNT(*) AS c')],
+            'FROM' => 'glpi_plugin_grcmanager_controls',
+            'GROUPBY' => 'implementation_status',
+        ]);
+
+        foreach ($rows as $row) {
+            if (isset($countsByStatus[$row['implementation_status']])) {
+                $countsByStatus[$row['implementation_status']] = (int) $row['c'];
+            }
+        }
+
+        $data = [];
+        foreach ($countsByStatus as $status => $count) {
+            $data[] = ['label' => $status, 'number' => $count];
+        }
+
+        return [
+            'data' => $data,
+            'label' => $params['label'] ?? __('Contrôles SoA par état de mise en œuvre', 'grcmanager'),
+            'icon' => 'ti ti-chart-pie',
+        ];
+    }
 }
