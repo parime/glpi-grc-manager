@@ -209,4 +209,85 @@ final class DashboardCardService
             'icon' => 'ti ti-chart-pie',
         ];
     }
+
+    /**
+     * Sprint 4 (audits internes et CAPA, clause 10.2) : non-conformités encore ouvertes ou en
+     * traitement, quel que soit l'audit d'origine.
+     */
+    public static function openNonconformitiesCount(array $params = []): array
+    {
+        global $DB;
+
+        $count = (int) $DB->request([
+            'COUNT' => 'c',
+            'FROM' => 'glpi_plugin_grcmanager_nonconformities',
+            'WHERE' => ['status' => ['open', 'in_progress']],
+        ])->current()['c'];
+
+        return [
+            'number' => $count,
+            'label' => $params['label'] ?? __('Non-conformités ouvertes', 'grcmanager'),
+            'icon' => 'ti ti-alert-hexagon',
+        ];
+    }
+
+    /**
+     * Actions correctives/préventives en retard : même définition que
+     * GlpiPlugin\Grcmanager\Services\Capa\OverdueCapaService (échéance dépassée, statut ni
+     * clôturée ni vérifiée), pour que la carte de tableau de bord et la tâche Cron ne divergent
+     * jamais sur ce qui compte comme "en retard".
+     */
+    public static function overdueCapaCount(array $params = []): array
+    {
+        global $DB;
+
+        $count = (int) $DB->request([
+            'COUNT' => 'c',
+            'FROM' => 'glpi_plugin_grcmanager_nonconformities',
+            'WHERE' => [
+                'status' => ['NOT IN', ['closed', 'verified']],
+                new QueryExpression('due_date IS NOT NULL'),
+                new QueryExpression('due_date < CURDATE()'),
+            ],
+        ])->current()['c'];
+
+        return [
+            'number' => $count,
+            'label' => $params['label'] ?? __('Actions correctives/préventives en retard', 'grcmanager'),
+            'icon' => 'ti ti-calendar-due',
+        ];
+    }
+
+    public static function auditsByStatus(array $params = []): array
+    {
+        global $DB;
+
+        $countsByStatus = array_fill_keys(
+            ['planned', 'in_progress', 'completed', 'cancelled'],
+            0
+        );
+
+        $rows = $DB->request([
+            'SELECT' => ['status', new QueryExpression('COUNT(*) AS c')],
+            'FROM' => 'glpi_plugin_grcmanager_audits',
+            'GROUPBY' => 'status',
+        ]);
+
+        foreach ($rows as $row) {
+            if (isset($countsByStatus[$row['status']])) {
+                $countsByStatus[$row['status']] = (int) $row['c'];
+            }
+        }
+
+        $data = [];
+        foreach ($countsByStatus as $status => $count) {
+            $data[] = ['label' => $status, 'number' => $count];
+        }
+
+        return [
+            'data' => $data,
+            'label' => $params['label'] ?? __('Audits internes par statut', 'grcmanager'),
+            'icon' => 'ti ti-chart-pie',
+        ];
+    }
 }

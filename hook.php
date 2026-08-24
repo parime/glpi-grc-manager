@@ -84,6 +84,25 @@ function plugin_grcmanager_dashboard_cards(?array $cards = null): array
             'group' => $group,
             'provider' => DashboardCardService::class . '::soaByImplementationStatus',
         ],
+        // Sprint 4 (audits internes et CAPA, clause 9.2/10.2).
+        'grcmanager_open_nonconformities' => [
+            'widgettype' => ['bigNumber'],
+            'label' => __('Non-conformités ouvertes', 'grcmanager'),
+            'group' => $group,
+            'provider' => DashboardCardService::class . '::openNonconformitiesCount',
+        ],
+        'grcmanager_overdue_capa' => [
+            'widgettype' => ['bigNumber'],
+            'label' => __('Actions correctives/préventives en retard', 'grcmanager'),
+            'group' => $group,
+            'provider' => DashboardCardService::class . '::overdueCapaCount',
+        ],
+        'grcmanager_audits_by_status' => [
+            'widgettype' => ['multipleNumber', 'pie', 'donut', 'bar', 'hbar'],
+            'label' => __('Audits internes par statut', 'grcmanager'),
+            'group' => $group,
+            'provider' => DashboardCardService::class . '::auditsByStatus',
+        ],
     ];
 }
 
