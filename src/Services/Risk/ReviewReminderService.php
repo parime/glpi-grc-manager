@@ -15,9 +15,20 @@ use PluginGrcmanagerRisk;
  * PluginGrcmanagerRisk::cronReviewreminder() (see issue tracked in
  * docs/design/DEVELOPMENT_PLAN.md, Sprint 2).
  *
- * NOTE: depends on GLPI's legacy global-namespace CommonDBTM class (PluginGrcmanagerRisk) and the
- * NotificationEvent core class, not unit-tested in isolation, same exclusion rationale as the
- * sibling plugin glpi-vulnerability-manager, see phpstan.neon.dist.
+ * Sprint 5 generalized this service to also drive PluginGrcmanagerSupplierRisk's own
+ * cronReviewreminder(): both itemtypes share the exact same `status`/`review_date` columns and the
+ * exact same "review due" semantics (see RiskAssessmentTrait), only the itemtype/table differ, so
+ * a single `$itemtype` constructor argument was enough, no second copy of this query/notify logic.
+ * GLPI's own Cron task model still requires one CronTask::Register() and one static
+ * `cron<name>()` entry point per itemtype (see src/Install/Installer.php), and each itemtype needs
+ * its own NotificationTarget class (GLPI dispatches NotificationEvent::raiseEvent() by the
+ * notified item's own get_class()), so those two stay one-per-itemtype; only the query/notify
+ * logic below is shared.
+ *
+ * NOTE: depends on GLPI's legacy global-namespace CommonDBTM classes (PluginGrcmanagerRisk and,
+ * dynamically, PluginGrcmanagerSupplierRisk) and the NotificationEvent core class, not
+ * unit-tested in isolation, same exclusion rationale as the sibling plugin
+ * glpi-vulnerability-manager, see phpstan.neon.dist.
  */
 final class ReviewReminderService
 {
@@ -31,11 +42,25 @@ final class ReviewReminderService
 
     public const EVENT = 'review_due';
 
+    /**
+     * @param class-string $itemtype A CommonDBTM class with `status`/`review_date` columns and a
+     *                                `review_due` NotificationEvent target, defaults to
+     *                                PluginGrcmanagerRisk for backward compatibility with Sprint 2
+     *                                callers that never passed an argument.
+     */
+    public function __construct(
+        private readonly string $itemtype = PluginGrcmanagerRisk::class
+    ) {
+    }
+
     public function notify(): ReviewReminderResult
     {
-        $risk = new PluginGrcmanagerRisk();
+        $itemtype = $this->itemtype;
 
-        $dueRisks = $risk->find([
+        /** @var \CommonDBTM $prototype */
+        $prototype = new $itemtype();
+
+        $dueRisks = $prototype->find([
             'status'      => ['<>', 'closed'],
             'review_date' => ['<=', date('Y-m-d', strtotime('+' . self::REMINDER_WINDOW_DAYS . ' days'))],
             ['NOT' => ['review_date' => null]],
@@ -44,7 +69,8 @@ final class ReviewReminderService
         $notified = 0;
 
         foreach ($dueRisks as $riskRow) {
-            $item = new PluginGrcmanagerRisk();
+            /** @var \CommonDBTM $item */
+            $item = new $itemtype();
             if (!$item->getFromDB((int) $riskRow['id'])) {
                 continue;
             }

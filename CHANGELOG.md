@@ -9,6 +9,30 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce p
 
 ### Added
 
+- **Risques fournisseurs/tiers** : nouveau registre dédié, `PluginGrcmanagerSupplierRisk`, avec
+  exactement les mêmes mécanismes d'acceptation/traitement que le registre générique
+  (`PluginGrcmanagerRisk`) : catégorie/probabilité/impact/niveau de risque calculé, traitement
+  (accepter/mitiger/transférer/éviter), propriétaire, justification, date de revue, statut. Chaque
+  risque fournisseur est rattaché à un vrai `Supplier` natif de GLPI (`suppliers_id`, jamais un
+  concept fournisseur propre à ce plugin), rattachement obligatoire (validation serveur réelle,
+  vérifiée en direct). Le calcul de notation (`computed_score`/`risk_level` à partir de
+  `probability`/`impact` via la matrice administrable existante) est désormais partagé avec le
+  registre générique via un nouveau trait `GlpiPlugin\Grcmanager\Traits\RiskAssessmentTrait`
+  (`src/Traits/RiskAssessmentTrait.php`), qui regroupe aussi les énumérations et le rendu des
+  badges colorés traduits, pour que les deux registres ne puissent jamais diverger sur leur
+  notation ; `PluginGrcmanagerRisk` a été refactoré pour utiliser ce même trait, sans changement de
+  comportement. Même mécanisme de rappel de revue que le Sprint 2
+  (`GlpiPlugin\Grcmanager\Services\Risk\ReviewReminderService`, généralisée pour piloter les deux
+  tâches Cron `PluginGrcmanagerRisk::cronReviewreminder()` et
+  `PluginGrcmanagerSupplierRisk::cronReviewreminder()` à partir de la même implémentation), nouvelle
+  notification GLPI native dédiée (`inc/notificationtargetsupplierrisk.class.php`). Liste filtrable
+  par catégorie/probabilité/impact/niveau/traitement/statut et par le Fournisseur lié (vrai filtre
+  GLPI natif, jointure réelle sur `glpi_suppliers`), badges colorés traduits, lien cliquable, vue
+  « Mes risques fournisseurs » (`front/supplierrisk.php`), formulaire dédié
+  (`front/supplierrisk.form.php`). 2 nouvelles cartes de tableau de bord : risques fournisseurs par
+  niveau, nombre de fournisseurs ayant au moins un risque élevé/critique encore ouvert
+  (`DashboardCardService`, même signature accumulateur-safe que les cartes précédentes). Nouvelles
+  chaînes traduites dans `locales/fr_FR.po`/`locales/en_GB.po`.
 - **Audits internes et CAPA (clauses 9.2 et 10.2 ISO/IEC 27001:2022)** : deux nouveaux itemtypes.
   `PluginGrcmanagerAudit` porte le programme d'audit interne (titre, périmètre libre, catégories de
   risque couvertes, contrôles Annexe A couverts via un lien many-to-many

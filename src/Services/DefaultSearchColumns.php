@@ -23,5 +23,9 @@ final class DefaultSearchColumns
         // Sprint 4 (audits internes et CAPA), same "id first" convention.
         'PluginGrcmanagerAudit'         => [9, 1, 2, 3, 4, 5, 6],
         'PluginGrcmanagerNonconformity' => [12, 1, 2, 3, 4, 5, 7],
+        // Sprint 5 (risques fournisseurs/tiers), same "id first" convention, supplier column
+        // second (the whole point of this register) then the same scoring/treatment order as
+        // PluginGrcmanagerRisk above.
+        'PluginGrcmanagerSupplierRisk'  => [11, 1, 2, 3, 6, 4, 5, 7, 8, 9],
     ];
 }

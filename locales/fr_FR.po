@@ -600,3 +600,29 @@ msgstr "Audits internes par statut"
 msgid "Mes actions correctives/préventives"
 msgstr "Mes actions correctives/préventives"
 
+msgid "Risque fournisseur"
+msgid_plural "Risques fournisseurs"
+msgstr[0] "Risque fournisseur"
+msgstr[1] "Risques fournisseurs"
+
+msgid "Obligatoire : ce registre est dédié aux risques liés à un fournisseur."
+msgstr "Obligatoire : ce registre est dédié aux risques liés à un fournisseur."
+
+msgid "Un fournisseur est obligatoire pour un risque fournisseur."
+msgstr "Un fournisseur est obligatoire pour un risque fournisseur."
+
+msgid "Mes risques fournisseurs"
+msgstr "Mes risques fournisseurs"
+
+msgid "Revue de risque fournisseur à échéance"
+msgstr "Revue de risque fournisseur à échéance"
+
+msgid "Propriétaire du risque fournisseur"
+msgstr "Propriétaire du risque fournisseur"
+
+msgid "Risques fournisseurs par niveau"
+msgstr "Risques fournisseurs par niveau"
+
+msgid "Fournisseurs avec au moins un risque élevé/critique ouvert"
+msgstr "Fournisseurs avec au moins un risque élevé/critique ouvert"
+
