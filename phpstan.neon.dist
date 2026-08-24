@@ -15,3 +15,9 @@ parameters:
         # stays out of `paths` altogether for the same reason.
         - src/Services/DefaultSearchColumns.php
         - src/Services/Dashboard/DashboardCardService.php
+        # Sprint 2: reads GLPI's runtime global $DB (RiskMatrixConfig) or depends on GLPI core
+        # classes NotificationEvent/PluginGrcmanagerRisk (ReviewReminderService), same rationale.
+        # RiskMatrixDefaults.php and ReviewReminderResult.php in the same directory stay in scope:
+        # both are pure PHP with no GLPI dependency.
+        - src/Services/Risk/RiskMatrixConfig.php
+        - src/Services/Risk/ReviewReminderService.php

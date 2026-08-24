@@ -27,5 +27,5 @@
       "en_GB": "Generic GRC (governance, risk, compliance) and ISO 27001 platform for GLPI: risk register, SoA, audits, CAPA."
     }
   },
-  "note": "Sprint 1 terminé : squelette de plugin installable, validé contre GLPI réel, avec un registre de risques génériques (PluginGrcmanagerRisk) fonctionnel de bout en bout. Les champs version/download/screenshots seront complétés à la publication de la v1.0 (voir docs/design/DEVELOPMENT_PLAN.md)."
+  "note": "Sprint 2 terminé : registre de risques génériques (PluginGrcmanagerRisk) avec matrice de risque administrable, filtres de liste réellement fonctionnels et rappels de date de revue, en plus du squelette de plugin installable livré au Sprint 1, validés contre GLPI réel. Les champs version/download/screenshots seront complétés à la publication de la v1.0 (voir docs/design/DEVELOPMENT_PLAN.md)."
 }

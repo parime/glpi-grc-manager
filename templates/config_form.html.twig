@@ -1,0 +1,78 @@
+{# Sprint 2 : matrice probabilité x impact administrable (voir front/config.php,
+   RiskMatrixConfig). Un seul écran pour l'instant (pas d'onglets comme le plugin jumeau
+   glpi-vulnerability-manager, qui en a besoin pour 11 sous-écrans différents) : à réévaluer en
+   onglets si un futur sprint ajoute d'autres réglages ici. #}
+<div class="card">
+  <div class="card-body">
+    <h4>{{ __('Matrice de risque', 'grcmanager') }}</h4>
+    <p class="text-muted">
+      {{ __('Détermine automatiquement le niveau d\'un risque (faible/moyen/élevé/critique) à partir de sa probabilité et de son impact. Les valeurs par défaut ci-dessous reproduisent exactement le comportement du registre avant que cet écran n\'existe : aucun risque existant ne change de niveau tant que vous ne modifiez pas la grille.', 'grcmanager') }}
+    </p>
+
+    <form method="post" action="{{ config('root_doc') }}/plugins/grcmanager/front/config.php">
+      <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}">
+
+      <div class="table-responsive">
+        <table class="table table-bordered align-middle grcmanager-risk-matrix" style="max-width: 720px;">
+          <thead>
+            <tr>
+              <th>{{ __('Probabilité', 'grcmanager') }} \ {{ __('Impact', 'grcmanager') }}</th>
+              {% for impact_key, impact_label in risk_impacts %}<th>{{ impact_label }}</th>{% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for probability_key, probability_label in risk_probabilities %}
+              <tr>
+                <th>{{ probability_label }}</th>
+                {% for impact_key, impact_label in risk_impacts %}
+                  {% set current_level = risk_matrix[probability_key][impact_key]|default('medium') %}
+                  <td class="grcmanager-matrix-cell grcmanager-level-{{ current_level }}">
+                    <select name="matrix_{{ probability_key }}_{{ impact_key }}" class="form-select form-select-sm grcmanager-level-select" data-level="{{ current_level }}">
+                      {% for level_key, level_label in risk_impacts %}
+                        <option value="{{ level_key }}" {{ current_level == level_key ? 'selected' : '' }}>{{ level_label }}</option>
+                      {% endfor %}
+                    </select>
+                  </td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="d-flex gap-2 mt-3">
+        <button type="submit" name="update_risk_matrix" class="btn btn-primary">{{ __('Enregistrer') }}</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# Color-coded matrix cells (same low/medium/high/critical -> green/yellow/orange/red convention
+   as PluginGrcmanagerRisk::riskLevelBadge(), inc/risk.class.php), so a non-technical admin sees
+   at a glance which combinations are severe without reading every select's value. Updates live on
+   change, not just on page load, so the visual stays true after an edit and before saving. #}
+<style>
+  .grcmanager-matrix-cell.grcmanager-level-low { background-color: var(--tblr-green-lt, #d4f4e2); }
+  .grcmanager-matrix-cell.grcmanager-level-medium { background-color: var(--tblr-yellow-lt, #fdf3d8); }
+  .grcmanager-matrix-cell.grcmanager-level-high { background-color: var(--tblr-orange-lt, #fde6d8); }
+  .grcmanager-matrix-cell.grcmanager-level-critical { background-color: var(--tblr-red-lt, #fbd9d3); }
+</style>
+<script>
+(function () {
+    document.querySelectorAll('.grcmanager-level-select').forEach(function (select) {
+        select.addEventListener('change', function () {
+            var cell = select.closest('.grcmanager-matrix-cell');
+            if (!cell) {
+                return;
+            }
+            cell.classList.remove(
+                'grcmanager-level-low',
+                'grcmanager-level-medium',
+                'grcmanager-level-high',
+                'grcmanager-level-critical'
+            );
+            cell.classList.add('grcmanager-level-' + select.value);
+        });
+    });
+})();
+</script>

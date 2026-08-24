@@ -7,6 +7,35 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce p
 
 ## [Non publié]
 
+### Added
+
+- **Matrice de risque administrable** (`front/config.php`, onglet unique pour l'instant) : la
+  grille probabilité x impact utilisée par `RiskScoringService` pour calculer `risk_level` n'est
+  plus codée en dur, elle est éditable depuis l'interface GLPI (5x4 menus déroulants colorés) et
+  stockée dans `glpi_plugin_grcmanager_riskmatrixconfig`, sur le modèle du plugin jumeau
+  glpi-vulnerability-manager. Les valeurs par défaut reproduisent exactement la matrice fixe du
+  Sprint 1 : aucun changement pour les installations existantes tant qu'un administrateur ne
+  modifie pas la grille (voir `RiskMatrixDefaults`).
+- **Filtres de liste réellement fonctionnels** sur catégorie, probabilité, impact, niveau de
+  risque, traitement et statut (`PluginGrcmanagerRisk::getSpecificValueToSelect()`) : le Sprint 1
+  affichait des badges traduits mais ne permettait de filtrer qu'en tapant la valeur brute non
+  traduite dans une case de texte ; ces six colonnes affichent maintenant un vrai menu déroulant
+  traduit dans le formulaire de recherche.
+- **Vue « Mes risques »** sur la liste (`front/risk.php`) : lien direct vers les risques dont
+  l'utilisateur connecté est propriétaire.
+- **Rappels de date de revue** : nouvelle tâche Cron GLPI (`PluginGrcmanagerRisk::cronReviewreminder()`,
+  quotidienne) qui identifie les risques dont la date de revue est dépassée ou approche (30 jours)
+  et déclenche une notification GLPI native (`review_due`) au propriétaire du risque
+  (`ReviewReminderService`, `inc/notificationtargetrisk.class.php`), en plus de la carte de
+  tableau de bord « Risques en attente de revue » déjà livrée au Sprint 1.
+
+### Fixed
+
+- `front/risk.php` transmettait un tableau de paramètres vide à `Search::showList()`, ignorant
+  silencieusement tout critère de recherche présent dans l'URL (tri, pagination, filtres), corrigé
+  en fusionnant `$_GET` via `Glpi\Search\Input\QueryBuilder::manageParams()`, le même mécanisme que
+  `Search::show()` utilise pour les écrans natifs de GLPI.
+
 ## [0.1.0] - 2026-08-24
 
 ### Added

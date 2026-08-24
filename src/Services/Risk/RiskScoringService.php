@@ -11,9 +11,14 @@ namespace GlpiPlugin\Grcmanager\Services\Risk;
  * whenever probability/impact change, so `computed_score`/`risk_level` are never entered
  * manually and always stay consistent with the two source fields.
  *
- * Sprint 1 ships a fixed 4x4 matrix (hardcoded weights below); an administrable matrix (mirroring
- * the sibling plugin glpi-vulnerability-manager's own configurable probability x impact matrix)
- * is planned for a later sprint, see docs/design/DEVELOPMENT_PLAN.md.
+ * Sprint 2: the probability x impact -> risk_level matrix is now administrable from GLPI's admin
+ * UI (front/config.php), mirroring the sibling plugin glpi-vulnerability-manager's own
+ * configurable matrix (its RiskMatrixDefaults/RiskScorer split). The matrix is injected via the
+ * constructor (whatever GlpiPlugin\Grcmanager\Services\Risk\RiskMatrixConfig loaded from
+ * glpi_plugin_grcmanager_riskmatrixconfig, or RiskMatrixDefaults::MATRIX for a still-unconfigured
+ * install), never read from a global here, so this class stays GLPI-free. The numeric
+ * `computed_score` (still shown on the form for context) keeps Sprint 1's fixed ordinal weights:
+ * only the probability x impact -> level mapping is administrable, not the underlying score.
  */
 final class RiskScoringService
 {
@@ -37,6 +42,15 @@ final class RiskScoringService
         'critical' => 4,
     ];
 
+    /**
+     * @param array<string, array<string, string>> $matrix probability => impact => risk_level,
+     *                                                      defaults to Sprint 1's original grid.
+     */
+    public function __construct(
+        private readonly array $matrix = RiskMatrixDefaults::MATRIX
+    ) {
+    }
+
     public function score(string $probability, string $impact): float
     {
         $probabilityWeight = self::PROBABILITY_WEIGHTS[$probability] ?? 0;
@@ -46,11 +60,19 @@ final class RiskScoringService
     }
 
     /**
-     * Maps a raw score (1-16, see score() above) onto the same low/medium/high/critical scale
-     * already used for `impact`, so a single riskLevelBadge() can render both (see
-     * inc/risk.class.php).
+     * Looks up the configured matrix for this probability/impact pair. Falls back to the
+     * score-based thresholds (Sprint 1's original behaviour) only for a combination missing from
+     * an incomplete/corrupted matrix (e.g. an unrecognized probability/impact key), so a partial
+     * admin edit can never leave a risk without a computed level.
      */
-    public function level(float $score): string
+    public function level(string $probability, string $impact): string
+    {
+        return $this->matrix[$probability][$impact] ?? $this->levelFromScore(
+            $this->score($probability, $impact)
+        );
+    }
+
+    private function levelFromScore(float $score): string
     {
         return match (true) {
             $score >= 12 => 'critical',
