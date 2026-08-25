@@ -187,23 +187,18 @@ Journal des limites connues et compromis assumés, tenu à jour à chaque sprint
 
 ## Sprint 8 (Documentation et release v1.0.0)
 
-- **`docs/TUTORIAL.md` (27 captures) ne couvre que les Sprints 1-4.** Vérifié lors de la revue de
-  préparation v1.0.0 : le tutoriel bilingue existant parcourt le registre de risques générique, la
-  matrice probabilité x impact, la SoA et les audits/CAPA jusqu'à l'ajout d'une carte de tableau de
-  bord, mais ne montre ni le registre de risques fournisseurs/tiers (Sprint 5), ni le suivi des
-  formations et les revues de direction (Sprint 6), ni le tableau de bord ISMS par défaut seedé à
-  l'installation ni la nouvelle carte de suivi de version GitHub sur l'écran Configuration
-  (Sprint 7). Le texte d'introduction et l'Étape 1 affirment même encore que le plugin ajoute
-  « quatre écrans » au menu Outils, alors qu'il en ajoute sept désormais. Non corrigé dans le cadre
-  de ce sprint : générer nettoyement les captures manquantes demande de rejouer le flux complet sur
-  une instance réelle avec de vraies données (comme les 27 captures existantes), un travail
-  d'automatisation navigateur qui n'a pas pu être fait en toute sécurité dans le temps imparti de
-  cette revue. Ce que couvrent déjà les 27 captures reste exact (aucune capture existante n'a été
-  invalidée par les Sprints 5-7 : le flux risque générique/matrice/SoA/audits-CAPA/ajout de carte
-  qu'elles montrent n'a pas changé visuellement). À traiter en priorité juste avant ou juste après
-  la publication de la v1.0.0 : compléter le tutoriel avec une étape 7 (risques fournisseurs), une
-  étape 8 (formations et revues de direction) et une mise à jour de l'étape 6 (nouveau tableau de
-  bord par défaut, carte de version GitHub).
+- ~~**`docs/TUTORIAL.md` (27 captures) ne couvre que les Sprints 1-4.**~~ **Résolu après la
+  publication de la v1.0.0** : le tutoriel compte désormais 42 captures, toutes réelles (rejouées
+  sur l'instance réelle du plugin avec Playwright, exactement comme les 27 captures d'origine).
+  Étape 7 (registre de risques fournisseurs/tiers, Sprint 5, lien vers un vrai `Supplier` GLPI),
+  étape 8 (suivi d'une formation et de la réalisation d'un participant, Sprint 6), étape 9
+  (enregistrement d'une revue de direction, Sprint 6, avec démonstration de l'auto-renseignement de
+  `review_date`), étape 10 (tableau de bord ISMS seedé à l'installation, Sprint 7, capturé avec les
+  données de démonstration natives GLPI explicitement désactivées pour montrer les vrais chiffres)
+  et étape 11 (carte de suivi de version GitHub sur l'écran Configuration, Sprint 7) ont été
+  ajoutées. Le texte d'introduction et l'Étape 1 ont été corrigés : le plugin ajoute bien « sept
+  écrans » au menu Outils, plus la mention du registre de risques fournisseurs fantôme qui ne
+  correspondait à aucun écran réel a été retirée.
 - **`docs/design/` ne contient qu'un seul document (`DEVELOPMENT_PLAN.md`), pas d'ADR dédiées.**
   Évalué lors de la même revue : il n'existe pas de série de fichiers "Architecture Decision
   Record" formels comme le ferait un projet plus mature. Jugé suffisant pour l'instant (pas
