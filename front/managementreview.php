@@ -25,7 +25,7 @@ Session::checkRight(PluginGrcmanagerManagementReview::$rightname, READ);
 Html::header(
     PluginGrcmanagerManagementReview::getTypeName(2),
     $_SERVER['PHP_SELF'],
-    'admin',
+    'tools',
     PluginGrcmanagerManagementReview::class
 );
 

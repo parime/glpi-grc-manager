@@ -44,7 +44,7 @@ if (isset($_POST['update_risk_matrix'])) {
 Html::header(
     __('Configuration', 'grcmanager'),
     $_SERVER['PHP_SELF'],
-    'admin',
+    'tools',
     PluginGrcmanagerRisk::class
 );
 

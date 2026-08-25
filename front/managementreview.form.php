@@ -41,7 +41,7 @@ if (isset($_POST['add'])) {
     Html::header(
         PluginGrcmanagerManagementReview::getTypeName(1),
         $_SERVER['PHP_SELF'],
-        'admin',
+        'tools',
         PluginGrcmanagerManagementReview::class
     );
 

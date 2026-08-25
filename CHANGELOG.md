@@ -34,6 +34,15 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce p
   en retard de renouvellement de formation, revues de direction par statut.
 - Nouvelles chaînes traduites dans `locales/fr_FR.po`/`locales/en_GB.po`.
 
+### Fixed
+
+- Fil d'Ariane incorrect sur tous les écrans du plugin : `Html::header()` déclarait la catégorie
+  `'admin'` (Administration) sur 11 fichiers alors que le plugin est enregistré sous `'tools'`
+  (Outils) dans `Hooks::MENU_TOADD`, même bug que sur `glpi-vulnerability-manager`, confirmé en
+  direct sur les deux dépôts. Corrigé partout (y compris les 4 nouveaux écrans du Sprint 6 ci-dessus,
+  qui n'existaient pas encore lors du premier correctif) pour que le fil d'Ariane et le menu actif
+  reflètent l'emplacement réel.
+
 ## [0.5.0] - 2026-08-24
 
 ### Added
