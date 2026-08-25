@@ -7,6 +7,15 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce p
 
 ## [Non publié]
 
+### Fixed
+
+- **Colonne Titre non cliquable sur les listes Risques, Risques fournisseurs, Audits, Non-
+  conformités, Formations et Revues de direction** : seule la colonne ID (petite cible) ouvrait
+  la fiche, le titre affiché s'affichait en texte brut. Constat direct du porteur du plugin sur un
+  écran comparable. Colonne Titre passée en `datatype => 'itemlink'` (`itemtype => self::class`)
+  sur les 6 classes concernées, vérifié en conditions réelles (HTML rendu avec un vrai lien vers
+  la fiche).
+
 ### Added
 
 - **Suivi des formations de sensibilisation à la sécurité (clauses 7.2 "compétence" et 7.3
