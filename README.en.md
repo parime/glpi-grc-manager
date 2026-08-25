@@ -4,7 +4,7 @@
 > GLPI.
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/status-alpha%20%E2%80%94%20sprint%201-orange)](ROADMAP.md)
+[![Status](https://img.shields.io/badge/status-alpha%20%E2%80%94%20sprint%207%20done-orange)](ROADMAP.md)
 [![GLPI](https://img.shields.io/badge/GLPI-11.x-green)](docs/design/DEVELOPMENT_PLAN.md)
 
 [🇫🇷 Français](README.md) | 🇬🇧 **English**
@@ -36,12 +36,14 @@ treatment, a Statement of Applicability (SoA), internal audits and corrective ac
 
 ## Project status
 
-**Sprint 1 "Plugin infrastructure" complete** and validated against a real GLPI 11: installable
-plugin skeleton (`setup.php`/`hook.php`), a dedicated GLPI right (`plugin_grcmanager`), and a
-first generic risk register (`PluginGrcmanagerRisk`) working end-to-end (list with translated
-color-coded badges, create/edit form, automatic risk-level computation). See
-[ROADMAP.md](ROADMAP.md) and [docs/design/DEVELOPMENT_PLAN.md](docs/design/DEVELOPMENT_PLAN.md)
-for what's next.
+**Sprints 1 through 7 complete**, validated against a real GLPI 11: generic risk register
+(administrable probability x impact matrix, filters, review reminders), Statement of Applicability
+(93 ISO/IEC 27001:2022 Annex A controls), internal audit program with non-conformities and CAPA,
+supplier/third-party risk register, security awareness training tracking and management reviews,
+and a complete ISMS dashboard (15 cards, a default dashboard seeded at install time). Sprint 8
+(documentation and the v1.0.0 release, in progress) is the last one before the first published
+version. See [ROADMAP.md](ROADMAP.md) and
+[docs/design/DEVELOPMENT_PLAN.md](docs/design/DEVELOPMENT_PLAN.md) for the details.
 
 ## Installation
 

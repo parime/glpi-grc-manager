@@ -7,6 +7,16 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce p
 
 ## [Non publié]
 
+### Fixed
+
+- **`README.md`/`README.en.md` affichaient encore un statut "Sprint 1 terminé"** alors que les
+  Sprints 1 à 7 sont terminés (badge de statut et section "État du projet"/"Project status" mis à
+  jour en conséquence). Constat fait lors de la revue de préparation v1.0.0 (Sprint 8).
+- **`plugin.json` : champ `note` obsolète**, encore rédigé au passé du Sprint 6 alors que le
+  Sprint 7 (tableaux de bord, consolidation) est terminé depuis. Mis à jour pour refléter l'état
+  réel du projet, sans toucher aux champs `version`/`state`/`screenshots` (réservés à la
+  publication de la v1.0.0).
+
 ### Added
 
 - **Sprint 7 (tableaux de bord, consolidation)** : les 15 cartes posées aux Sprints 1 à 6 ont été
