@@ -162,3 +162,25 @@ Journal des limites connues et compromis assumés, tenu à jour à chaque sprint
   structuré (responsable, échéance, statut) par décision individuelle apparaît.
 - **`showForm()` en HTML/PHP manuel, pas en Twig**, même choix assumé que tous les formulaires
   précédents de ce plugin (voir Sprint 1 ci-dessus).
+
+## Sprint 7 (Tableaux de bord, consolidation)
+
+- **Tableau de bord seedé écrasé au réinstall si un administrateur l'a personnalisé.**
+  `DefaultDashboardService::seed()` fait un upsert sur une clé fixe
+  (`grcmanager-isms-overview`) à chaque `plugin:install`/`plugin:install --force` : un
+  administrateur qui aurait déplacé/retiré des cartes depuis l'écran natif Tableaux de bord verrait
+  ses changements écrasés par une réinstallation ou une mise à niveau ultérieure du plugin. Assumé
+  pour ce sprint (comportement identique à n'importe quelle configuration par défaut réinitialisée
+  à chaque mise à jour) plutôt qu'une détection « déjà personnalisé, ne pas toucher » plus
+  complexe ; à réévaluer si ce comportement surprend un administrateur en conditions réelles.
+- **Nom du tableau de bord seedé non re-traduit par langue de session.** `__(...)` n'est évalué
+  qu'une fois, au moment de l'installation : le nom stocké dans `glpi_dashboards_dashboards.name`
+  reste figé dans la langue active à ce moment-là pour tous les utilisateurs ensuite, contrairement
+  aux libellés des 15 cartes elles-mêmes (résolus à chaque affichage). Même limite que les autres
+  valeurs persistées en base par ce plugin plutôt que résolues dynamiquement à l'affichage (ex.
+  `severity`/`status` bruts stockés en base, traduits uniquement par les badges de liste).
+- **Aucune nouvelle carte de tableau de bord ajoutée à ce sprint.** L'inventaire des 15 cartes
+  existantes n'a révélé ni carte cassée, ni doublon, ni lacune justifiant une carte « santé ISMS »
+  consolidée supplémentaire : le nouveau tableau de bord par défaut (ci-dessus) répond au besoin
+  de vue d'ensemble en réorganisant les cartes déjà posées, sans en ajouter une seizième
+  redondante avec les bigNumbers déjà disponibles.

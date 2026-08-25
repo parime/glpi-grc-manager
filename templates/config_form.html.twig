@@ -1,3 +1,22 @@
+{# Version installee vs derniere version publiee sur GitHub - meme mecanisme/gabarit que les
+   plugins jumeaux glpi-vulnerability-manager, assetsign-glpi et Configuration-glpi-auto. #}
+<div class="card card-sm mb-3">
+  <div class="card-body d-flex align-items-center gap-3">
+    <i class="ti ti-brand-github fs-1 text-muted"></i>
+    <div>
+      <div class="fw-bold">{{ __('Version du plugin', 'grcmanager') }}</div>
+      <div class="text-muted small">
+        {{ __('Version installée', 'grcmanager') }}
+        <span class="badge bg-blue-lt">v{{ installed_version }}</span>
+        {% if latest_github_version %}
+          {{ __('Dernière version sur GitHub', 'grcmanager') }}
+          <span class="badge {{ latest_github_version != installed_version ? 'bg-orange-lt' : 'bg-green-lt' }}">v{{ latest_github_version }}</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
 {# Sprint 2 : matrice probabilité x impact administrable (voir front/config.php,
    RiskMatrixConfig). Un seul écran pour l'instant (pas d'onglets comme le plugin jumeau
    glpi-vulnerability-manager, qui en a besoin pour 11 sous-écrans différents) : à réévaluer en

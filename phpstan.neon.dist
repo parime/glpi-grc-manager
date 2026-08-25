@@ -18,6 +18,13 @@ parameters:
         # stays out of `paths` altogether for the same reason.
         - src/Services/DefaultSearchColumns.php
         - src/Services/Dashboard/DashboardCardService.php
+        # Sprint 7: depends on GLPI core's Glpi\Dashboard\Dashboard (global $DB, Session,
+        # TemplateRenderer...), same rationale as DashboardCardService.php above.
+        - src/Services/Dashboard/DefaultDashboardService.php
+        # Sprint 7 (suivi de version GitHub): depends on \Toolbox::getURLContent(), $GLPI_CACHE
+        # and DAY_TIMESTAMP, same category of GLPI-core-only runtime symbol as
+        # RiskMatrixConfig.php/OverdueCapaService.php below.
+        - src/Services/GithubVersionChecker.php
         # Sprint 2: reads GLPI's runtime global $DB (RiskMatrixConfig) or depends on GLPI core
         # classes NotificationEvent/PluginGrcmanagerRisk (ReviewReminderService), same rationale.
         # RiskMatrixDefaults.php and ReviewReminderResult.php in the same directory stay in scope:

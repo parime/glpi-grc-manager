@@ -58,6 +58,10 @@ Then, from GLPI: Setup > Plugins > GLPI GRC Manager > Install > Enable.
 
 ## Documentation
 
+📖 **[See the full tutorial](docs/TUTORIAL.md)**: the plugin's whole flow, from activation to the
+dashboard, through the risk register, the probability x impact matrix, the SoA and audits/CAPA,
+with a real screenshot for every step (available in French and English).
+
 | Document | Content |
 |---|---|
 | [docs/design/DEVELOPMENT_PLAN.md](docs/design/DEVELOPMENT_PLAN.md) | Sprint-by-sprint development plan |

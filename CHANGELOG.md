@@ -7,6 +7,25 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce p
 
 ## [Non publié]
 
+### Added
+
+- **Sprint 7 (tableaux de bord, consolidation)** : les 15 cartes posées aux Sprints 1 à 6 ont été
+  vérifiées une à une contre une instance GLPI 11 réelle avec de vraies données (schéma, valeurs
+  d'énumération et sortie de chaque `DashboardCardService::*` comparés directement) : aucune
+  n'était cassée, aucune carte redondante ou manquante identifiée. Nouveau tableau de bord natif
+  GLPI seedé à l'installation (`GlpiPlugin\Grcmanager\Services\Dashboard\DefaultDashboardService`),
+  reprenant les 15 cartes déjà posées, pour qu'une installation fraîche affiche d'emblée une vue
+  d'ensemble ISMS plutôt qu'un sélecteur « Ajouter une carte » vide. Visible par tout utilisateur
+  disposant du droit natif « dashboard », exactement comme les tableaux de bord natifs Central/
+  Parc/Assistance ; retiré proprement à la désinstallation.
+- **Suivi de la dernière version publiée sur GitHub** sur l'écran Configuration, à côté de la
+  version installée (`GlpiPlugin\Grcmanager\Services\GithubVersionChecker`, mise en cache 24h) :
+  même mécanisme que les plugins jumeaux glpi-vulnerability-manager, assetsign-glpi et
+  Configuration-glpi-auto.
+- Lien vers le tutoriel utilisateur bilingue (`docs/TUTORIAL.md`) ajouté dans la section
+  Documentation de `README.md`/`README.en.md`, jusque-là non référencé depuis la page d'accueil du
+  dépôt.
+
 ### Fixed
 
 - **Colonne Titre non cliquable sur les listes Risques, Risques fournisseurs, Audits, Non-
