@@ -15,6 +15,7 @@
  * -------------------------------------------------------------------------
  */
 
+use GlpiPlugin\Grcmanager\Services\GithubVersionChecker;
 use GlpiPlugin\Grcmanager\Services\Risk\RiskMatrixConfig;
 
 include('../../../inc/includes.php');
@@ -53,6 +54,8 @@ Html::header(
     'risk_probabilities' => PluginGrcmanagerRisk::getProbabilities(),
     'risk_impacts'       => PluginGrcmanagerRisk::getImpacts(),
     'csrf_token'         => Session::getNewCSRFToken(),
+    'installed_version'     => PLUGIN_GRCMANAGER_VERSION,
+    'latest_github_version' => GithubVersionChecker::getLatestGithubVersion(),
 ]);
 
 Html::footer();

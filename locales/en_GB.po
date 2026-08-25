@@ -711,3 +711,15 @@ msgstr "Participants overdue for training renewal"
 msgid "Revues de direction par statut"
 msgstr "Management reviews by status"
 
+msgid "GRC Manager - Vue d'ensemble ISMS"
+msgstr "GRC Manager - ISMS overview"
+
+msgid "Version du plugin"
+msgstr "Plugin version"
+
+msgid "Version installée"
+msgstr "Installed version"
+
+msgid "Dernière version sur GitHub"
+msgstr "Latest version on GitHub"
+

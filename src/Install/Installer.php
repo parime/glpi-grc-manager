@@ -7,6 +7,7 @@ namespace GlpiPlugin\Grcmanager\Install;
 use CronTask;
 use DBConnection;
 use GlpiPlugin\Grcmanager\Services\Control\ControlCatalogDefaults;
+use GlpiPlugin\Grcmanager\Services\Dashboard\DefaultDashboardService;
 use GlpiPlugin\Grcmanager\Services\DefaultSearchColumns;
 use GlpiPlugin\Grcmanager\Services\Risk\RiskMatrixDefaults;
 use Migration;
@@ -470,6 +471,11 @@ final class Installer
 
         $this->seedDisplayPreferences();
 
+        // Sprint 7 (tableaux de bord, consolidation) : tableau de bord natif GLPI prêt à l'emploi,
+        // voir DefaultDashboardService pour le détail (idempotent comme le reste de cette
+        // méthode : upsert sur une clé fixe, jamais dupliqué au réinstall).
+        DefaultDashboardService::seed();
+
         $migration->executeMigration();
 
         return true;
@@ -775,6 +781,10 @@ final class Installer
         $this->unseedNotification('PluginGrcmanagerSupplierRisk');
         $this->unseedNotification('PluginGrcmanagerNonconformity');
         $this->unseedNotification('PluginGrcmanagerTraining');
+
+        // Sprint 7 (tableaux de bord) : retire le tableau de bord natif seedé par
+        // DefaultDashboardService::seed() ci-dessus, avant que ses tables ne disparaissent.
+        DefaultDashboardService::remove();
 
         // GLPI 11 forbids $DB->query() for direct queries ("Executing direct queries is not
         // allowed!"), same lesson learned live on the sibling plugin glpi-vulnerability-manager,

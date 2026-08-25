@@ -62,6 +62,10 @@ Puis, depuis GLPI : Configuration > Plugins > GLPI GRC Manager > Installer > Act
 
 ## Documentation
 
+📖 **[Voir le tutoriel complet](docs/TUTORIAL.md)** : le flux entier du plugin, de l'activation au
+tableau de bord, en passant par le registre de risques, la matrice probabilité x impact, la SoA et
+les audits/CAPA, avec une capture d'écran réelle par étape (disponible en français et en anglais).
+
 | Document | Contenu |
 |---|---|
 | [docs/design/DEVELOPMENT_PLAN.md](docs/design/DEVELOPMENT_PLAN.md) | Plan de développement par sprints |

@@ -711,3 +711,15 @@ msgstr "Participants en retard de renouvellement de formation"
 msgid "Revues de direction par statut"
 msgstr "Revues de direction par statut"
 
+msgid "GRC Manager - Vue d'ensemble ISMS"
+msgstr "GRC Manager - Vue d'ensemble ISMS"
+
+msgid "Version du plugin"
+msgstr "Version du plugin"
+
+msgid "Version installée"
+msgstr "Version installée"
+
+msgid "Dernière version sur GitHub"
+msgstr "Dernière version sur GitHub"
+
