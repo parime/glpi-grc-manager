@@ -27,5 +27,8 @@ final class DefaultSearchColumns
         // second (the whole point of this register) then the same scoring/treatment order as
         // PluginGrcmanagerRisk above.
         'PluginGrcmanagerSupplierRisk'  => [11, 1, 2, 3, 6, 4, 5, 7, 8, 9],
+        // Sprint 6 (formations et revues de direction), same "id first" convention.
+        'PluginGrcmanagerTraining'         => [8, 1, 2, 3, 4, 5, 6],
+        'PluginGrcmanagerManagementReview' => [6, 1, 2, 3, 4, 5],
     ];
 }

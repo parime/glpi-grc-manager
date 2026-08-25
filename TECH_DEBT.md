@@ -121,3 +121,44 @@ Journal des limites connues et compromis assumés, tenu à jour à chaque sprint
   Non couvert par PHPStan (`phpstan.neon.dist`) comme le reste du code dépendant du runtime GLPI
   (`RiskMatrixConfig::load()`, `Dropdown`, `__()`), même raison que
   `src/Services/Risk/RiskMatrixConfig.php`.
+
+## Sprint 6 (Formations et revues de direction)
+
+- **Liens participants/participants-formation et participants/revue de direction en accès direct
+  `$DB`, pas en itemtype `CommonDBRelation`**, même simplification assumée qu'aux Sprints 3-4 pour
+  les liens contrôle <-> risque et audit <-> contrôle (voir ci-dessus) :
+  `glpi_plugin_grcmanager_trainings_users` et `glpi_plugin_grcmanager_managementreviews_users` sont
+  gérées par de simples méthodes statiques (`PluginGrcmanagerTraining::syncParticipants()`/
+  `getParticipants()`, `PluginGrcmanagerManagementReview::syncAttendees()`/`getAttendees()`), pas
+  par une vraie classe de liaison GLPI. Suffisant pour un multi-select dans `showForm()` avec un
+  nombre de participants toujours faible ; à reconsidérer si un besoin réel de journalisation GLPI
+  native (`Log`) sur ces liens apparaît.
+- **Suppression d'un participant = perte de son historique de réalisation.**
+  `PluginGrcmanagerTraining::syncParticipants()` retire la ligne
+  `glpi_plugin_grcmanager_trainings_users` correspondante dès qu'un participant est désélectionné du
+  multi-select puis la sauvegarde effectuée (supprimer-puis-réinsérer, même approche que
+  `PluginGrcmanagerAudit::syncLinkedControls()`) : son statut/date de réalisation précédent n'est
+  conservé nulle part. Assumé pour ce sprint plutôt qu'une table d'historique séparée ; à
+  réévaluer si un besoin réel de conserver une trace même après retrait d'un participant apparaît.
+- **Rappel de renouvellement de formation sans déduplication**, même limite assumée que
+  `ReviewReminderService::notify()` au Sprint 2 et `OverdueCapaService` au Sprint 4 (voir
+  ci-dessus) : un participant resté en retard de renouvellement plusieurs jours génère une
+  notification à chaque exécution quotidienne de la tâche Cron
+  (`PluginGrcmanagerTraining::cronRenewaldue()`), pas une seule fois.
+- **`PluginGrcmanagerManagementReview` n'a volontairement ni notification GLPI native ni tâche
+  Cron dédiée**, contrairement à `PluginGrcmanagerTraining` (rappel de renouvellement) et à tous
+  les autres itemtypes de ce plugin ayant une échéance (revue de risque, CAPA en retard) : une
+  revue de direction n'a pas de date d'échéance récurrente à surveiller au sens où l'entend ce
+  plugin (`review_date` est une date de tenue, pas une date limite dépassable), donc rien à
+  notifier automatiquement. Une évolution possible (non retenue ici) serait un rappel de
+  planification si aucune revue n'a été enregistrée depuis un intervalle donné, sur le modèle des
+  rappels de revue de risque.
+- **Décisions et actions d'une revue de direction en texte libre, sans lien fort vers le mécanisme
+  CAPA existant** (`PluginGrcmanagerNonconformity`). Assumé délibérément (voir le docblock de
+  `inc/managementreview.class.php`) : une décision de revue de direction n'est pas toujours une
+  action corrective liée à un audit (elle peut être une approbation budgétaire, un changement de
+  politique, une acceptation de risque...), forcer chaque décision dans le flux CAPA
+  dénaturerait ce que demande réellement la clause 9.3. À réévaluer si un besoin réel de suivi
+  structuré (responsable, échéance, statut) par décision individuelle apparaît.
+- **`showForm()` en HTML/PHP manuel, pas en Twig**, même choix assumé que tous les formulaires
+  précédents de ce plugin (voir Sprint 1 ci-dessus).

@@ -7,13 +7,41 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce p
 
 ## [Non publié]
 
+### Added
+
+- **Suivi des formations de sensibilisation à la sécurité (clauses 7.2 "compétence" et 7.3
+  "sensibilisation" ISO/IEC 27001:2022)** : nouvel itemtype `PluginGrcmanagerTraining`, une ligne
+  par session/campagne de formation (titre, format présentiel/e-learning/autre, public cible en
+  texte libre, date de réalisation, caractère obligatoire, période de renouvellement optionnelle en
+  mois). Suivi individuel de réalisation par participant (vrai `User` natif de GLPI, jamais un
+  concept propre à ce plugin) sur la table de liaison
+  `glpi_plugin_grcmanager_trainings_users` : statut (en attente/terminée/dispensé) et date de
+  réalisation par participant, pas seulement un décompte agrégé. Nouvelle tâche Cron quotidienne
+  (`PluginGrcmanagerTraining::cronRenewaldue()`) qui notifie individuellement chaque participant en
+  retard de renouvellement (`GlpiPlugin\Grcmanager\Services\Training\TrainingRenewalService`,
+  `inc/notificationtargettraining.class.php`, résolution explicite de plusieurs destinataires par
+  formation, pas un simple propriétaire unique). Liste filtrable avec badges colorés traduits et
+  lien cliquable (`front/training.php`), formulaire dédié (`front/training.form.php`).
+- **Enregistrement des revues de direction (clause 9.3 ISO/IEC 27001:2022)** : nouvel itemtype
+  `PluginGrcmanagerManagementReview` (titre, statut planifiée/terminée avec auto-renseignement de la
+  date de revue dès le passage au statut "Terminée", participants liés via
+  `glpi_plugin_grcmanager_managementreviews_users`, ordre du jour et décisions/actions en texte
+  libre, volontairement non rattachées au mécanisme CAPA existant, voir `TECH_DEBT.md` Sprint 6).
+  Liste filtrable avec badges colorés traduits et lien cliquable
+  (`front/managementreview.php`), formulaire dédié (`front/managementreview.form.php`).
+- **3 nouvelles cartes de tableau de bord** (`DashboardCardService`, même signature
+  accumulateur-safe que les cartes précédentes) : taux de réalisation des formations, participants
+  en retard de renouvellement de formation, revues de direction par statut.
+- Nouvelles chaînes traduites dans `locales/fr_FR.po`/`locales/en_GB.po`.
+
 ### Fixed
 
 - Fil d'Ariane incorrect sur tous les écrans du plugin : `Html::header()` déclarait la catégorie
   `'admin'` (Administration) sur 11 fichiers alors que le plugin est enregistré sous `'tools'`
   (Outils) dans `Hooks::MENU_TOADD`, même bug que sur `glpi-vulnerability-manager`, confirmé en
-  direct sur les deux dépôts. Corrigé partout pour que le fil d'Ariane et le menu actif reflètent
-  l'emplacement réel.
+  direct sur les deux dépôts. Corrigé partout (y compris les 4 nouveaux écrans du Sprint 6 ci-dessus,
+  qui n'existaient pas encore lors du premier correctif) pour que le fil d'Ariane et le menu actif
+  reflètent l'emplacement réel.
 
 ## [0.5.0] - 2026-08-24
 
