@@ -7,6 +7,7 @@ namespace GlpiPlugin\Grcmanager\Install;
 use CronTask;
 use DBConnection;
 use GlpiPlugin\Grcmanager\Services\Control\ControlCatalogDefaults;
+use GlpiPlugin\Grcmanager\Services\Dashboard\DefaultDashboardService;
 use GlpiPlugin\Grcmanager\Services\DefaultSearchColumns;
 use GlpiPlugin\Grcmanager\Services\Risk\RiskMatrixDefaults;
 use Migration;
@@ -49,6 +50,13 @@ final class Installer
 
     // Sprint 5 (risques fournisseurs/tiers), same table-name derivation rule.
     private const SUPPLIER_RISKS_TABLE = 'glpi_plugin_grcmanager_supplierrisks';
+
+    // Sprint 6 (formations et revues de direction, clauses 7.2/7.3/9.3), same table-name
+    // derivation rule.
+    private const TRAININGS_TABLE = 'glpi_plugin_grcmanager_trainings';
+    private const TRAININGS_USERS_TABLE = 'glpi_plugin_grcmanager_trainings_users';
+    private const MANAGEMENT_REVIEWS_TABLE = 'glpi_plugin_grcmanager_managementreviews';
+    private const MANAGEMENT_REVIEWS_USERS_TABLE = 'glpi_plugin_grcmanager_managementreviews_users';
 
     public function install(Migration $migration): bool
     {
@@ -279,6 +287,93 @@ final class Installer
             $DB->doQuery($query) or die($DB->error());
         }
 
+        // Sprint 6 (suivi des formations de sensibilisation, clauses 7.2/7.3) : une ligne par
+        // session/campagne de formation. `renewal_period_months` = 0 signifie qu'aucun
+        // renouvellement periodique n'est requis (voir PluginGrcmanagerTraining::getOverdueParticipants()).
+        if (!$DB->tableExists(self::TRAININGS_TABLE)) {
+            $query = "CREATE TABLE `" . self::TRAININGS_TABLE . "` (
+                `id` int {$keySign} NOT NULL AUTO_INCREMENT,
+                `title` varchar(255) NOT NULL,
+                `description` text,
+                `format` varchar(16) NOT NULL DEFAULT 'in_person'
+                    COMMENT 'in_person, e_learning, other',
+                `target_audience` varchar(255) NOT NULL DEFAULT '' COMMENT 'Texte libre',
+                `date_delivered` date DEFAULT NULL,
+                `is_mandatory` tinyint NOT NULL DEFAULT 1,
+                `renewal_period_months` int NOT NULL DEFAULT 0
+                    COMMENT '0 = pas de renouvellement requis',
+                `date_creation` timestamp NULL DEFAULT NULL,
+                `date_mod` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                KEY `format` (`format`)
+            ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
+
+            $DB->doQuery($query) or die($DB->error());
+        }
+
+        // Many-to-many + suivi individuel : un participant (vrai `User` natif de GLPI) par ligne,
+        // avec son propre statut/date de realisation (pas seulement un lien, contrairement aux
+        // liens controle<->risque/audit<->controle des Sprints 3-4 : un auditeur ISO 27001 doit
+        // pouvoir voir qui a precisement termine quelle formation et quand, pas seulement un
+        // decompte agrege), voir PluginGrcmanagerTraining::syncParticipants()/getParticipants().
+        if (!$DB->tableExists(self::TRAININGS_USERS_TABLE)) {
+            $query = "CREATE TABLE `" . self::TRAININGS_USERS_TABLE . "` (
+                `id` int {$keySign} NOT NULL AUTO_INCREMENT,
+                `plugin_grcmanager_trainings_id` int {$keySign} NOT NULL,
+                `users_id` int {$keySign} NOT NULL,
+                `completion_status` varchar(16) NOT NULL DEFAULT 'pending'
+                    COMMENT 'pending, completed, exempted',
+                `completion_date` date DEFAULT NULL,
+                `date_creation` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `unicity_link` (`plugin_grcmanager_trainings_id`, `users_id`),
+                KEY `trainings_id` (`plugin_grcmanager_trainings_id`),
+                KEY `users_id` (`users_id`),
+                KEY `completion_status` (`completion_status`)
+            ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
+
+            $DB->doQuery($query) or die($DB->error());
+        }
+
+        // Sprint 6 (revues de direction, clause 9.3) : une ligne par revue de direction realisee ou
+        // planifiee, avec l'ordre du jour et les decisions/actions en texte libre (pas un lien
+        // fort vers le mecanisme CAPA existant, voir PluginGrcmanagerManagementReview pour le
+        // raisonnement, et TECH_DEBT.md).
+        if (!$DB->tableExists(self::MANAGEMENT_REVIEWS_TABLE)) {
+            $query = "CREATE TABLE `" . self::MANAGEMENT_REVIEWS_TABLE . "` (
+                `id` int {$keySign} NOT NULL AUTO_INCREMENT,
+                `title` varchar(255) NOT NULL,
+                `status` varchar(16) NOT NULL DEFAULT 'planned' COMMENT 'planned, completed',
+                `review_date` date DEFAULT NULL,
+                `agenda` text,
+                `decisions` text,
+                `date_creation` timestamp NULL DEFAULT NULL,
+                `date_mod` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                KEY `status` (`status`)
+            ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
+
+            $DB->doQuery($query) or die($DB->error());
+        }
+
+        // Many-to-many : participants (vrais `User` natifs de GLPI) d'une revue de direction, meme
+        // convention "lien simple en acces direct $DB" que AUDITS_CONTROLS_TABLE ci-dessus (voir
+        // PluginGrcmanagerManagementReview::getAttendees()/syncAttendees()).
+        if (!$DB->tableExists(self::MANAGEMENT_REVIEWS_USERS_TABLE)) {
+            $query = "CREATE TABLE `" . self::MANAGEMENT_REVIEWS_USERS_TABLE . "` (
+                `id` int {$keySign} NOT NULL AUTO_INCREMENT,
+                `plugin_grcmanager_managementreviews_id` int {$keySign} NOT NULL,
+                `users_id` int {$keySign} NOT NULL,
+                `date_creation` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `unicity_link` (`plugin_grcmanager_managementreviews_id`, `users_id`),
+                KEY `reviews_id` (`plugin_grcmanager_managementreviews_id`),
+                KEY `users_id` (`users_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
+
+            $DB->doQuery($query) or die($DB->error());
+        }
+
         $this->seedControls();
 
         $this->seedReviewReminderNotification(
@@ -294,6 +389,7 @@ final class Installer
             'risque fournisseur'
         );
         $this->seedCapaOverdueNotification();
+        $this->seedTrainingRenewalNotification();
 
         // Sprint 2 (rappels de date de revue) : évalue chaque jour les risques dont la date de
         // revue est dépassée ou approche, et déclenche la notification GLPI seedée ci-dessus (voir
@@ -341,6 +437,21 @@ final class Installer
             ]
         );
 
+        // Sprint 6 (formations, clauses 7.2/7.3) : évalue chaque jour les formations ayant au
+        // moins un participant en retard de renouvellement, et déclenche la notification GLPI
+        // seedée ci-dessus (voir PluginGrcmanagerTraining::cronRenewaldue(),
+        // src/Services/Training/TrainingRenewalService.php).
+        CronTask::Register(
+            'PluginGrcmanagerTraining',
+            'renewaldue',
+            DAY_TIMESTAMP,
+            [
+                'comment' => 'Notifie chaque participant en retard de renouvellement pour une '
+                    . 'formation',
+                'mode'    => CronTask::MODE_EXTERNAL,
+            ]
+        );
+
         // ProfileRight::addProfileRights() is NOT idempotent, it does a raw INSERT with no
         // existence check, so it throws a duplicate-key error on any second call, guarded here
         // the same way the sibling plugin glpi-vulnerability-manager guards its own equivalent
@@ -359,6 +470,11 @@ final class Installer
         }
 
         $this->seedDisplayPreferences();
+
+        // Sprint 7 (tableaux de bord, consolidation) : tableau de bord natif GLPI prêt à l'emploi,
+        // voir DefaultDashboardService pour le détail (idempotent comme le reste de cette
+        // méthode : upsert sur une clé fixe, jamais dupliqué au réinstall).
+        DefaultDashboardService::seed();
 
         $migration->executeMigration();
 
@@ -523,6 +639,73 @@ final class Installer
     }
 
     /**
+     * Same structure as seedCapaOverdueNotification() above, for the Sprint 6 training-renewal Cron
+     * task (PluginGrcmanagerTraining::cronRenewaldue(), event 'training_renewal_due', see
+     * inc/notificationtargettraining.class.php). Idempotent for the same reason.
+     *
+     * Deliberately does NOT insert a `glpi_notificationtargets` row (unlike every notification
+     * seeded above): a training has no single "item owner" field to resolve a default recipient
+     * from, its recipients are the (possibly several) overdue participants,
+     * PluginGrcmanagerNotificationTargetTraining::addAdditionalTargets() resolves and adds every
+     * one of them itself, unconditionally, regardless of any configured target row (see its own
+     * docblock).
+     */
+    private function seedTrainingRenewalNotification(): void
+    {
+        global $DB;
+
+        $itemtype = 'PluginGrcmanagerTraining';
+        $event    = 'training_renewal_due';
+
+        $alreadySeeded = $DB->request([
+            'FROM'  => 'glpi_notifications',
+            'WHERE' => ['itemtype' => $itemtype, 'event' => $event],
+        ])->count() > 0;
+
+        if ($alreadySeeded) {
+            return;
+        }
+
+        $template = new NotificationTemplate();
+        $templateId = $template->add([
+            'name'     => 'GRC Manager - Renouvellement de formation en retard',
+            'itemtype' => $itemtype,
+            'comment'  => 'Notification envoyée par la tâche automatique GRC Manager lorsqu\'un '
+                . 'participant est en retard de renouvellement pour une formation.',
+        ]);
+
+        $DB->insert('glpi_notificationtemplatetranslations', [
+            'notificationtemplates_id' => $templateId,
+            'language'                 => '',
+            'subject'                  => '##training.action## : ##training.title##',
+            'content_text'             => "##training.action## : ##training.title##\n\n"
+                . "Format : ##training.format##\n"
+                . "Renouvellement (mois) : ##training.renewalmonths##\n\n"
+                . "Voir la formation : ##training.url##",
+            'content_html'             => '<p><strong>##training.action## : ##training.title##</strong></p>'
+                . '<p>Format : ' . "##training.format##<br>"
+                . 'Renouvellement (mois) : ' . "##training.renewalmonths##</p>"
+                . '<p><a href="##training.url##">Voir la formation</a></p>',
+        ]);
+
+        $notification = new Notification();
+        $notificationId = $notification->add([
+            'name'         => 'GRC Manager - Renouvellement de formation en retard',
+            'entities_id'  => 0,
+            'is_recursive' => 1,
+            'itemtype'     => $itemtype,
+            'event'        => $event,
+            'is_active'    => 1,
+        ]);
+
+        $DB->insert('glpi_notifications_notificationtemplates', [
+            'notifications_id'         => $notificationId,
+            'mode'                     => 'mailing',
+            'notificationtemplates_id' => $templateId,
+        ]);
+    }
+
+    /**
      * Idempotent like seedSource() on the sibling plugin glpi-vulnerability-manager (same author,
      * same guard shape): each of the 93 controls is looked up by its unique `code` before
      * inserting, so re-running install() (upgrade path, `plugin:install --force`) never duplicates
@@ -597,6 +780,11 @@ final class Installer
         $this->unseedNotification('PluginGrcmanagerRisk');
         $this->unseedNotification('PluginGrcmanagerSupplierRisk');
         $this->unseedNotification('PluginGrcmanagerNonconformity');
+        $this->unseedNotification('PluginGrcmanagerTraining');
+
+        // Sprint 7 (tableaux de bord) : retire le tableau de bord natif seedé par
+        // DefaultDashboardService::seed() ci-dessus, avant que ses tables ne disparaissent.
+        DefaultDashboardService::remove();
 
         // GLPI 11 forbids $DB->query() for direct queries ("Executing direct queries is not
         // allowed!"), same lesson learned live on the sibling plugin glpi-vulnerability-manager,
@@ -610,6 +798,10 @@ final class Installer
         $migration->dropTable(self::AUDITS_CONTROLS_TABLE);
         $migration->dropTable(self::NONCONFORMITIES_TABLE);
         $migration->dropTable(self::AUDITS_TABLE);
+        $migration->dropTable(self::TRAININGS_USERS_TABLE);
+        $migration->dropTable(self::TRAININGS_TABLE);
+        $migration->dropTable(self::MANAGEMENT_REVIEWS_USERS_TABLE);
+        $migration->dropTable(self::MANAGEMENT_REVIEWS_TABLE);
 
         $migration->executeMigration();
 

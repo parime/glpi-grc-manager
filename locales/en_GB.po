@@ -626,3 +626,100 @@ msgstr "Supplier risks by level"
 msgid "Fournisseurs avec au moins un risque élevé/critique ouvert"
 msgstr "Suppliers with at least one open high/critical risk"
 
+msgid "Formation"
+msgid_plural "Formations"
+msgstr[0] "Training"
+msgstr[1] "Trainings"
+
+msgid "Revue de direction"
+msgid_plural "Revues de direction"
+msgstr[0] "Management review"
+msgstr[1] "Management reviews"
+
+msgid "Présentiel"
+msgstr "In person"
+
+msgid "E-learning"
+msgstr "E-learning"
+
+msgid "Autre"
+msgstr "Other"
+
+msgid "En attente"
+msgstr "Pending"
+
+msgid "Terminée"
+msgstr "Completed"
+
+msgid "Dispensé"
+msgstr "Exempted"
+
+msgid "Format"
+msgstr "Format"
+
+msgid "Public cible"
+msgstr "Target audience"
+
+msgid "Date de réalisation"
+msgstr "Completion date"
+
+msgid "Obligatoire"
+msgstr "Mandatory"
+
+msgid "Renouvellement (mois)"
+msgstr "Renewal (months)"
+
+msgid "Statut de réalisation"
+msgstr "Completion status"
+
+msgid "Participants"
+msgstr "Participants"
+
+msgid "Texte libre (ex. \"Tout le personnel\", \"Équipe technique\", nom d'un groupe ou service)."
+msgstr "Free text (e.g. \"All staff\", \"Technical team\", the name of a group or department)."
+
+msgid "Enregistrez pour ajouter les nouveaux participants sélectionnés : leur suivi individuel apparaît ci-dessous après enregistrement."
+msgstr "Save to add the newly selected participants: their individual tracking appears below once saved."
+
+msgid "0 = pas de renouvellement requis."
+msgstr "0 = no renewal required."
+
+msgid "Planifiée"
+msgstr "Planned"
+
+msgid "Ordre du jour"
+msgstr "Agenda"
+
+msgid "Décisions et actions"
+msgstr "Decisions and actions"
+
+msgid "Sujets réellement abordés (état des actions précédentes, changements du contexte, retours des parties intéressées, résultats d'audits, non-conformités, opportunités d'amélioration...)."
+msgstr "Topics actually covered (status of previous actions, changes in context, feedback from interested parties, audit results, nonconformities, opportunities for improvement...)."
+
+msgid "Renouvellement de formation en retard"
+msgstr "Training renewal overdue"
+
+msgid "Participant : %s"
+msgstr "Participant: %s"
+
+msgid "Taux de réalisation des formations"
+msgstr "Training completion rate"
+
+msgid "Participants en retard de renouvellement de formation"
+msgstr "Participants overdue for training renewal"
+
+msgid "Revues de direction par statut"
+msgstr "Management reviews by status"
+
+msgid "GRC Manager - Vue d'ensemble ISMS"
+msgstr "GRC Manager - ISMS overview"
+
+msgid "Version du plugin"
+msgstr "Plugin version"
+
+msgid "Version installée"
+msgstr "Installed version"
+
+msgid "Dernière version sur GitHub"
+msgstr "Latest version on GitHub"
+

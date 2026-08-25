@@ -116,6 +116,25 @@ function plugin_grcmanager_dashboard_cards(?array $cards = null): array
             'group' => $group,
             'provider' => DashboardCardService::class . '::suppliersWithHighRiskCount',
         ],
+        // Sprint 6 (formations et revues de direction, clauses 7.2/7.3/9.3).
+        'grcmanager_training_completion_rate' => [
+            'widgettype' => ['bigNumber'],
+            'label' => __('Taux de réalisation des formations', 'grcmanager'),
+            'group' => $group,
+            'provider' => DashboardCardService::class . '::trainingCompletionRate',
+        ],
+        'grcmanager_training_overdue_renewal' => [
+            'widgettype' => ['bigNumber'],
+            'label' => __('Participants en retard de renouvellement de formation', 'grcmanager'),
+            'group' => $group,
+            'provider' => DashboardCardService::class . '::trainingOverdueRenewalCount',
+        ],
+        'grcmanager_management_reviews_by_status' => [
+            'widgettype' => ['multipleNumber', 'pie', 'donut', 'bar', 'hbar'],
+            'label' => __('Revues de direction par statut', 'grcmanager'),
+            'group' => $group,
+            'provider' => DashboardCardService::class . '::managementReviewsByStatus',
+        ],
     ];
 }
 

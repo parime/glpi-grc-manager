@@ -7,6 +7,91 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce p
 
 ## [Non publié]
 
+## [1.0.0] - 2026-08-25
+
+Les 8 sprints du plan de développement sont terminés. Testé en charge à l'échelle d'un ISMS
+réel sur une instance secondaire (350 risques, 93 contrôles SoA, 40 audits, 80 non-conformités,
+60 risques fournisseurs, 30 formations) : toutes les listes chargent en 40 à 200ms, toutes les
+requêtes des cartes de tableau de bord en moins d'une milliseconde côté base. CI/CD complète
+verte, pipeline de release relu de bout en bout. Recommandation non bloquante documentée dans
+TECH_DEBT.md : le tutoriel (27 captures d'écran) ne couvre que les Sprints 1 à 4, à compléter
+pour les Sprints 5 à 7 (risques fournisseurs, formations, revues de direction, tableau de bord
+par défaut, suivi de version GitHub).
+
+### Fixed
+
+- **`README.md`/`README.en.md` affichaient encore un statut "Sprint 1 terminé"** alors que les
+  Sprints 1 à 7 sont terminés (badge de statut et section "État du projet"/"Project status" mis à
+  jour en conséquence). Constat fait lors de la revue de préparation v1.0.0 (Sprint 8).
+- **`plugin.json` : champ `note` obsolète**, encore rédigé au passé du Sprint 6 alors que le
+  Sprint 7 (tableaux de bord, consolidation) est terminé depuis. Mis à jour pour refléter l'état
+  réel du projet, sans toucher aux champs `version`/`state`/`screenshots` (réservés à la
+  publication de la v1.0.0).
+
+### Added
+
+- **Sprint 7 (tableaux de bord, consolidation)** : les 15 cartes posées aux Sprints 1 à 6 ont été
+  vérifiées une à une contre une instance GLPI 11 réelle avec de vraies données (schéma, valeurs
+  d'énumération et sortie de chaque `DashboardCardService::*` comparés directement) : aucune
+  n'était cassée, aucune carte redondante ou manquante identifiée. Nouveau tableau de bord natif
+  GLPI seedé à l'installation (`GlpiPlugin\Grcmanager\Services\Dashboard\DefaultDashboardService`),
+  reprenant les 15 cartes déjà posées, pour qu'une installation fraîche affiche d'emblée une vue
+  d'ensemble ISMS plutôt qu'un sélecteur « Ajouter une carte » vide. Visible par tout utilisateur
+  disposant du droit natif « dashboard », exactement comme les tableaux de bord natifs Central/
+  Parc/Assistance ; retiré proprement à la désinstallation.
+- **Suivi de la dernière version publiée sur GitHub** sur l'écran Configuration, à côté de la
+  version installée (`GlpiPlugin\Grcmanager\Services\GithubVersionChecker`, mise en cache 24h) :
+  même mécanisme que les plugins jumeaux glpi-vulnerability-manager, assetsign-glpi et
+  Configuration-glpi-auto.
+- Lien vers le tutoriel utilisateur bilingue (`docs/TUTORIAL.md`) ajouté dans la section
+  Documentation de `README.md`/`README.en.md`, jusque-là non référencé depuis la page d'accueil du
+  dépôt.
+
+### Fixed
+
+- **Colonne Titre non cliquable sur les listes Risques, Risques fournisseurs, Audits, Non-
+  conformités, Formations et Revues de direction** : seule la colonne ID (petite cible) ouvrait
+  la fiche, le titre affiché s'affichait en texte brut. Constat direct du porteur du plugin sur un
+  écran comparable. Colonne Titre passée en `datatype => 'itemlink'` (`itemtype => self::class`)
+  sur les 6 classes concernées, vérifié en conditions réelles (HTML rendu avec un vrai lien vers
+  la fiche).
+
+### Added
+
+- **Suivi des formations de sensibilisation à la sécurité (clauses 7.2 "compétence" et 7.3
+  "sensibilisation" ISO/IEC 27001:2022)** : nouvel itemtype `PluginGrcmanagerTraining`, une ligne
+  par session/campagne de formation (titre, format présentiel/e-learning/autre, public cible en
+  texte libre, date de réalisation, caractère obligatoire, période de renouvellement optionnelle en
+  mois). Suivi individuel de réalisation par participant (vrai `User` natif de GLPI, jamais un
+  concept propre à ce plugin) sur la table de liaison
+  `glpi_plugin_grcmanager_trainings_users` : statut (en attente/terminée/dispensé) et date de
+  réalisation par participant, pas seulement un décompte agrégé. Nouvelle tâche Cron quotidienne
+  (`PluginGrcmanagerTraining::cronRenewaldue()`) qui notifie individuellement chaque participant en
+  retard de renouvellement (`GlpiPlugin\Grcmanager\Services\Training\TrainingRenewalService`,
+  `inc/notificationtargettraining.class.php`, résolution explicite de plusieurs destinataires par
+  formation, pas un simple propriétaire unique). Liste filtrable avec badges colorés traduits et
+  lien cliquable (`front/training.php`), formulaire dédié (`front/training.form.php`).
+- **Enregistrement des revues de direction (clause 9.3 ISO/IEC 27001:2022)** : nouvel itemtype
+  `PluginGrcmanagerManagementReview` (titre, statut planifiée/terminée avec auto-renseignement de la
+  date de revue dès le passage au statut "Terminée", participants liés via
+  `glpi_plugin_grcmanager_managementreviews_users`, ordre du jour et décisions/actions en texte
+  libre, volontairement non rattachées au mécanisme CAPA existant, voir `TECH_DEBT.md` Sprint 6).
+  Liste filtrable avec badges colorés traduits et lien cliquable
+  (`front/managementreview.php`), formulaire dédié (`front/managementreview.form.php`).
+- **3 nouvelles cartes de tableau de bord** (`DashboardCardService`, même signature
+  accumulateur-safe que les cartes précédentes) : taux de réalisation des formations, participants
+  en retard de renouvellement de formation, revues de direction par statut.
+- Nouvelles chaînes traduites dans `locales/fr_FR.po`/`locales/en_GB.po`.
+
+### Fixed
+
+- Fil d'Ariane incorrect sur tous les écrans du plugin : `Html::header()` déclarait la catégorie
+  `'admin'` (Administration) sur 11 fichiers alors que le plugin est enregistré sous `'tools'`
+  (Outils) dans `Hooks::MENU_TOADD`, même bug que sur `glpi-vulnerability-manager`, confirmé en
+  direct sur les deux dépôts. Corrigé partout (y compris les 4 nouveaux écrans du Sprint 6 ci-dessus,
+  qui n'existaient pas encore lors du premier correctif) pour que le fil d'Ariane et le menu actif
+  reflètent l'emplacement réel.
+
 ## [0.5.0] - 2026-08-24
 
 ### Added

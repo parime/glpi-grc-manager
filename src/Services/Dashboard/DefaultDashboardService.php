@@ -1,0 +1,150 @@
+<?php
+
+declare(strict_types=1);
+
+namespace GlpiPlugin\Grcmanager\Services\Dashboard;
+
+use Glpi\Dashboard\Dashboard;
+
+/**
+ * Sprint 7 (tableaux de bord, consolidation) : tableau de bord natif GLPI "prêt à l'emploi",
+ * seedé à l'installation, pour qu'une installation fraîche affiche d'emblée une vue d'ensemble
+ * ISMS au lieu d'un sélecteur « Ajouter une carte » vide (voir DEVELOPMENT_PLAN.md, Sprint 7).
+ * Reprend telles quelles les 15 cartes déjà posées aux Sprints 1 à 6 (voir
+ * hook.php::plugin_grcmanager_dashboard_cards() / DashboardCardService) : aucune carte
+ * « résumé » supplémentaire n'a été ajoutée pour ce sprint, ce tableau de bord EST la vue de
+ * synthèse qui les relie entre elles.
+ *
+ * Construit avec l'API native `Glpi\Dashboard\Dashboard` (mêmes méthodes que celles appelées par
+ * l'écran natif Configuration > Tableaux de bord : save()/saveItems(), voir
+ * src/Glpi/Dashboard/Dashboard.php du cœur GLPI 11) plutôt qu'une insertion SQL directe dans
+ * glpi_dashboards_dashboards/glpi_dashboards_items, pour ne jamais diverger du schéma interne
+ * (card_options JSON-encodé, etc.) que l'écran natif produit lui-même.
+ *
+ * `users_id` forcé à 0, jamais `Dashboard::saveNew()` (qui l'aurait mis à l'utilisateur de la
+ * session en cours, aucun utilisateur particulier lors d'une installation en CLI de toute façon) :
+ * c'est ce qui rend ce tableau de bord visible par tout le monde disposant du droit natif
+ * "dashboard", exactement comme les tableaux de bord "Central"/"Parc"/"Assistance" fournis par le
+ * cœur GLPI (voir `Dashboard::getDefaults()`, même valeur users_id=0, aucune ligne
+ * glpi_dashboards_rights). Confirmé en lisant `Dashboard::canViewCurrent()` : un tableau de bord
+ * avec users_id=0 passe par `self::canView() && !$this->isPrivate()`, jamais par les droits de
+ * partage détaillés (glpi_dashboards_rights) réservés aux tableaux de bord privés partagés à la
+ * main, donc aucune ligne de droits à seeder ici.
+ *
+ * Idempotent comme le reste de `Installer.php` : `key` fixe (pas de slug dérivé du titre traduit,
+ * qui changerait avec la langue), `Dashboard::save()` fait un vrai upsert sur cette colonne
+ * (`$DB->updateOrInsert(..., ['key' => $this->key])`), et `saveItems()` supprime puis réinsère
+ * les items à chaque appel : ré-exécuter `seed()` (upgrade, `plugin:install --force`) ne duplique
+ * jamais rien. Contrepartie assumée (voir TECH_DEBT.md) : un administrateur qui personnalise
+ * ensuite ce tableau de bord depuis l'écran natif Tableaux de bord verra ses changements écrasés
+ * au prochain upgrade du plugin, comme n'importe quelle configuration par défaut réinitialisée à
+ * chaque mise à jour.
+ */
+final class DefaultDashboardService
+{
+    public const KEY = 'grcmanager-isms-overview';
+
+    public static function seed(): void
+    {
+        global $DB;
+
+        // Dashboard::$key is protected, and Dashboard::saveNew() forces users_id to the current
+        // session's user (0 for a CLI install, but the installing admin's own ID if triggered from
+        // the web UI, which would make the dashboard private to them, see class docblock above).
+        // Upserting the row directly with users_id=0 (same query shape as Dashboard::save(),
+        // Dashboard::getTable() so this can never diverge from the real table name) sidesteps
+        // both restrictions, then Dashboard::getFromDB()/saveItems() (both public) take over for
+        // the items, exactly the calls the native dashboard editor itself would make.
+        $DB->updateOrInsert(
+            Dashboard::getTable(),
+            [
+                'key'      => self::KEY,
+                'name'     => __("GRC Manager - Vue d'ensemble ISMS", 'grcmanager'),
+                'context'  => 'core',
+                'users_id' => 0,
+            ],
+            ['key' => self::KEY]
+        );
+
+        $dashboard = new Dashboard();
+        if ($dashboard->getFromDB(self::KEY)) {
+            $dashboard->saveItems(self::getItems());
+        }
+    }
+
+    public static function remove(): void
+    {
+        (new Dashboard())->delete(['key' => self::KEY], true);
+    }
+
+    /**
+     * Disposition sur la grille native (26 colonnes de large par défaut) : une première rangée de
+     * chiffres clés (bigNumber, ceux qui appellent le plus directement à l'action : risques
+     * ouverts/en attente de revue, non-conformités ouvertes, CAPA en retard, fournisseurs à
+     * risque, renouvellements de formation en retard), une deuxième rangée de progression
+     * (contrôles SoA revus, taux de réalisation des formations), puis les répartitions
+     * (pie/donut) qui détaillent chaque registre.
+     */
+    private static function getItems(): array
+    {
+        $bigNumber = static function (
+            string $cardId,
+            int $x,
+            int $y,
+            string $color,
+            int $width = 4
+        ): array {
+            return [
+                'gridstack_id' => $cardId . '_default',
+                'card_id'      => $cardId,
+                'x'            => $x,
+                'y'            => $y,
+                'width'        => $width,
+                'height'       => 2,
+                'card_options' => [
+                    'color'        => $color,
+                    'widgettype'   => 'bigNumber',
+                    'use_gradient' => '0',
+                ],
+            ];
+        };
+
+        $pie = static function (string $cardId, int $x, int $y): array {
+            return [
+                'gridstack_id' => $cardId . '_default',
+                'card_id'      => $cardId,
+                'x'            => $x,
+                'y'            => $y,
+                'width'        => 6,
+                'height'       => 4,
+                'card_options' => [
+                    'color'        => '#f9fafb',
+                    'widgettype'   => 'pie',
+                    'use_gradient' => '1',
+                ],
+            ];
+        };
+
+        return [
+            // Rangée 1 (y=0) : chiffres clés appelant à l'action.
+            $bigNumber('grcmanager_open_risks', 0, 0, '#e69393'),
+            $bigNumber('grcmanager_risks_pending_review', 4, 0, '#f8911f'),
+            $bigNumber('grcmanager_open_nonconformities', 8, 0, '#b52d30'),
+            $bigNumber('grcmanager_overdue_capa', 12, 0, '#f08d7b'),
+            $bigNumber('grcmanager_suppliers_with_high_risk', 16, 0, '#8e5ea2'),
+            $bigNumber('grcmanager_training_overdue_renewal', 20, 0, '#ffdc64'),
+            // Rangée 2 (y=2) : progression.
+            $bigNumber('grcmanager_soa_reviewed', 0, 2, '#0e87a0', 6),
+            $bigNumber('grcmanager_training_completion_rate', 6, 2, '#27ab3c', 6),
+            // Rangée 3 (y=4) : répartitions, registre de risques et SoA.
+            $pie('grcmanager_risks_by_level', 0, 4),
+            $pie('grcmanager_risks_by_category', 6, 4),
+            $pie('grcmanager_soa_by_applicability', 12, 4),
+            $pie('grcmanager_soa_by_implementation_status', 18, 4),
+            // Rangée 4 (y=8) : répartitions, audits/CAPA, fournisseurs, revues de direction.
+            $pie('grcmanager_audits_by_status', 0, 8),
+            $pie('grcmanager_supplierrisks_by_level', 6, 8),
+            $pie('grcmanager_management_reviews_by_status', 12, 8),
+        ];
+    }
+}

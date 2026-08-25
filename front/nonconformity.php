@@ -25,7 +25,7 @@ Session::checkRight(PluginGrcmanagerNonconformity::$rightname, READ);
 Html::header(
     PluginGrcmanagerNonconformity::getTypeName(2),
     $_SERVER['PHP_SELF'],
-    'admin',
+    'tools',
     PluginGrcmanagerNonconformity::class
 );
 

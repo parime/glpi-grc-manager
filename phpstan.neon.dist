@@ -11,12 +11,20 @@ parameters:
         - src/Services/Risk
         - src/Services/Control
         - src/Services/Capa
+        - src/Services/Training
     excludePaths:
         # Depends on GLPI's legacy global-namespace CommonDBTM classes (PluginGrcmanager*), not
         # available for static analysis, see above. src/Install/ is entirely GLPI-dependent and
         # stays out of `paths` altogether for the same reason.
         - src/Services/DefaultSearchColumns.php
         - src/Services/Dashboard/DashboardCardService.php
+        # Sprint 7: depends on GLPI core's Glpi\Dashboard\Dashboard (global $DB, Session,
+        # TemplateRenderer...), same rationale as DashboardCardService.php above.
+        - src/Services/Dashboard/DefaultDashboardService.php
+        # Sprint 7 (suivi de version GitHub): depends on \Toolbox::getURLContent(), $GLPI_CACHE
+        # and DAY_TIMESTAMP, same category of GLPI-core-only runtime symbol as
+        # RiskMatrixConfig.php/OverdueCapaService.php below.
+        - src/Services/GithubVersionChecker.php
         # Sprint 2: reads GLPI's runtime global $DB (RiskMatrixConfig) or depends on GLPI core
         # classes NotificationEvent/PluginGrcmanagerRisk (ReviewReminderService), same rationale.
         # RiskMatrixDefaults.php and ReviewReminderResult.php in the same directory stay in scope:
@@ -27,3 +35,8 @@ parameters:
         # same rationale as ReviewReminderService above. OverdueCapaResult.php in the same
         # directory stays in scope: pure PHP with no GLPI dependency.
         - src/Services/Capa/OverdueCapaService.php
+        # Sprint 6: depends on GLPI's runtime global $DB and core classes
+        # NotificationEvent/PluginGrcmanagerTraining, same rationale as OverdueCapaService above.
+        # TrainingRenewalResult.php in the same directory stays in scope: pure PHP with no GLPI
+        # dependency.
+        - src/Services/Training/TrainingRenewalService.php

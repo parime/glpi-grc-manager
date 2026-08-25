@@ -24,7 +24,7 @@ use GlpiPlugin\Grcmanager\Compatibility\RequirementChecker;
 // must bundle vendor/, see .github/workflows/release.yml.
 require_once __DIR__ . '/vendor/autoload.php';
 
-define('PLUGIN_GRCMANAGER_VERSION', '0.5.0');
+define('PLUGIN_GRCMANAGER_VERSION', '1.0.0');
 define('PLUGIN_GRCMANAGER_MIN_GLPI', '11.0.0');
 define('PLUGIN_GRCMANAGER_MAX_GLPI', '11.99.99');
 define('PLUGIN_GRCMANAGER_MIN_PHP', '8.1.0');
@@ -51,7 +51,8 @@ function plugin_init_grcmanager(): void
     // 'tools' category. Sprint 4 (audits internes et CAPA, clause 9.2/10.2) adds
     // PluginGrcmanagerAudit and PluginGrcmanagerNonconformity the same way. Sprint 5 (risques
     // fournisseurs/tiers) adds PluginGrcmanagerSupplierRisk right after the generic risk register
-    // it mirrors.
+    // it mirrors. Sprint 6 (formations et revues de direction, clauses 7.2/7.3/9.3) adds
+    // PluginGrcmanagerTraining and PluginGrcmanagerManagementReview.
     $PLUGIN_HOOKS[Hooks::MENU_TOADD]['grcmanager'] = [
         'tools' => [
             PluginGrcmanagerRisk::class,
@@ -59,6 +60,8 @@ function plugin_init_grcmanager(): void
             PluginGrcmanagerControl::class,
             PluginGrcmanagerAudit::class,
             PluginGrcmanagerNonconformity::class,
+            PluginGrcmanagerTraining::class,
+            PluginGrcmanagerManagementReview::class,
         ],
     ];
 

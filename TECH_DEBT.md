@@ -121,3 +121,96 @@ Journal des limites connues et compromis assumés, tenu à jour à chaque sprint
   Non couvert par PHPStan (`phpstan.neon.dist`) comme le reste du code dépendant du runtime GLPI
   (`RiskMatrixConfig::load()`, `Dropdown`, `__()`), même raison que
   `src/Services/Risk/RiskMatrixConfig.php`.
+
+## Sprint 6 (Formations et revues de direction)
+
+- **Liens participants/participants-formation et participants/revue de direction en accès direct
+  `$DB`, pas en itemtype `CommonDBRelation`**, même simplification assumée qu'aux Sprints 3-4 pour
+  les liens contrôle <-> risque et audit <-> contrôle (voir ci-dessus) :
+  `glpi_plugin_grcmanager_trainings_users` et `glpi_plugin_grcmanager_managementreviews_users` sont
+  gérées par de simples méthodes statiques (`PluginGrcmanagerTraining::syncParticipants()`/
+  `getParticipants()`, `PluginGrcmanagerManagementReview::syncAttendees()`/`getAttendees()`), pas
+  par une vraie classe de liaison GLPI. Suffisant pour un multi-select dans `showForm()` avec un
+  nombre de participants toujours faible ; à reconsidérer si un besoin réel de journalisation GLPI
+  native (`Log`) sur ces liens apparaît.
+- **Suppression d'un participant = perte de son historique de réalisation.**
+  `PluginGrcmanagerTraining::syncParticipants()` retire la ligne
+  `glpi_plugin_grcmanager_trainings_users` correspondante dès qu'un participant est désélectionné du
+  multi-select puis la sauvegarde effectuée (supprimer-puis-réinsérer, même approche que
+  `PluginGrcmanagerAudit::syncLinkedControls()`) : son statut/date de réalisation précédent n'est
+  conservé nulle part. Assumé pour ce sprint plutôt qu'une table d'historique séparée ; à
+  réévaluer si un besoin réel de conserver une trace même après retrait d'un participant apparaît.
+- **Rappel de renouvellement de formation sans déduplication**, même limite assumée que
+  `ReviewReminderService::notify()` au Sprint 2 et `OverdueCapaService` au Sprint 4 (voir
+  ci-dessus) : un participant resté en retard de renouvellement plusieurs jours génère une
+  notification à chaque exécution quotidienne de la tâche Cron
+  (`PluginGrcmanagerTraining::cronRenewaldue()`), pas une seule fois.
+- **`PluginGrcmanagerManagementReview` n'a volontairement ni notification GLPI native ni tâche
+  Cron dédiée**, contrairement à `PluginGrcmanagerTraining` (rappel de renouvellement) et à tous
+  les autres itemtypes de ce plugin ayant une échéance (revue de risque, CAPA en retard) : une
+  revue de direction n'a pas de date d'échéance récurrente à surveiller au sens où l'entend ce
+  plugin (`review_date` est une date de tenue, pas une date limite dépassable), donc rien à
+  notifier automatiquement. Une évolution possible (non retenue ici) serait un rappel de
+  planification si aucune revue n'a été enregistrée depuis un intervalle donné, sur le modèle des
+  rappels de revue de risque.
+- **Décisions et actions d'une revue de direction en texte libre, sans lien fort vers le mécanisme
+  CAPA existant** (`PluginGrcmanagerNonconformity`). Assumé délibérément (voir le docblock de
+  `inc/managementreview.class.php`) : une décision de revue de direction n'est pas toujours une
+  action corrective liée à un audit (elle peut être une approbation budgétaire, un changement de
+  politique, une acceptation de risque...), forcer chaque décision dans le flux CAPA
+  dénaturerait ce que demande réellement la clause 9.3. À réévaluer si un besoin réel de suivi
+  structuré (responsable, échéance, statut) par décision individuelle apparaît.
+- **`showForm()` en HTML/PHP manuel, pas en Twig**, même choix assumé que tous les formulaires
+  précédents de ce plugin (voir Sprint 1 ci-dessus).
+
+## Sprint 7 (Tableaux de bord, consolidation)
+
+- **Tableau de bord seedé écrasé au réinstall si un administrateur l'a personnalisé.**
+  `DefaultDashboardService::seed()` fait un upsert sur une clé fixe
+  (`grcmanager-isms-overview`) à chaque `plugin:install`/`plugin:install --force` : un
+  administrateur qui aurait déplacé/retiré des cartes depuis l'écran natif Tableaux de bord verrait
+  ses changements écrasés par une réinstallation ou une mise à niveau ultérieure du plugin. Assumé
+  pour ce sprint (comportement identique à n'importe quelle configuration par défaut réinitialisée
+  à chaque mise à jour) plutôt qu'une détection « déjà personnalisé, ne pas toucher » plus
+  complexe ; à réévaluer si ce comportement surprend un administrateur en conditions réelles.
+- **Nom du tableau de bord seedé non re-traduit par langue de session.** `__(...)` n'est évalué
+  qu'une fois, au moment de l'installation : le nom stocké dans `glpi_dashboards_dashboards.name`
+  reste figé dans la langue active à ce moment-là pour tous les utilisateurs ensuite, contrairement
+  aux libellés des 15 cartes elles-mêmes (résolus à chaque affichage). Même limite que les autres
+  valeurs persistées en base par ce plugin plutôt que résolues dynamiquement à l'affichage (ex.
+  `severity`/`status` bruts stockés en base, traduits uniquement par les badges de liste).
+- **Aucune nouvelle carte de tableau de bord ajoutée à ce sprint.** L'inventaire des 15 cartes
+  existantes n'a révélé ni carte cassée, ni doublon, ni lacune justifiant une carte « santé ISMS »
+  consolidée supplémentaire : le nouveau tableau de bord par défaut (ci-dessus) répond au besoin
+  de vue d'ensemble en réorganisant les cartes déjà posées, sans en ajouter une seizième
+  redondante avec les bigNumbers déjà disponibles.
+
+## Sprint 8 (Documentation et release v1.0.0)
+
+- **`docs/TUTORIAL.md` (27 captures) ne couvre que les Sprints 1-4.** Vérifié lors de la revue de
+  préparation v1.0.0 : le tutoriel bilingue existant parcourt le registre de risques générique, la
+  matrice probabilité x impact, la SoA et les audits/CAPA jusqu'à l'ajout d'une carte de tableau de
+  bord, mais ne montre ni le registre de risques fournisseurs/tiers (Sprint 5), ni le suivi des
+  formations et les revues de direction (Sprint 6), ni le tableau de bord ISMS par défaut seedé à
+  l'installation ni la nouvelle carte de suivi de version GitHub sur l'écran Configuration
+  (Sprint 7). Le texte d'introduction et l'Étape 1 affirment même encore que le plugin ajoute
+  « quatre écrans » au menu Outils, alors qu'il en ajoute sept désormais. Non corrigé dans le cadre
+  de ce sprint : générer nettoyement les captures manquantes demande de rejouer le flux complet sur
+  une instance réelle avec de vraies données (comme les 27 captures existantes), un travail
+  d'automatisation navigateur qui n'a pas pu être fait en toute sécurité dans le temps imparti de
+  cette revue. Ce que couvrent déjà les 27 captures reste exact (aucune capture existante n'a été
+  invalidée par les Sprints 5-7 : le flux risque générique/matrice/SoA/audits-CAPA/ajout de carte
+  qu'elles montrent n'a pas changé visuellement). À traiter en priorité juste avant ou juste après
+  la publication de la v1.0.0 : compléter le tutoriel avec une étape 7 (risques fournisseurs), une
+  étape 8 (formations et revues de direction) et une mise à jour de l'étape 6 (nouveau tableau de
+  bord par défaut, carte de version GitHub).
+- **`docs/design/` ne contient qu'un seul document (`DEVELOPMENT_PLAN.md`), pas d'ADR dédiées.**
+  Évalué lors de la même revue : il n'existe pas de série de fichiers "Architecture Decision
+  Record" formels comme le ferait un projet plus mature. Jugé suffisant pour l'instant (pas
+  bloquant pour la v1.0.0) car les décisions d'architecture significatives sont déjà documentées,
+  juste dispersées différemment : `DEVELOPMENT_PLAN.md` donne la vue d'ensemble (répartition
+  `inc/`/`src/Services/`/`src/Install/`/`front/`), et chaque choix de conception concret avec sa
+  justification vit dans ce fichier `TECH_DEBT.md`, sprint par sprint, ce qui couvre en pratique le
+  même besoin (« pourquoi tel choix a été fait, à quoi faire attention si on le change ») qu'une
+  ADR. À réévaluer si le projet gagne des contributeurs externes qui auraient besoin d'un point
+  d'entrée unique de type `ARCHITECTURE.md` plutôt que de devoir lire tout `TECH_DEBT.md`.

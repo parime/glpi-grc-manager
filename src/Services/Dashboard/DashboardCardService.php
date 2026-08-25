@@ -355,4 +355,106 @@ final class DashboardCardService
             'icon' => 'ti ti-building-warehouse',
         ];
     }
+
+    /**
+     * Sprint 6 (formations, clauses 7.2/7.3) : pourcentage de lignes de participation marquées
+     * "Terminée" parmi l'ensemble des participations enregistrées, toutes formations confondues.
+     * Un participant "Dispensé" (exempted) n'est ni un succès ni un échec de réalisation : exclu du
+     * dénominateur, même logique qu'un statut "non applicable" ailleurs dans ce plugin.
+     */
+    public static function trainingCompletionRate(array $params = []): array
+    {
+        global $DB;
+
+        $eligible = (int) $DB->request([
+            'COUNT' => 'c',
+            'FROM'  => 'glpi_plugin_grcmanager_trainings_users',
+            'WHERE' => ['completion_status' => ['<>', 'exempted']],
+        ])->current()['c'];
+
+        $completed = (int) $DB->request([
+            'COUNT' => 'c',
+            'FROM'  => 'glpi_plugin_grcmanager_trainings_users',
+            'WHERE' => ['completion_status' => 'completed'],
+        ])->current()['c'];
+
+        $rate = $eligible > 0 ? (int) round(($completed / $eligible) * 100) : 0;
+
+        return [
+            'number' => $rate,
+            'label' => $params['label'] ?? __('Taux de réalisation des formations', 'grcmanager'),
+            'icon' => 'ti ti-school',
+        ];
+    }
+
+    /**
+     * Nombre de participants distincts en retard de renouvellement, même définition partagée par
+     * PluginGrcmanagerTraining::getOverdueParticipants() et la tâche Cron
+     * PluginGrcmanagerTraining::cronRenewaldue(), pour que la carte de tableau de bord et le rappel
+     * automatique ne divergent jamais sur ce qui compte comme "en retard".
+     */
+    public static function trainingOverdueRenewalCount(array $params = []): array
+    {
+        global $DB;
+
+        $count = (int) $DB->request([
+            'SELECT'     => [new QueryExpression('COUNT(DISTINCT links.users_id) AS c')],
+            'FROM'       => 'glpi_plugin_grcmanager_trainings_users AS links',
+            'INNER JOIN' => [
+                'glpi_plugin_grcmanager_trainings AS t' => [
+                    'FKEY' => ['links' => 'plugin_grcmanager_trainings_id', 't' => 'id'],
+                ],
+            ],
+            'WHERE'      => [
+                'links.completion_status'  => 'completed',
+                't.renewal_period_months'  => ['>', 0],
+                new QueryExpression(
+                    'DATE_ADD(links.completion_date, INTERVAL t.renewal_period_months MONTH) < CURDATE()'
+                ),
+            ],
+        ])->current()['c'];
+
+        return [
+            'number' => $count,
+            'label' => $params['label'] ?? __(
+                'Participants en retard de renouvellement de formation',
+                'grcmanager'
+            ),
+            'icon' => 'ti ti-calendar-due',
+        ];
+    }
+
+    /**
+     * Sprint 6 (revues de direction, clause 9.3) : répartition par statut (planifiée/terminée),
+     * même schéma que auditsByStatus() ci-dessus.
+     */
+    public static function managementReviewsByStatus(array $params = []): array
+    {
+        global $DB;
+
+        $countsByStatus = array_fill_keys(['planned', 'completed'], 0);
+
+        $rows = $DB->request([
+            'SELECT' => ['status', new QueryExpression('COUNT(*) AS c')],
+            'FROM' => 'glpi_plugin_grcmanager_managementreviews',
+            'GROUPBY' => 'status',
+        ]);
+
+        foreach ($rows as $row) {
+            if (isset($countsByStatus[$row['status']])) {
+                $countsByStatus[$row['status']] = (int) $row['c'];
+            }
+        }
+
+        $data = [];
+        foreach ($countsByStatus as $status => $count) {
+            $data[] = ['label' => $status, 'number' => $count];
+        }
+
+        return [
+            'data' => $data,
+            'label' => $params['label'] ?? __('Revues de direction par statut', 'grcmanager'),
+            'icon' => 'ti ti-chart-pie',
+        ];
+    }
 }
