@@ -160,7 +160,8 @@ class PluginGrcmanagerNonconformity extends CommonDBTM
             'table'    => $this->getTable(),
             'field'    => 'title',
             'name'     => __('Titre', 'grcmanager'),
-            'datatype' => 'string',
+            'datatype' => 'itemlink',
+            'itemtype' => self::class,
         ];
 
         $tab[] = [

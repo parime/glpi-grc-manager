@@ -117,7 +117,8 @@ class PluginGrcmanagerSupplierRisk extends CommonDBTM
             'table'    => $this->getTable(),
             'field'    => 'title',
             'name'     => __('Titre', 'grcmanager'),
-            'datatype' => 'string',
+            'datatype' => 'itemlink',
+            'itemtype' => self::class,
         ];
 
         // Real GLPI-native dropdown join to the core Supplier itemtype (unlike the control<->risk
