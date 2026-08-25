@@ -7,6 +7,17 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce p
 
 ## [Non publié]
 
+## [1.0.0] - 2026-08-25
+
+Les 8 sprints du plan de développement sont terminés. Testé en charge à l'échelle d'un ISMS
+réel sur une instance secondaire (350 risques, 93 contrôles SoA, 40 audits, 80 non-conformités,
+60 risques fournisseurs, 30 formations) : toutes les listes chargent en 40 à 200ms, toutes les
+requêtes des cartes de tableau de bord en moins d'une milliseconde côté base. CI/CD complète
+verte, pipeline de release relu de bout en bout. Recommandation non bloquante documentée dans
+TECH_DEBT.md : le tutoriel (27 captures d'écran) ne couvre que les Sprints 1 à 4, à compléter
+pour les Sprints 5 à 7 (risques fournisseurs, formations, revues de direction, tableau de bord
+par défaut, suivi de version GitHub).
+
 ### Fixed
 
 - **`README.md`/`README.en.md` affichaient encore un statut "Sprint 1 terminé"** alors que les
