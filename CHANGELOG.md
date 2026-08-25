@@ -7,6 +7,14 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce p
 
 ## [Non publié]
 
+### Fixed
+
+- Fil d'Ariane incorrect sur tous les écrans du plugin : `Html::header()` déclarait la catégorie
+  `'admin'` (Administration) sur 11 fichiers alors que le plugin est enregistré sous `'tools'`
+  (Outils) dans `Hooks::MENU_TOADD`, même bug que sur `glpi-vulnerability-manager`, confirmé en
+  direct sur les deux dépôts. Corrigé partout pour que le fil d'Ariane et le menu actif reflètent
+  l'emplacement réel.
+
 ## [0.5.0] - 2026-08-24
 
 ### Added
