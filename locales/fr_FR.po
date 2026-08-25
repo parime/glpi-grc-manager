@@ -626,3 +626,88 @@ msgstr "Risques fournisseurs par niveau"
 msgid "Fournisseurs avec au moins un risque élevé/critique ouvert"
 msgstr "Fournisseurs avec au moins un risque élevé/critique ouvert"
 
+msgid "Formation"
+msgid_plural "Formations"
+msgstr[0] "Formation"
+msgstr[1] "Formations"
+
+msgid "Revue de direction"
+msgid_plural "Revues de direction"
+msgstr[0] "Revue de direction"
+msgstr[1] "Revues de direction"
+
+msgid "Présentiel"
+msgstr "Présentiel"
+
+msgid "E-learning"
+msgstr "E-learning"
+
+msgid "Autre"
+msgstr "Autre"
+
+msgid "En attente"
+msgstr "En attente"
+
+msgid "Terminée"
+msgstr "Terminée"
+
+msgid "Dispensé"
+msgstr "Dispensé"
+
+msgid "Format"
+msgstr "Format"
+
+msgid "Public cible"
+msgstr "Public cible"
+
+msgid "Date de réalisation"
+msgstr "Date de réalisation"
+
+msgid "Obligatoire"
+msgstr "Obligatoire"
+
+msgid "Renouvellement (mois)"
+msgstr "Renouvellement (mois)"
+
+msgid "Statut de réalisation"
+msgstr "Statut de réalisation"
+
+msgid "Participants"
+msgstr "Participants"
+
+msgid "Texte libre (ex. \"Tout le personnel\", \"Équipe technique\", nom d'un groupe ou service)."
+msgstr "Texte libre (ex. \"Tout le personnel\", \"Équipe technique\", nom d'un groupe ou service)."
+
+msgid "Enregistrez pour ajouter les nouveaux participants sélectionnés : leur suivi individuel apparaît ci-dessous après enregistrement."
+msgstr "Enregistrez pour ajouter les nouveaux participants sélectionnés : leur suivi individuel apparaît ci-dessous après enregistrement."
+
+msgid "0 = pas de renouvellement requis."
+msgstr "0 = pas de renouvellement requis."
+
+msgid "Planifiée"
+msgstr "Planifiée"
+
+msgid "Ordre du jour"
+msgstr "Ordre du jour"
+
+msgid "Décisions et actions"
+msgstr "Décisions et actions"
+
+msgid "Sujets réellement abordés (état des actions précédentes, changements du contexte, retours des parties intéressées, résultats d'audits, non-conformités, opportunités d'amélioration...)."
+msgstr "Sujets réellement abordés (état des actions précédentes, changements du contexte, retours des parties intéressées, résultats d'audits, non-conformités, opportunités d'amélioration...)."
+
+msgid "Renouvellement de formation en retard"
+msgstr "Renouvellement de formation en retard"
+
+msgid "Participant : %s"
+msgstr "Participant : %s"
+
+msgid "Taux de réalisation des formations"
+msgstr "Taux de réalisation des formations"
+
+msgid "Participants en retard de renouvellement de formation"
+msgstr "Participants en retard de renouvellement de formation"
+
+msgid "Revues de direction par statut"
+msgstr "Revues de direction par statut"
+
