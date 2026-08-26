@@ -2,7 +2,7 @@
   "name": "GLPI GRC Manager",
   "key": "grcmanager",
   "state": "stable",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "GPL-3.0-or-later",
   "homepage": "https://github.com/parime/glpi-grc-manager",
   "download": "https://github.com/parime/glpi-grc-manager/releases/latest",
