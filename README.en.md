@@ -1,10 +1,12 @@
 # GLPI GRC Manager
 
+<p align="center"><img src="logo.png" alt="GLPI GRC Manager" width="180"></p>
+
 > Generic Governance, Risk and Compliance (GRC) and ISO 27001 platform, natively integrated into
 > GLPI.
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/status-alpha%20%E2%80%94%20sprint%207%20done-orange)](ROADMAP.md)
+[![Status](https://img.shields.io/badge/status-stable%20%E2%80%94%20v1.0.0-brightgreen)](ROADMAP.md)
 [![GLPI](https://img.shields.io/badge/GLPI-11.x-green)](docs/design/DEVELOPMENT_PLAN.md)
 
 [🇫🇷 Français](README.md) | 🇬🇧 **English**

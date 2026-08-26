@@ -7,6 +7,21 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce p
 
 ## [Non publié]
 
+## [1.0.1] - 2026-08-26
+
+### Added
+
+- **Fiche marketplace** (`grcmanager.xml`) et logo : le plugin n'avait encore ni catalogue
+  marketplace ni aucun visuel alors que la v1.0.0 est stable et publiée. Ajout de la fiche
+  complète (description, tags, captures d'écran), d'un logo placeholder (thème ISO 27001) et
+  d'une automatisation dans `release.yml` qui ouvre désormais une PR de mise à jour du catalogue
+  à chaque release, pour éviter la dérive silencieuse déjà rencontrée sur les plugins jumeaux
+  (assetsign-glpi#105).
+
+### Fixed
+
+- Badges README (statut "alpha — sprint 7") restés obsolètes depuis le passage en v1.0.0 stable.
+
 ## [1.0.0] - 2026-08-25
 
 Les 8 sprints du plan de développement sont terminés. Testé en charge à l'échelle d'un ISMS
