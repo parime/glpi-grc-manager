@@ -5,6 +5,11 @@ on:
     branches: [main, dev]
   pull_request:
     branches: [main, dev]
+  # Permet a release.yml de forcer l'execution de la CI sur une branche creee via GITHUB_TOKEN
+  # (ex: la PR de mise a jour automatique du catalogue marketplace) -- un push/PR effectue avec
+  # le GITHUB_TOKEN par defaut ne declenche pas ces triggers (garde-fou anti-boucle GitHub
+  # Actions), seul un declenchement explicite via workflow_dispatch les contourne.
+  workflow_dispatch:
 
 permissions:
   contents: read
