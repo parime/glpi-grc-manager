@@ -66,6 +66,10 @@ final class Installer
     // frontière camelCase) que toutes les autres tables ci-dessus.
     private const ASSET_CLASSIFICATIONS_TABLE = 'glpi_plugin_grcmanager_assetclassifications';
 
+    // Issue #28 (bibliothèque de politiques de sécurité versionnées, A.5.1), même dérivation de
+    // nom de table que toutes les autres tables ci-dessus.
+    private const POLICIES_TABLE = 'glpi_plugin_grcmanager_policies';
+
     // Issue #30 (registre des obligations légales/réglementaires/contractuelles), même dérivation
     // de nom de table que toutes les autres tables ci-dessus.
     private const COMPLIANCE_OBLIGATIONS_TABLE = 'glpi_plugin_grcmanager_complianceobligations';
@@ -479,6 +483,34 @@ final class Installer
             $DB->doQuery($query) or die($DB->error());
         }
 
+        // Issue #28 (bibliothèque de politiques de sécurité versionnées, A.5.1/A.5.1.1/A.5.1.2) :
+        // une ligne par politique (charte informatique, politique de mots de passe, PCA...), avec
+        // le cycle de vie brouillon -> approuvée -> archivée (voir
+        // GlpiPlugin\Grcmanager\Services\Policy\PolicyLifecycle) et le rappel de revue périodique
+        // sur `next_review_date` (voir PolicyReviewReminderService, calqué sur
+        // ReviewReminderService du registre de risques). Le document lui-même (PDF, Word...) n'est
+        // PAS stocké ici : attaché via le mécanisme natif GLPI Document/Document_Item (voir
+        // setup.php, $CFG_GLPI['document_types'], et PluginGrcmanagerPolicy::defineTabs()).
+        if (!$DB->tableExists(self::POLICIES_TABLE)) {
+            $query = "CREATE TABLE `" . self::POLICIES_TABLE . "` (
+                `id` int {$keySign} NOT NULL AUTO_INCREMENT,
+                `title` varchar(255) NOT NULL,
+                `version` varchar(16) NOT NULL DEFAULT '1.0',
+                `status` varchar(16) NOT NULL DEFAULT 'draft' COMMENT 'draft, approved, archived',
+                `approval_date` date DEFAULT NULL,
+                `next_review_date` date DEFAULT NULL,
+                `users_id` int {$keySign} NOT NULL DEFAULT 0 COMMENT 'Policy owner',
+                `description` text,
+                `date_creation` timestamp NULL DEFAULT NULL,
+                `date_mod` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                KEY `status` (`status`),
+                KEY `users_id` (`users_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
+
+            $DB->doQuery($query) or die($DB->error());
+        }
+
         // Issue #30 (registre des obligations légales/réglementaires/contractuelles, clause 4.2
         // ISO 27001 "parties intéressées et leurs exigences", Annexe A A.5.31-36) : lien optionnel
         // zéro-ou-un vers un risque du registre en colonne DIRECTE (`plugin_grcmanager_risks_id`),
@@ -537,6 +569,7 @@ final class Installer
         );
         $this->seedCapaOverdueNotification();
         $this->seedTrainingRenewalNotification();
+        $this->seedPolicyReviewReminderNotification();
 
         // Sprint 2 (rappels de date de revue) : évalue chaque jour les risques dont la date de
         // revue est dépassée ou approche, et déclenche la notification GLPI seedée ci-dessus (voir
@@ -610,6 +643,22 @@ final class Installer
             [
                 'comment' => 'Notifie chaque participant en retard de renouvellement pour une '
                     . 'formation',
+                'mode'    => CronTask::MODE_EXTERNAL,
+            ]
+        );
+
+        // Issue #28 (bibliothèque de politiques de sécurité versionnées, A.5.1) : évalue chaque
+        // jour les politiques dont la prochaine date de revue est dépassée ou approche, et
+        // déclenche la notification GLPI seedée ci-dessus (voir
+        // PluginGrcmanagerPolicy::cronReviewreminder(),
+        // src/Services/Policy/PolicyReviewReminderService.php).
+        CronTask::Register(
+            'PluginGrcmanagerPolicy',
+            'reviewreminder',
+            DAY_TIMESTAMP,
+            [
+                'comment' => 'Notifie le propriétaire de chaque politique de sécurité dont la '
+                    . 'prochaine date de revue est dépassée ou approche',
                 'mode'    => CronTask::MODE_EXTERNAL,
             ]
         );
@@ -886,6 +935,82 @@ final class Installer
     }
 
     /**
+     * Same structure as seedReviewReminderNotification() above, for the issue #28 policy
+     * review-reminder Cron task (PluginGrcmanagerPolicy::cronReviewreminder(), event
+     * 'policy_review_due', see inc/notificationtargetpolicy.class.php). Idempotent for the same
+     * reason. Kept as its own dedicated method rather than a third call to
+     * seedReviewReminderNotification(): that method's event is hardcoded to 'review_due' and its
+     * tags to `##<prefix>.risklevel##`/`##<prefix>.reviewdate##`-shaped risk wording, which doesn't
+     * fit this itemtype's own event name and tag set (title/version/status/reviewdate), same
+     * reasoning as PolicyReviewReminderService not simply reusing ReviewReminderService (see its
+     * own docblock).
+     */
+    private function seedPolicyReviewReminderNotification(): void
+    {
+        global $DB;
+
+        $itemtype = 'PluginGrcmanagerPolicy';
+        $event    = 'policy_review_due';
+
+        $alreadySeeded = $DB->request([
+            'FROM'  => 'glpi_notifications',
+            'WHERE' => ['itemtype' => $itemtype, 'event' => $event],
+        ])->count() > 0;
+
+        if ($alreadySeeded) {
+            return;
+        }
+
+        $template = new NotificationTemplate();
+        $templateId = $template->add([
+            'name'     => 'GRC Manager - Revue de politique de sécurité à échéance',
+            'itemtype' => $itemtype,
+            'comment'  => 'Notification envoyée par la tâche automatique GRC Manager lorsqu\'une '
+                . 'politique de sécurité atteint ou dépasse sa prochaine date de revue.',
+        ]);
+
+        $DB->insert('glpi_notificationtemplatetranslations', [
+            'notificationtemplates_id' => $templateId,
+            'language'                 => '',
+            'subject'                  => '##policy.action## : ##policy.title##',
+            'content_text'             => "##policy.action## : ##policy.title##\n\n"
+                . "Version : ##policy.version##\n"
+                . "Statut : ##policy.status##\n"
+                . "Prochaine revue : ##policy.reviewdate##\n\n"
+                . "Voir la politique : ##policy.url##",
+            'content_html'             => '<p><strong>##policy.action## : ##policy.title##</strong></p>'
+                . '<p>Version : ' . "##policy.version##<br>"
+                . 'Statut : ' . "##policy.status##<br>"
+                . 'Prochaine revue : ' . "##policy.reviewdate##</p>"
+                . '<p><a href="##policy.url##">Voir la politique</a></p>',
+        ]);
+
+        $notification = new Notification();
+        $notificationId = $notification->add([
+            'name'         => 'GRC Manager - Revue de politique de sécurité à échéance',
+            'entities_id'  => 0,
+            'is_recursive' => 1,
+            'itemtype'     => $itemtype,
+            'event'        => $event,
+            'is_active'    => 1,
+        ]);
+
+        $DB->insert('glpi_notifications_notificationtemplates', [
+            'notifications_id'         => $notificationId,
+            'mode'                     => 'mailing',
+            'notificationtemplates_id' => $templateId,
+        ]);
+
+        // Default recipient: the policy's own owner (`users_id`), same generic resolution as
+        // seedReviewReminderNotification() above.
+        $DB->insert('glpi_notificationtargets', [
+            'items_id'         => Notification::ITEM_USER,
+            'type'             => Notification::USER_TYPE,
+            'notifications_id' => $notificationId,
+        ]);
+    }
+
+    /**
      * Idempotent like seedSource() on the sibling plugin glpi-vulnerability-manager (same author,
      * same guard shape): each of the 93 controls is looked up by its unique `code` before
      * inserting, so re-running install() (upgrade path, `plugin:install --force`) never duplicates
@@ -962,6 +1087,7 @@ final class Installer
         $this->unseedNotification('PluginGrcmanagerComplianceObligation');
         $this->unseedNotification('PluginGrcmanagerNonconformity');
         $this->unseedNotification('PluginGrcmanagerTraining');
+        $this->unseedNotification('PluginGrcmanagerPolicy');
 
         // Sprint 7 (tableaux de bord) : retire le tableau de bord natif seedé par
         // DefaultDashboardService::seed() ci-dessus, avant que ses tables ne disparaissent.
@@ -985,6 +1111,7 @@ final class Installer
         $migration->dropTable(self::MANAGEMENT_REVIEWS_TABLE);
         $migration->dropTable(self::RISKS_ITEMS_TABLE);
         $migration->dropTable(self::ASSET_CLASSIFICATIONS_TABLE);
+        $migration->dropTable(self::POLICIES_TABLE);
         $migration->dropTable(self::COMPLIANCE_OBLIGATIONS_TABLE);
 
         $migration->executeMigration();
