@@ -773,3 +773,68 @@ msgstr "A linked asset carries a high C/I/A classification: check this risk's im
 msgid "(C : %1$s, I : %2$s, D : %3$s)"
 msgstr "(C: %1$s, I: %2$s, A: %3$s)"
 
+msgid "Obligation légale, réglementaire ou contractuelle"
+msgid_plural "Obligations légales, réglementaires et contractuelles"
+msgstr[0] "Legal, regulatory or contractual obligation"
+msgstr[1] "Legal, regulatory and contractual obligations"
+
+msgid "Légale"
+msgstr "Legal"
+
+msgid "Réglementaire"
+msgstr "Regulatory"
+
+msgid "Contractuelle"
+msgstr "Contractual"
+
+msgid "Conforme"
+msgstr "Compliant"
+
+msgid "Partiellement conforme"
+msgstr "Partially compliant"
+
+msgid "Non conforme"
+msgstr "Non-compliant"
+
+msgid "Non évaluée"
+msgstr "Not assessed"
+
+msgid "Type"
+msgstr "Type"
+
+msgid "Référence / source"
+msgstr "Reference / source"
+
+msgid "Statut de conformité"
+msgstr "Compliance status"
+
+msgid "Description / notes"
+msgstr "Description / notes"
+
+msgid "Risque lié (optionnel)"
+msgstr "Linked risk (optional)"
+
+msgid "À renseigner uniquement si le non-respect de cette obligation constitue un risque identifié dans le registre de risques."
+msgstr "Only fill in if failing to meet this obligation constitutes a risk identified in the risk register."
+
+msgid "Ex. « RGPD », « Contrat client Acme SA », « Loi n°... »."
+msgstr "E.g. \"GDPR\", \"Client contract Acme Ltd\", \"Act No. ...\"."
+
+msgid "Revue d'obligation à échéance"
+msgstr "Obligation review due"
+
+msgid "Propriétaire de l'obligation"
+msgstr "Obligation owner"
+
+msgid "Obligations non conformes"
+msgstr "Non-compliant obligations"
+
+msgid "Obligations en attente de revue"
+msgstr "Obligations pending review"
+
+msgid "Obligations par type"
+msgstr "Obligations by type"
+
+msgid "Obligations par statut de conformité"
+msgstr "Obligations by compliance status"
+
