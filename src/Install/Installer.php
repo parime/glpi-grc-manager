@@ -66,6 +66,10 @@ final class Installer
     // frontière camelCase) que toutes les autres tables ci-dessus.
     private const ASSET_CLASSIFICATIONS_TABLE = 'glpi_plugin_grcmanager_assetclassifications';
 
+    // Issue #30 (registre des obligations légales/réglementaires/contractuelles), même dérivation
+    // de nom de table que toutes les autres tables ci-dessus.
+    private const COMPLIANCE_OBLIGATIONS_TABLE = 'glpi_plugin_grcmanager_complianceobligations';
+
     public function install(Migration $migration): bool
     {
         global $DB;
@@ -475,6 +479,41 @@ final class Installer
             $DB->doQuery($query) or die($DB->error());
         }
 
+        // Issue #30 (registre des obligations légales/réglementaires/contractuelles, clause 4.2
+        // ISO 27001 "parties intéressées et leurs exigences", Annexe A A.5.31-36) : lien optionnel
+        // zéro-ou-un vers un risque du registre en colonne DIRECTE (`plugin_grcmanager_risks_id`),
+        // pas une table de liaison many-to-many comme CONTROLS_RISKS_TABLE ci-dessus - voir le
+        // docblock de PluginGrcmanagerComplianceObligation pour le raisonnement complet (cardinalité
+        // plus simple que le lien risque <-> actifs CMDB de l'issue #25, même choix déjà fait pour
+        // `users_id`/propriétaire sur chaque autre registre de ce plugin).
+        if (!$DB->tableExists(self::COMPLIANCE_OBLIGATIONS_TABLE)) {
+            $query = "CREATE TABLE `" . self::COMPLIANCE_OBLIGATIONS_TABLE . "` (
+                `id` int {$keySign} NOT NULL AUTO_INCREMENT,
+                `title` varchar(255) NOT NULL,
+                `type` varchar(16) NOT NULL DEFAULT 'legal'
+                    COMMENT 'legal, regulatory, contractual',
+                `reference_source` varchar(255) NOT NULL DEFAULT ''
+                    COMMENT 'Ex. RGPD, Contrat client Acme SA, Loi n°...',
+                `compliance_status` varchar(24) NOT NULL DEFAULT 'not_assessed'
+                    COMMENT 'compliant, partially_compliant, non_compliant, not_assessed',
+                `users_id` int {$keySign} NOT NULL DEFAULT 0 COMMENT 'Owner',
+                `review_date` date DEFAULT NULL,
+                `plugin_grcmanager_risks_id` int {$keySign} NOT NULL DEFAULT 0
+                    COMMENT 'Lien optionnel zero-ou-un vers un risque, 0 = aucun',
+                `description` text,
+                `date_creation` timestamp NULL DEFAULT NULL,
+                `date_mod` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                KEY `type` (`type`),
+                KEY `compliance_status` (`compliance_status`),
+                KEY `users_id` (`users_id`),
+                KEY `review_date` (`review_date`),
+                KEY `plugin_grcmanager_risks_id` (`plugin_grcmanager_risks_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
+
+            $DB->doQuery($query) or die($DB->error());
+        }
+
         $this->seedControls();
 
         $this->seedReviewReminderNotification(
@@ -488,6 +527,13 @@ final class Installer
             'supplierrisk',
             'Revue de risque fournisseur à échéance',
             'risque fournisseur'
+        );
+        $this->seedReviewReminderNotification(
+            'PluginGrcmanagerComplianceObligation',
+            'complianceobligation',
+            'Revue d\'obligation à échéance',
+            'obligation',
+            ['type' => 'Type', 'status' => 'Statut de conformité']
         );
         $this->seedCapaOverdueNotification();
         $this->seedTrainingRenewalNotification();
@@ -519,6 +565,21 @@ final class Installer
             [
                 'comment' => 'Notifie le propriétaire de chaque risque fournisseur dont la date de '
                     . 'revue est dépassée ou approche',
+                'mode'    => CronTask::MODE_EXTERNAL,
+            ]
+        );
+
+        // Issue #30 (obligations légales/réglementaires/contractuelles) : même mécanisme de
+        // rappel de revue que les deux registres de risques ci-dessus (ReviewReminderService
+        // généralisé par cette issue avec un $excludeCriteria vide, voir
+        // PluginGrcmanagerComplianceObligation::cronReviewreminder()).
+        CronTask::Register(
+            'PluginGrcmanagerComplianceObligation',
+            'reviewreminder',
+            DAY_TIMESTAMP,
+            [
+                'comment' => 'Notifie le propriétaire de chaque obligation dont la date de revue '
+                    . 'est dépassée ou approche',
                 'mode'    => CronTask::MODE_EXTERNAL,
             ]
         );
@@ -585,24 +646,37 @@ final class Installer
     /**
      * Seeds the Notification/NotificationTemplate/translation/target rows a review-date reminder
      * Cron task (PluginGrcmanagerRisk::cronReviewreminder(), and since Sprint 5
-     * PluginGrcmanagerSupplierRisk::cronReviewreminder()) needs to actually send something via
-     * NotificationEvent::raiseEvent('review_due', ...), see inc/notificationtargetrisk.class.php /
-     * inc/notificationtargetsupplierrisk.class.php for the NotificationTarget classes and their tag
-     * lists. Idempotent per itemtype: skipped entirely if a Notification for that itemtype/event
-     * already exists (an admin may have edited the template's wording since, never overwritten
-     * here). Generalized at Sprint 5 (was PluginGrcmanagerRisk-only before) so both review-reminder
-     * itemtypes are seeded from the exact same implementation, only their tag prefix/wording differ.
+     * PluginGrcmanagerSupplierRisk::cronReviewreminder(), and since issue #30
+     * PluginGrcmanagerComplianceObligation::cronReviewreminder()) needs to actually send something
+     * via NotificationEvent::raiseEvent('review_due', ...), see inc/notificationtargetrisk.class.php /
+     * inc/notificationtargetsupplierrisk.class.php / inc/notificationtargetcomplianceobligation.class.php
+     * for the NotificationTarget classes and their tag lists. Idempotent per itemtype: skipped
+     * entirely if a Notification for that itemtype/event already exists (an admin may have edited
+     * the template's wording since, never overwritten here). Generalized at Sprint 5 (was
+     * PluginGrcmanagerRisk-only before) so every review-reminder itemtype is seeded from the exact
+     * same implementation, only their tag prefix/wording differ.
      *
-     * @param string $itemtype  'PluginGrcmanagerRisk' or 'PluginGrcmanagerSupplierRisk'.
-     * @param string $tagPrefix Matches the NotificationTarget's own tag prefix ('risk'/'supplierrisk').
-     * @param string $name      Human-readable Notification/NotificationTemplate name suffix.
-     * @param string $noun      French noun used in the seeded comment ('risque'/'risque fournisseur').
+     * @param string $itemtype    'PluginGrcmanagerRisk', 'PluginGrcmanagerSupplierRisk' or
+     *                            'PluginGrcmanagerComplianceObligation'.
+     * @param string $tagPrefix   Matches the NotificationTarget's own tag prefix
+     *                            ('risk'/'supplierrisk'/'complianceobligation').
+     * @param string $name        Human-readable Notification/NotificationTemplate name suffix.
+     * @param string $noun        French noun used in the seeded comment
+     *                            ('risque'/'risque fournisseur'/'obligation').
+     * @param array<string, string> $detailLines Tag suffix => French label for the two body lines
+     *                            between the title and the review date. Defaults to
+     *                            category/risklevel (PluginGrcmanagerRisk/PluginGrcmanagerSupplierRisk's
+     *                            own tags, unchanged since Sprint 2/5) so existing callers see no
+     *                            behaviour change; issue #30 passes type/status instead, matching
+     *                            PluginGrcmanagerComplianceObligation's own fields (no
+     *                            category/risklevel on that itemtype).
      */
     private function seedReviewReminderNotification(
         string $itemtype,
         string $tagPrefix,
         string $name,
-        string $noun
+        string $noun,
+        array $detailLines = ['category' => 'Catégorie', 'risklevel' => 'Niveau de risque']
     ): void {
         global $DB;
 
@@ -625,18 +699,23 @@ final class Installer
                 . $noun . ' atteint ou dépasse sa date de revue.',
         ]);
 
+        $detailText = '';
+        $detailHtml = '';
+        foreach ($detailLines as $tagSuffix => $label) {
+            $detailText .= "{$label} : ##{$tagPrefix}.{$tagSuffix}##\n";
+            $detailHtml .= "{$label} : ##{$tagPrefix}.{$tagSuffix}##<br>";
+        }
+
         $DB->insert('glpi_notificationtemplatetranslations', [
             'notificationtemplates_id' => $templateId,
             'language'                 => '',
             'subject'                  => "##{$tagPrefix}.action## : ##{$tagPrefix}.title##",
             'content_text'             => "##{$tagPrefix}.action## : ##{$tagPrefix}.title##\n\n"
-                . "Catégorie : ##{$tagPrefix}.category##\n"
-                . "Niveau de risque : ##{$tagPrefix}.risklevel##\n"
+                . $detailText
                 . "Date de revue : ##{$tagPrefix}.reviewdate##\n\n"
                 . "Voir le " . $noun . " : ##{$tagPrefix}.url##",
             'content_html'             => "<p><strong>##{$tagPrefix}.action## : ##{$tagPrefix}.title##</strong></p>"
-                . '<p>Catégorie : ' . "##{$tagPrefix}.category##<br>"
-                . 'Niveau de risque : ' . "##{$tagPrefix}.risklevel##<br>"
+                . '<p>' . $detailHtml
                 . 'Date de revue : ' . "##{$tagPrefix}.reviewdate##</p>"
                 . "<p><a href=\"##{$tagPrefix}.url##\">Voir le " . $noun . '</a></p>',
         ]);
@@ -880,6 +959,7 @@ final class Installer
 
         $this->unseedNotification('PluginGrcmanagerRisk');
         $this->unseedNotification('PluginGrcmanagerSupplierRisk');
+        $this->unseedNotification('PluginGrcmanagerComplianceObligation');
         $this->unseedNotification('PluginGrcmanagerNonconformity');
         $this->unseedNotification('PluginGrcmanagerTraining');
 
@@ -905,6 +985,7 @@ final class Installer
         $migration->dropTable(self::MANAGEMENT_REVIEWS_TABLE);
         $migration->dropTable(self::RISKS_ITEMS_TABLE);
         $migration->dropTable(self::ASSET_CLASSIFICATIONS_TABLE);
+        $migration->dropTable(self::COMPLIANCE_OBLIGATIONS_TABLE);
 
         $migration->executeMigration();
 

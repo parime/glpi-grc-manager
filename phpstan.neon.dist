@@ -13,6 +13,7 @@ parameters:
         - src/Services/Capa
         - src/Services/Training
         - src/Services/Classification
+        - src/Services/Compliance
     excludePaths:
         # Depends on GLPI's legacy global-namespace CommonDBTM classes (PluginGrcmanager*), not
         # available for static analysis, see above. src/Install/ is entirely GLPI-dependent and
