@@ -148,6 +148,31 @@ function plugin_grcmanager_dashboard_cards(?array $cards = null): array
             'group' => $group,
             'provider' => DashboardCardService::class . '::policiesByStatus',
         ],
+        // Issue #30 (registre des obligations légales/réglementaires/contractuelles, clause 4.2).
+        'grcmanager_obligations_non_compliant' => [
+            'widgettype' => ['bigNumber'],
+            'label' => __('Obligations non conformes', 'grcmanager'),
+            'group' => $group,
+            'provider' => DashboardCardService::class . '::obligationsNonCompliantCount',
+        ],
+        'grcmanager_obligations_pending_review' => [
+            'widgettype' => ['bigNumber'],
+            'label' => __('Obligations en attente de revue', 'grcmanager'),
+            'group' => $group,
+            'provider' => DashboardCardService::class . '::obligationsPendingReviewCount',
+        ],
+        'grcmanager_obligations_by_type' => [
+            'widgettype' => ['multipleNumber', 'pie', 'donut', 'bar', 'hbar'],
+            'label' => __('Obligations par type', 'grcmanager'),
+            'group' => $group,
+            'provider' => DashboardCardService::class . '::obligationsByType',
+        ],
+        'grcmanager_obligations_by_compliance_status' => [
+            'widgettype' => ['multipleNumber', 'pie', 'donut', 'bar', 'hbar'],
+            'label' => __('Obligations par statut de conformité', 'grcmanager'),
+            'group' => $group,
+            'provider' => DashboardCardService::class . '::obligationsByComplianceStatus',
+        ],
     ];
 }
 

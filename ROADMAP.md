@@ -30,6 +30,9 @@ Objectif : une plateforme GRC/ISO 27001 générique fonctionnelle de bout en bou
 - Bibliothèque de politiques de sécurité versionnées (issue #28, clause A.5.1 ISO/IEC 27001:2022) :
   cycle de vie brouillon/approuvée/archivée, version, date d'approbation, rappels de revue
   automatiques, document(s) joint(s) via le mécanisme natif GLPI Document/Document_Item
+- Registre des obligations légales, réglementaires et contractuelles (issue #30, clause 4.2/Annexe A
+  A.5.31-36 ISO/IEC 27001:2022), avec lien optionnel vers une entrée du registre de risques quand le
+  non-respect d'une obligation constitue un risque identifié
 
 ## Version 1.5
 

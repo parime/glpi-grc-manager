@@ -25,6 +25,14 @@ use PluginGrcmanagerRisk;
  * notified item's own get_class()), so those two stay one-per-itemtype; only the query/notify
  * logic below is shared.
  *
+ * Issue #30 (PluginGrcmanagerComplianceObligation) reuses this same service for a third itemtype
+ * that has no `status` column at all (it has `compliance_status`, which grades compliance, not
+ * whether the obligation is still being tracked) - the previously-hardcoded
+ * `'status' => ['<>', 'closed']` exclusion is now the optional `$excludeCriteria` constructor
+ * argument below, defaulting to that exact same criterion so PluginGrcmanagerRisk and
+ * PluginGrcmanagerSupplierRisk see no behaviour change; PluginGrcmanagerComplianceObligation's own
+ * cronReviewreminder() passes an empty array instead.
+ *
  * NOTE: depends on GLPI's legacy global-namespace CommonDBTM classes (PluginGrcmanagerRisk and,
  * dynamically, PluginGrcmanagerSupplierRisk) and the NotificationEvent core class, not
  * unit-tested in isolation, same exclusion rationale as the sibling plugin
@@ -43,13 +51,22 @@ final class ReviewReminderService
     public const EVENT = 'review_due';
 
     /**
-     * @param class-string $itemtype A CommonDBTM class with `status`/`review_date` columns and a
+     * @param class-string $itemtype A CommonDBTM class with a `review_date` column and a
      *                                `review_due` NotificationEvent target, defaults to
      *                                PluginGrcmanagerRisk for backward compatibility with Sprint 2
      *                                callers that never passed an argument.
+     * @param array<int|string, mixed> $excludeCriteria Additional CommonDBTM::find() criteria
+     *                                merged into the base review_date window, e.g. to exclude a
+     *                                terminal status value. Defaults to the exact criterion this
+     *                                service always applied before issue #30
+     *                                (`status <> closed`), matching PluginGrcmanagerRisk's and
+     *                                PluginGrcmanagerSupplierRisk's own `status` enum. Pass an
+     *                                empty array for an itemtype with no such column (see class
+     *                                docblock, issue #30).
      */
     public function __construct(
-        private readonly string $itemtype = PluginGrcmanagerRisk::class
+        private readonly string $itemtype = PluginGrcmanagerRisk::class,
+        private readonly array $excludeCriteria = ['status' => ['<>', 'closed']]
     ) {
     }
 
@@ -60,11 +77,11 @@ final class ReviewReminderService
         /** @var \CommonDBTM $prototype */
         $prototype = new $itemtype();
 
-        $dueRisks = $prototype->find([
-            'status'      => ['<>', 'closed'],
-            'review_date' => ['<=', date('Y-m-d', strtotime('+' . self::REMINDER_WINDOW_DAYS . ' days'))],
-            ['NOT' => ['review_date' => null]],
-        ]);
+        $criteria = $this->excludeCriteria;
+        $criteria['review_date'] = ['<=', date('Y-m-d', strtotime('+' . self::REMINDER_WINDOW_DAYS . ' days'))];
+        $criteria[] = ['NOT' => ['review_date' => null]];
+
+        $dueRisks = $prototype->find($criteria);
 
         $notified = 0;
 

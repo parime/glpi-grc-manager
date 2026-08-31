@@ -814,3 +814,68 @@ msgstr "Politiques en attente de revue"
 msgid "Politiques de sécurité par statut"
 msgstr "Politiques de sécurité par statut"
 
+msgid "Obligation légale, réglementaire ou contractuelle"
+msgid_plural "Obligations légales, réglementaires et contractuelles"
+msgstr[0] "Obligation légale, réglementaire ou contractuelle"
+msgstr[1] "Obligations légales, réglementaires et contractuelles"
+
+msgid "Légale"
+msgstr "Légale"
+
+msgid "Réglementaire"
+msgstr "Réglementaire"
+
+msgid "Contractuelle"
+msgstr "Contractuelle"
+
+msgid "Conforme"
+msgstr "Conforme"
+
+msgid "Partiellement conforme"
+msgstr "Partiellement conforme"
+
+msgid "Non conforme"
+msgstr "Non conforme"
+
+msgid "Non évaluée"
+msgstr "Non évaluée"
+
+msgid "Type"
+msgstr "Type"
+
+msgid "Référence / source"
+msgstr "Référence / source"
+
+msgid "Statut de conformité"
+msgstr "Statut de conformité"
+
+msgid "Description / notes"
+msgstr "Description / notes"
+
+msgid "Risque lié (optionnel)"
+msgstr "Risque lié (optionnel)"
+
+msgid "À renseigner uniquement si le non-respect de cette obligation constitue un risque identifié dans le registre de risques."
+msgstr "À renseigner uniquement si le non-respect de cette obligation constitue un risque identifié dans le registre de risques."
+
+msgid "Ex. « RGPD », « Contrat client Acme SA », « Loi n°... »."
+msgstr "Ex. « RGPD », « Contrat client Acme SA », « Loi n°... »."
+
+msgid "Revue d'obligation à échéance"
+msgstr "Revue d'obligation à échéance"
+
+msgid "Propriétaire de l'obligation"
+msgstr "Propriétaire de l'obligation"
+
+msgid "Obligations non conformes"
+msgstr "Obligations non conformes"
+
+msgid "Obligations en attente de revue"
+msgstr "Obligations en attente de revue"
+
+msgid "Obligations par type"
+msgstr "Obligations par type"
+
+msgid "Obligations par statut de conformité"
+msgstr "Obligations par statut de conformité"
+

@@ -36,22 +36,19 @@ if (isset($_POST['add'])) {
     $item->update($_POST);
     Html::back();
 } else {
-    Session::checkRight(PluginGrcmanagerPolicy::$rightname, READ);
-
-    Html::header(
-        PluginGrcmanagerPolicy::getTypeName(1),
-        $_SERVER['PHP_SELF'],
-        'tools',
-        PluginGrcmanagerPolicy::class
+    // Unlike every other showForm()-only front/*.form.php of this plugin (Risk, Control...),
+    // this one goes through GLPI core's own displayFullPageForItem() (same call
+    // front/reminder.php makes for the native Reminder itemtype) instead of a bare
+    // Html::header()/showForm()/Html::footer() sequence: only display() (called internally by
+    // displayFullPageForItem(), see CommonDBTM.php) actually renders the tab bar, so this is the
+    // first itemtype in this plugin that NEEDS it, for the native "Documents" tab added by
+    // PluginGrcmanagerPolicy::defineTabs() to be reachable at all. Confirmed live: calling
+    // showForm() directly (like every sibling front/*.form.php) never shows any tab, regardless
+    // of defineTabs(). Rights (READ for an existing item, CREATE for a new one) are checked
+    // internally by displayFullPageForItem() itself via $item->can(), no separate
+    // Session::checkRight() call needed here.
+    PluginGrcmanagerPolicy::displayFullPageForItem(
+        $_GET['id'] ?? 0,
+        ['central' => ['tools', PluginGrcmanagerPolicy::class], 'helpdesk' => []]
     );
-
-    $id = (int) ($_GET['id'] ?? 0);
-
-    if ($id > 0) {
-        $item->getFromDB($id);
-    }
-
-    $item->showForm($id);
-
-    Html::footer();
 }

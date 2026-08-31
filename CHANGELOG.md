@@ -28,6 +28,26 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce p
   ajoutées au tableau de bord ISMS seedé à l'installation. Aucun lien direct posé entre la ligne
   A.5.1 de la SoA et ce registre (voir TECH_DEBT.md pour le raisonnement).
 
+- **Registre des obligations légales, réglementaires et contractuelles** (issue #30, ISO 27001
+  clause 4.2 « parties intéressées et leurs exigences », Annexe A A.5.31-36) : les contrôles
+  A.5.31-36 n'existaient jusqu'ici que comme lignes à cocher dans la Déclaration d'Applicabilité
+  (`PluginGrcmanagerControl`) - nouveau registre indépendant (`PluginGrcmanagerComplianceObligation`,
+  table `glpi_plugin_grcmanager_complianceobligations`) pour centraliser ce qui, en pratique, finit
+  souvent en tableur Excel isolé : intitulé, type (légale/réglementaire/contractuelle), référence/
+  source (ex. « RGPD », « Contrat client Acme SA »), statut de conformité (conforme/partiellement
+  conforme/non conforme/non évaluée), propriétaire, date de revue et description/notes. Lien
+  optionnel zéro-ou-un vers une entrée du registre de risques quand le non-respect de l'obligation
+  constitue un risque identifié (`plugin_grcmanager_risks_id`, colonne directe - pas une table de
+  liaison many-to-many, cardinalité plus simple que le lien risque <-> actifs CMDB de l'issue #25).
+  Nouvel écran sous Outils (liste filtrable, formulaire), 4 nouvelles cartes de tableau de bord
+  (obligations non conformes, en attente de revue, par type, par statut de conformité) ajoutées au
+  tableau de bord ISMS seedé du Sprint 7, et même mécanisme de rappel de revue (Cron quotidien +
+  notification GLPI native) que le registre de risques - `ReviewReminderService` généralisé pour
+  accepter un itemtype sans colonne `status` (l'obligation n'a pas d'état "clôturé", seulement un
+  statut de conformité, qui ne dispense jamais de la revue périodique). Logique pure (normalisation
+  type/statut, lien zéro-ou-un, fenêtre de rappel de revue) extraite dans
+  `GlpiPlugin\Grcmanager\Services\Compliance\ComplianceObligationRules`, testée unitairement.
+
 - **Classification Confidentialité/Intégrité/Disponibilité (C/I/D) des actifs** (issue #26,
   ISO/IEC 27001:2022 A.5.9/A.5.12/A.8.2) : nouveau registre natif, indépendant du lien registre de
   risques <-> actifs de l'issue #25 (`PluginGrcmanagerAssetClassification`, table
