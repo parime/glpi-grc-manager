@@ -58,6 +58,9 @@ final class Installer
     private const MANAGEMENT_REVIEWS_TABLE = 'glpi_plugin_grcmanager_managementreviews';
     private const MANAGEMENT_REVIEWS_USERS_TABLE = 'glpi_plugin_grcmanager_managementreviews_users';
 
+    // Issue #25 (lien registre de risques <-> actifs GLPI/CMDB), même dérivation de nom de table.
+    private const RISKS_ITEMS_TABLE = 'glpi_plugin_grcmanager_risks_items';
+
     public function install(Migration $migration): bool
     {
         global $DB;
@@ -369,6 +372,33 @@ final class Installer
                 UNIQUE KEY `unicity_link` (`plugin_grcmanager_managementreviews_id`, `users_id`),
                 KEY `reviews_id` (`plugin_grcmanager_managementreviews_id`),
                 KEY `users_id` (`users_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
+
+            $DB->doQuery($query) or die($DB->error());
+        }
+
+        // Issue #25 (lien registre de risques <-> actifs GLPI/CMDB) : table de liaison
+        // POLYMORPHE (itemtype/items_id), pas une deuxième colonne d'ID fixe comme
+        // CONTROLS_RISKS_TABLE/AUDITS_CONTROLS_TABLE ci-dessus (deux itemtypes fixes, propres à ce
+        // plugin) : la cible ici est n'importe quel itemtype GLPI géré (Computer, actif
+        // personnalisé...), exactement le même modèle que les tables de liaison polymorphes du
+        // cœur GLPI lui-même (ex. glpi_documents_items). Un risque peut avoir zéro ligne ici (reste
+        // un risque purement organisationnel, ex. "processus de recrutement", voir l'issue) — ce
+        // n'est pas une relation obligatoire, contrairement à `users_id` (propriétaire) sur
+        // RISKS_TABLE ci-dessus qui, elle, est bien une colonne directe (relation 1-vers-1
+        // implicite avec un `User`, toujours renseignée). Voir
+        // PluginGrcmanagerRisk::getLinkedAssets()/syncLinkedAssets()/getRisksLinkedToItem().
+        if (!$DB->tableExists(self::RISKS_ITEMS_TABLE)) {
+            $query = "CREATE TABLE `" . self::RISKS_ITEMS_TABLE . "` (
+                `id` int {$keySign} NOT NULL AUTO_INCREMENT,
+                `plugin_grcmanager_risks_id` int {$keySign} NOT NULL,
+                `itemtype` varchar(100) NOT NULL,
+                `items_id` int {$keySign} NOT NULL DEFAULT 0,
+                `date_creation` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `unicity_link` (`plugin_grcmanager_risks_id`, `itemtype`, `items_id`),
+                KEY `risks_id` (`plugin_grcmanager_risks_id`),
+                KEY `item` (`itemtype`, `items_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
 
             $DB->doQuery($query) or die($DB->error());
@@ -802,6 +832,7 @@ final class Installer
         $migration->dropTable(self::TRAININGS_TABLE);
         $migration->dropTable(self::MANAGEMENT_REVIEWS_USERS_TABLE);
         $migration->dropTable(self::MANAGEMENT_REVIEWS_TABLE);
+        $migration->dropTable(self::RISKS_ITEMS_TABLE);
 
         $migration->executeMigration();
 

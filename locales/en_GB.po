@@ -723,3 +723,12 @@ msgstr "Installed version"
 msgid "Dernière version sur GitHub"
 msgstr "Latest version on GitHub"
 
+msgid "Actifs liés (CMDB)"
+msgstr "Linked assets (CMDB)"
+
+msgid "%1$s #%2$d (supprimé)"
+msgstr "%1$s #%2$d (deleted)"
+
+msgid "Aucun risque lié à cet actif."
+msgstr "No risk linked to this asset."
+
