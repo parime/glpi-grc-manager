@@ -434,6 +434,69 @@ Journal des limites connues et compromis assumés, tenu à jour à chaque sprint
   gettext plutôt qu'un compilateur maison, conservé ici uniquement parce qu'aucune alternative
   n'était disponible.
 
+## Registre des incidents de sécurité de l'information (issue #29)
+
+- **`users_id` (responsable) et `description` ajoutés bien que non listés explicitement par
+  l'issue.** L'issue #29 énumère `id, title, incident_date, category, severity, cia_impact, status,
+  root_cause/lessons_learned, date_creation, date_mod` sans mentionner de propriétaire ni de
+  description libre - ajoutés malgré tout par cohérence avec CHAQUE autre registre de ce plugin
+  (risque, non-conformité, obligation, politique, audit...) qui ont tous les deux : un registre
+  d'incidents sans responsable assignable ni description libre aurait été une régression
+  d'utilisabilité par rapport au reste du plugin, pas une simplification justifiée par l'issue.
+- **`cia_impact` en cases à cocher HTML, jamais `Dropdown::showFromArray(..., ['multiple' =>
+  true])`** (le widget select2 que `PluginGrcmanagerAudit::showForm()` utilise pour son propre
+  `risk_categories`, la même convention "liste de valeurs séparées par des virgules sur une seule
+  colonne" à laquelle `cia_impact` se conforme par ailleurs). Délibérément différent ici : un
+  multi-select select2 alimenté par un tableau PHP brut ne répond pas de façon fiable, vérifié en
+  conditions réelles sur ce même projet, à une sélection simulée par un simple événement JS bas
+  niveau côté test automatisé (le `<select>` natif sous-jacent ne se met pas à jour bien que
+  l'affichage semble correct) - pour seulement 3 valeurs fixes (confidentialité/intégrité/
+  disponibilité), un widget select2 n'apporte de toute façon aucun bénéfice réel (pas de recherche,
+  pas de longue liste), donc de simples cases à cocher HTML sont à la fois plus simples ET plus
+  fiables. Voir `SecurityIncidentRules::normalizeCiaImpact()` pour la logique de normalisation
+  (accepte indifféremment un tableau de cases cochées ou une chaîne déjà séparée par des virgules).
+- **Sévérité dupliquée depuis `PluginGrcmanagerNonconformity::getSeverities()`, pas partagée via un
+  trait.** L'issue #29 demande explicitement de réutiliser la même échelle minor/major/critical.
+  Plutôt que de faire dépendre `PluginGrcmanagerSecurityIncident` de
+  `PluginGrcmanagerNonconformity` (ou d'extraire un trait pour un simple ensemble de 3 libellés),
+  les mêmes clés/libellés sont redéfinis indépendamment ici : cohérent avec le fait qu'aucune autre
+  échelle de sévérité de ce plugin n'est factorisée non plus (seul un vrai CALCUL partagé entre deux
+  classes, `RiskAssessmentTrait`, l'est - une simple coïncidence de vocabulaire entre deux
+  registres indépendants n'a pas semblé justifier un couplage supplémentaire). Si cette échelle
+  devait un jour évoluer, les deux définitions devront être mises à jour ensemble.
+- **`linked_itemtype`/`linked_items_id` restreints à `Ticket`/`Problem` uniquement**
+  (`SecurityIncidentRules::ALLOWED_LINKED_ITEMTYPES`), pas une liste dynamique comme
+  `PluginGrcmanagerRisk::getLinkableItemtypes()` (issue #25, qui inclut aussi les actifs CMDB et les
+  définitions d'actifs personnalisés actives) : l'issue #29 est explicite ("cet incident de sécurité
+  correspond à ce Ticket/Problem GLPI"), un incident de sécurité n'a pas vocation à référencer un
+  ordinateur ou un logiciel directement de cette même façon (ce lien-là existe déjà, indirectement,
+  via le risque éventuellement lié à l'incident et ses propres actifs liés).
+- **Aucun onglet retour "Incidents de sécurité" sur `Ticket`/`Problem`.** Contrairement à l'onglet
+  "Risques" que l'issue #25 ajoute sur chaque actif liable, aucun onglet retour n'a été ajouté sur
+  la fiche `Ticket`/`Problem` elle-même pour lister les incidents de sécurité qui la référencent :
+  le nombre d'incidents par ticket reste au plus 1 dans le sens direct (colonne, pas une table de
+  liaison), et l'issue ne demande pas explicitement cette vue inversée. À réévaluer si un besoin réel
+  de visibilité depuis la fiche Ticket/Problem apparaît en usage réel.
+- **Aucun mécanisme de rappel/Cron pour ce registre**, contrairement à la plupart des autres
+  registres de ce plugin (`ReviewReminderService`, `OverdueCapaService`...) : l'issue #29 ne décrit
+  aucune date d'échéance récurrente à surveiller (`incident_date` est une date de survenue, pas une
+  date limite dépassable, même raisonnement déjà appliqué à `review_date`/`review_date` vs.
+  `PluginGrcmanagerManagementReview` au Sprint 6) - rien à notifier automatiquement pour cette
+  première version.
+- **`plugin_grcmanager_risks_id` et `linked_itemtype`/`linked_items_id` ne sont pas de vraies clés
+  étrangères GLPI** (pas de `ON DELETE CASCADE` natif) : même simplification déjà assumée pour tous
+  les liens optionnels similaires de ce plugin (`PluginGrcmanagerComplianceObligation.
+  plugin_grcmanager_risks_id`, issue #30 ; `PluginGrcmanagerNonconformity.
+  plugin_grcmanager_audits_id`, Sprint 4). Un risque ou un ticket/problem supprimé laisse
+  l'incident avec une référence orpheline (aucune erreur : `riskLink()`/`ticketLink()` retournent
+  simplement une chaîne vide ou un libellé "(supprimé)").
+- **Pas de test unitaire dédié pour la migration (`Installer.php`)**, comme pour tous les autres
+  registres de ce plugin (dépendance runtime GLPI `$DB`/`Migration`, voir `phpstan.neon.dist`) :
+  l'idempotence de la migration (table créée une seule fois, `plugin:install --force` répété sans
+  erreur ni doublon) a été vérifiée manuellement contre l'instance Docker partagée plutôt que par un
+  test automatisé, cohérent avec le fait qu'aucun `InstallerTest.php` n'existe nulle part ailleurs
+  dans ce projet non plus.
+
 - **`docs/design/` ne contient qu'un seul document (`DEVELOPMENT_PLAN.md`), pas d'ADR dédiées.**
   Évalué lors de la même revue : il n'existe pas de série de fichiers "Architecture Decision
   Record" formels comme le ferait un projet plus mature. Jugé suffisant pour l'instant (pas

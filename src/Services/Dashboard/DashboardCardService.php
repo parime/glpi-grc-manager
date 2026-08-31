@@ -648,6 +648,79 @@ final class DashboardCardService
      * note), les valeurs sont dupliquées littéralement comme le fait déjà auditsByStatus() pour
      * son propre enum de statuts.
      */
+    /**
+     * Issue #29 (registre des incidents de sécurité de l'information, A.5.24-27) : répartition par
+     * statut (ouvert/en investigation/contenu/clôturé), même schéma que
+     * auditsByStatus()/managementReviewsByStatus() ci-dessus.
+     */
+    public static function securityIncidentsByStatus(array $params = []): array
+    {
+        global $DB;
+
+        $countsByStatus = array_fill_keys(
+            ['open', 'investigating', 'contained', 'closed'],
+            0
+        );
+
+        $rows = $DB->request([
+            'SELECT' => ['status', new QueryExpression('COUNT(*) AS c')],
+            'FROM' => 'glpi_plugin_grcmanager_securityincidents',
+            'GROUPBY' => 'status',
+        ]);
+
+        foreach ($rows as $row) {
+            if (isset($countsByStatus[$row['status']])) {
+                $countsByStatus[$row['status']] = (int) $row['c'];
+            }
+        }
+
+        $data = [];
+        foreach ($countsByStatus as $status => $count) {
+            $data[] = ['label' => $status, 'number' => $count];
+        }
+
+        return [
+            'data' => $data,
+            'label' => $params['label'] ?? __('Incidents de sécurité par statut', 'grcmanager'),
+            'icon' => 'ti ti-chart-pie',
+        ];
+    }
+
+    /**
+     * Issue #29 : répartition par sévérité (mineure/majeure/critique), même échelle que
+     * PluginGrcmanagerNonconformity::getSeverities() et même schéma de carte que
+     * risksByLevel()/supplierRisksByLevel() ci-dessus.
+     */
+    public static function securityIncidentsBySeverity(array $params = []): array
+    {
+        global $DB;
+
+        $countsBySeverity = array_fill_keys(['minor', 'major', 'critical'], 0);
+
+        $rows = $DB->request([
+            'SELECT' => ['severity', new QueryExpression('COUNT(*) AS c')],
+            'FROM' => 'glpi_plugin_grcmanager_securityincidents',
+            'GROUPBY' => 'severity',
+        ]);
+
+        foreach ($rows as $row) {
+            if (isset($countsBySeverity[$row['severity']])) {
+                $countsBySeverity[$row['severity']] = (int) $row['c'];
+            }
+        }
+
+        $data = [];
+        foreach ($countsBySeverity as $severity => $count) {
+            $data[] = ['label' => $severity, 'number' => $count];
+        }
+
+        return [
+            'data' => $data,
+            'label' => $params['label'] ?? __('Incidents de sécurité par sévérité', 'grcmanager'),
+            'icon' => 'ti ti-chart-pie',
+        ];
+    }
+
     public static function objectivesByStatus(array $params = []): array
     {
         global $DB;

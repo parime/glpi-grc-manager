@@ -180,6 +180,19 @@ function plugin_grcmanager_dashboard_cards(?array $cards = null): array
             'group' => $group,
             'provider' => DashboardCardService::class . '::objectivesByStatus',
         ],
+        // Issue #29 (registre des incidents de sécurité de l'information, A.5.24-27).
+        'grcmanager_security_incidents_by_status' => [
+            'widgettype' => ['multipleNumber', 'pie', 'donut', 'bar', 'hbar'],
+            'label' => __('Incidents de sécurité par statut', 'grcmanager'),
+            'group' => $group,
+            'provider' => DashboardCardService::class . '::securityIncidentsByStatus',
+        ],
+        'grcmanager_security_incidents_by_severity' => [
+            'widgettype' => ['multipleNumber', 'pie', 'donut', 'bar', 'hbar'],
+            'label' => __('Incidents de sécurité par sévérité', 'grcmanager'),
+            'group' => $group,
+            'provider' => DashboardCardService::class . '::securityIncidentsBySeverity',
+        ],
     ];
 }
 

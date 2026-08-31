@@ -64,7 +64,10 @@ function plugin_init_grcmanager(): void
     // has NO menu entry of its own: it is only ever added/removed inline from its parent
     // objective's own form (see PluginGrcmanagerObjective::showMeasurementHistory()), same
     // "no menu entry for a pure link/child table" convention as every many-to-many link in this
-    // plugin family.
+    // plugin family. Issue #29 (registre des incidents de sécurité de l'information, clause
+    // A.5.24-27) adds PluginGrcmanagerSecurityIncident right after the audit/non-conformity screens
+    // it complements (an incident can reveal a non-conformity or feed the CAPA loop, even though
+    // there is no hard link between the two itemtypes in this first version).
     $PLUGIN_HOOKS[Hooks::MENU_TOADD]['grcmanager'] = [
         'tools' => [
             PluginGrcmanagerRisk::class,
@@ -73,6 +76,7 @@ function plugin_init_grcmanager(): void
             PluginGrcmanagerComplianceObligation::class,
             PluginGrcmanagerAudit::class,
             PluginGrcmanagerNonconformity::class,
+            PluginGrcmanagerSecurityIncident::class,
             PluginGrcmanagerTraining::class,
             PluginGrcmanagerManagementReview::class,
             PluginGrcmanagerPolicy::class,
