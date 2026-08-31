@@ -27,6 +27,9 @@ Objectif : une plateforme GRC/ISO 27001 générique fonctionnelle de bout en bou
   (issue #26, clauses A.5.9/A.5.12/A.8.2 ISO/IEC 27001:2022), registre indépendant du lien
   risque <-> actif ci-dessus : une classification est une propriété de l'actif lui-même, pas d'un
   risque particulier
+- Bibliothèque de politiques de sécurité versionnées (issue #28, clause A.5.1 ISO/IEC 27001:2022) :
+  cycle de vie brouillon/approuvée/archivée, version, date d'approbation, rappels de revue
+  automatiques, document(s) joint(s) via le mécanisme natif GLPI Document/Document_Item
 
 ## Version 1.5
 

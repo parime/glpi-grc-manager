@@ -9,6 +9,25 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce p
 
 ### Added
 
+- **Bibliothèque de politiques de sécurité versionnées** (issue #28, ISO/IEC 27001:2022
+  A.5.1/A.5.1.1/A.5.1.2) : le contrôle A.5.1 de la SoA n'existait jusqu'ici que comme ligne à
+  cocher, sans aucun outil derrière. Nouveau registre natif (`PluginGrcmanagerPolicy`, table
+  `glpi_plugin_grcmanager_policies`) pour gérer les politiques de sécurité (charte informatique,
+  politique de mots de passe, PCA...) avec un vrai cycle de vie : statut brouillon/approuvée/
+  archivée, version libre (ex. « 1.2 »), date d'approbation (obligatoire pour passer au statut
+  approuvée, validation serveur réelle), prochaine date de revue et propriétaire. Le ou les
+  documents réels (PDF, Word...) sont attachés via le mécanisme natif GLPI Document/Document_Item
+  (onglet « Documents » standard, `PluginGrcmanagerPolicy::defineTabs()` +
+  `$CFG_GLPI['document_types']`), jamais un système de stockage propre à ce plugin. Rappels de
+  revue automatiques sur `next_review_date` (tâche Cron quotidienne
+  `PluginGrcmanagerPolicy::cronReviewreminder()`, notification GLPI native), même mécanisme que les
+  rappels de revue déjà en place sur le registre de risques (`ReviewReminderService`), avec sa
+  propre fenêtre de 30 jours extraite en logique pure testable (`PolicyReviewReminderWindow`).
+  Nouvel écran sous Outils, liste filtrable par statut avec badge coloré, 2 nouvelles cartes de
+  tableau de bord (« Politiques en attente de revue », « Politiques de sécurité par statut »),
+  ajoutées au tableau de bord ISMS seedé à l'installation. Aucun lien direct posé entre la ligne
+  A.5.1 de la SoA et ce registre (voir TECH_DEBT.md pour le raisonnement).
+
 - **Classification Confidentialité/Intégrité/Disponibilité (C/I/D) des actifs** (issue #26,
   ISO/IEC 27001:2022 A.5.9/A.5.12/A.8.2) : nouveau registre natif, indépendant du lien registre de
   risques <-> actifs de l'issue #25 (`PluginGrcmanagerAssetClassification`, table

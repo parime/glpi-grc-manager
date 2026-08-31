@@ -465,4 +465,63 @@ final class DashboardCardService
             'icon' => 'ti ti-chart-pie',
         ];
     }
+
+    /**
+     * Issue #28 (bibliothèque de politiques de sécurité versionnées, A.5.1) : politiques dont la
+     * prochaine date de revue est dépassée ou approche, même définition "dû" que
+     * GlpiPlugin\Grcmanager\Services\Policy\PolicyReviewReminderWindow (fenêtre de 30 jours,
+     * `archived` exclu), pour que cette carte et la tâche Cron
+     * PluginGrcmanagerPolicy::cronReviewreminder() ne divergent jamais sur ce qui compte comme "en
+     * attente de revue".
+     */
+    public static function policiesPendingReviewCount(array $params = []): array
+    {
+        global $DB;
+
+        $count = (int) $DB->request([
+            'COUNT' => 'c',
+            'FROM'  => 'glpi_plugin_grcmanager_policies',
+            'WHERE' => [
+                'status' => ['<>', 'archived'],
+                new QueryExpression('next_review_date IS NOT NULL'),
+                new QueryExpression('next_review_date <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)'),
+            ],
+        ])->current()['c'];
+
+        return [
+            'number' => $count,
+            'label' => $params['label'] ?? __('Politiques en attente de revue', 'grcmanager'),
+            'icon' => 'ti ti-calendar-due',
+        ];
+    }
+
+    public static function policiesByStatus(array $params = []): array
+    {
+        global $DB;
+
+        $countsByStatus = array_fill_keys(['draft', 'approved', 'archived'], 0);
+
+        $rows = $DB->request([
+            'SELECT' => ['status', new QueryExpression('COUNT(*) AS c')],
+            'FROM' => 'glpi_plugin_grcmanager_policies',
+            'GROUPBY' => 'status',
+        ]);
+
+        foreach ($rows as $row) {
+            if (isset($countsByStatus[$row['status']])) {
+                $countsByStatus[$row['status']] = (int) $row['c'];
+            }
+        }
+
+        $data = [];
+        foreach ($countsByStatus as $status => $count) {
+            $data[] = ['label' => $status, 'number' => $count];
+        }
+
+        return [
+            'data' => $data,
+            'label' => $params['label'] ?? __('Politiques de sécurité par statut', 'grcmanager'),
+            'icon' => 'ti ti-chart-pie',
+        ];
+    }
 }

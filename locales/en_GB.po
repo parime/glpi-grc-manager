@@ -773,3 +773,44 @@ msgstr "A linked asset carries a high C/I/A classification: check this risk's im
 msgid "(C : %1$s, I : %2$s, D : %3$s)"
 msgstr "(C: %1$s, I: %2$s, A: %3$s)"
 
+msgid "Politique de sécurité"
+msgid_plural "Politiques de sécurité"
+msgstr[0] "Security policy"
+msgstr[1] "Security policies"
+
+msgid "Brouillon"
+msgstr "Draft"
+
+msgid "Approuvée"
+msgstr "Approved"
+
+msgid "Archivée"
+msgstr "Archived"
+
+msgid "Version"
+msgstr "Version"
+
+msgid "Date d'approbation"
+msgstr "Approval date"
+
+msgid "Prochaine revue"
+msgstr "Next review"
+
+msgid "Une date d'approbation est obligatoire pour marquer une politique comme approuvée."
+msgstr "An approval date is required to mark a policy as approved."
+
+msgid "Une date d'approbation est obligatoire pour passer au statut \"Approuvée\"."
+msgstr "An approval date is required to switch to the \"Approved\" status."
+
+msgid "Revue de politique à échéance"
+msgstr "Policy review due"
+
+msgid "Propriétaire de la politique"
+msgstr "Policy owner"
+
+msgid "Politiques en attente de revue"
+msgstr "Policies pending review"
+
+msgid "Politiques de sécurité par statut"
+msgstr "Security policies by status"
+

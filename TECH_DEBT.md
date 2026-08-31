@@ -288,6 +288,53 @@ Journal des limites connues et compromis assumés, tenu à jour à chaque sprint
   assumée pour ce même formulaire depuis l'issue #25 ("un nombre d'actifs liés par risque toujours
   faible en pratique"). À revoir si ce nombre cesse d'être faible en usage réel.
 
+## Bibliothèque de politiques de sécurité versionnées (issue #28)
+
+- **Aucun lien optionnel posé entre le contrôle SoA A.5.1 et les politiques.** L'issue suggérait
+  d'envisager (sans l'imposer) un lien léger entre la ligne A.5.1 de la SoA
+  (`PluginGrcmanagerControl`) et ce nouveau registre, sur le modèle de
+  `getLinkedRisks()`/`syncLinkedRisks()`. Non retenu pour cette version : ce lien many-to-many
+  existant relie un contrôle à un nombre potentiellement élevé de risques répartis sur les 93
+  contrôles, alors qu'ici un seul contrôle fixe (A.5.1) serait concerné - une table de liaison
+  entière (et son multi-select dans `PluginGrcmanagerControl::showForm()`) pour un unique contrôle
+  a semblé disproportionnée par rapport au bénéfice réel, sachant que la bibliothèque de politiques
+  reste de toute façon accessible en un clic depuis le menu Outils. À reconsidérer si un besoin
+  réel de traçabilité contrôle <-> politique apparaît (ex. plusieurs contrôles Annexe A amenés à
+  référencer des politiques spécifiques, pas seulement A.5.1).
+- **Rappel de revue sans déduplication**, même limite assumée par tous les autres mécanismes de
+  rappel de ce plugin depuis le Sprint 2 (`ReviewReminderService`, voir ci-dessus) : une politique
+  restée en retard de revue plusieurs jours génère une notification à chaque exécution quotidienne
+  de la tâche Cron (`PluginGrcmanagerPolicy::cronReviewreminder()`), pas une seule fois.
+- **`PolicyReviewReminderService` n'est volontairement PAS un troisième appelant de
+  `GlpiPlugin\Grcmanager\Services\Risk\ReviewReminderService`** malgré la ressemblance structurelle
+  évidente (déjà généralisée au Sprint 5 pour couvrir `PluginGrcmanagerRisk` ET
+  `PluginGrcmanagerSupplierRisk`) : cette dernière a la condition `status <> 'closed'` et la colonne
+  `review_date` figées en dur dans sa requête, qui ne correspondent ni au statut
+  brouillon/approuvé/archivé de ce registre, ni à sa colonne `next_review_date`. Plutôt que de
+  généraliser encore ce service partagé avec un second paramètre (nom de colonne, valeur de statut
+  à exclure), une classe dédiée, structurellement proche mais indépendante, a semblé plus lisible
+  pour un seul troisième cas d'usage - à réévaluer si un quatrième registre a besoin du même
+  mécanisme de rappel de revue, où une généralisation deviendrait alors probablement rentable.
+- **`PolicyReviewReminderService` filtre en SQL sur `status`/`next_review_date IS NOT NULL` puis
+  délègue la fenêtre "due" (30 jours) à `PolicyReviewReminderWindow::isDue()`, en PHP**, contrairement
+  à `ReviewReminderService` qui fait tout en une seule requête SQL. Différence assumée pour rendre
+  cette logique de fenêtre testable unitairement sans instance GLPI réelle (voir
+  `tests/Unit/Services/Policy/PolicyReviewReminderWindowTest.php`), ce que `ReviewReminderService`
+  documente lui-même explicitement comme hors de portée pour son propre équivalent inline (voir son
+  docblock et `phpstan.neon.dist`). Légèrement moins efficace pour un très grand nombre de
+  politiques (fetch plus large que nécessaire, filtre appliqué ligne par ligne), sans impact réel
+  pour le volume attendu (quelques dizaines de politiques par organisation, pas des milliers).
+- **Pas d'état "en cours de revue" séparé.** Seulement trois statuts (brouillon/approuvée/archivée) :
+  une politique en cours de révision par le RSSI reste, opérationnellement, sa dernière version
+  approuvée tant que la nouvelle n'est pas elle-même approuvée (`next_review_date` porte déjà seule
+  le signal "à traiter bientôt", indépendamment du statut). Cohérent avec la demande de l'issue
+  (« brouillon/approuvé »), pas étendu à un quatrième état non demandé.
+- **`showForm()` en HTML/PHP manuel, pas en Twig**, même choix assumé que tous les formulaires
+  précédents de ce plugin (voir Sprint 1 ci-dessus) : pas de bascule JS conditionnelle sur le champ
+  Date d'approbation bien qu'il devienne obligatoire dès que le statut "Approuvée" est choisi
+  (`PolicyLifecycle::isApprovalDateMissing()`), seulement une aide textuelle (`form-hint`) et un
+  message d'erreur réel si l'enregistrement est tenté sans date d'approbation, vérifié en direct.
+
 - **`docs/design/` ne contient qu'un seul document (`DEVELOPMENT_PLAN.md`), pas d'ADR dédiées.**
   Évalué lors de la même revue : il n'existe pas de série de fichiers "Architecture Decision
   Record" formels comme le ferait un projet plus mature. Jugé suffisant pour l'instant (pas

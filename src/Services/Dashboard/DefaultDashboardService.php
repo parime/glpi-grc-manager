@@ -145,6 +145,10 @@ final class DefaultDashboardService
             $pie('grcmanager_audits_by_status', 0, 8),
             $pie('grcmanager_supplierrisks_by_level', 6, 8),
             $pie('grcmanager_management_reviews_by_status', 12, 8),
+            // Issue #28 (bibliothèque de politiques de sécurité versionnées, A.5.1).
+            $pie('grcmanager_policies_by_status', 18, 8),
+            // Rangée 5 (y=12) : chiffre clé isolé, politiques en attente de revue.
+            $bigNumber('grcmanager_policies_pending_review', 0, 12, '#f8911f'),
         ];
     }
 }
