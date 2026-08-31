@@ -18,7 +18,12 @@ use Glpi\Dashboard\Dashboard;
  *
  * Issue #30 (registre des obligations légales/réglementaires/contractuelles) ajoute 4 nouvelles
  * cartes à ce tableau de bord seedé (2 chiffres clés en rangée 2, 2 répartitions en rangées 4/5),
- * la première évolution de ce tableau de bord depuis le Sprint 7 lui-même.
+ * la première évolution de ce tableau de bord depuis le Sprint 7 lui-même. Issue #29 (registre des
+ * incidents de sécurité de l'information, A.5.24-27) ajoute 2 répartitions supplémentaires dans une
+ * toute nouvelle rangée 6 (y=16), plutôt que de réutiliser un `y` déjà occupé : la grille native
+ * GLPI ne détecte aucune collision automatiquement (deux items avec les mêmes coordonnées se
+ * superposent silencieusement), donc chaque nouvel ajout à ce tableau de bord seedé doit choisir un
+ * `y` strictement après le maximum déjà utilisé.
  *
  * Construit avec l'API native `Glpi\Dashboard\Dashboard` (mêmes méthodes que celles appelées par
  * l'écran natif Configuration > Tableaux de bord : save()/saveItems(), voir
@@ -161,6 +166,9 @@ final class DefaultDashboardService
             $pie('grcmanager_obligations_by_compliance_status', 6, 12),
             $pie('grcmanager_objectives_by_status', 12, 12),
             $bigNumber('grcmanager_policies_pending_review', 18, 12, '#f8911f'),
+            // Rangée 6 (y=16) : incidents de sécurité de l'information (issue #29).
+            $pie('grcmanager_security_incidents_by_status', 0, 16),
+            $pie('grcmanager_security_incidents_by_severity', 6, 16),
         ];
     }
 }

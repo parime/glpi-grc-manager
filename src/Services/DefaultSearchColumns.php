@@ -41,5 +41,8 @@ final class DefaultSearchColumns
         // Issue #32 (objectifs ISMS et suivi de KPI dans le temps), same "id first" convention:
         // titre, statut, échéance, valeur cible, propriétaire.
         'PluginGrcmanagerObjective' => [8, 1, 2, 3, 4, 6],
+        // Issue #29 (registre des incidents de sécurité de l'information, A.5.24-27), same
+        // "id first" convention: titre, catégorie, sévérité, statut, date, responsable.
+        'PluginGrcmanagerSecurityIncident' => [13, 1, 2, 3, 4, 5, 6],
     ];
 }

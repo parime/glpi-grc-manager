@@ -954,3 +954,74 @@ msgstr "Objectif(s) ISO 27001 clause 6.2 dont la progression a été examinée l
 
 msgid "Objectifs ISMS par statut"
 msgstr "Objectifs ISMS par statut"
+
+msgid "Incident de sécurité"
+msgid_plural "Incidents de sécurité"
+msgstr[0] "Incident de sécurité"
+msgstr[1] "Incidents de sécurité"
+
+msgid "Violation de données"
+msgstr "Violation de données"
+
+msgid "Logiciel malveillant"
+msgstr "Logiciel malveillant"
+
+msgid "Accès non autorisé"
+msgstr "Accès non autorisé"
+
+msgid "Indisponibilité / déni de service"
+msgstr "Indisponibilité / déni de service"
+
+msgid "Ouvert"
+msgstr "Ouvert"
+
+msgid "En investigation"
+msgstr "En investigation"
+
+msgid "Contenu"
+msgstr "Contenu"
+
+msgid "Date de l'incident"
+msgstr "Date de l'incident"
+
+msgid "Impact C/I/D"
+msgstr "Impact C/I/D"
+
+msgid "Ticket/Problem lié"
+msgstr "Ticket/Problem lié"
+
+msgid "Cause racine"
+msgstr "Cause racine"
+
+msgid "Enseignements tirés"
+msgstr "Enseignements tirés"
+
+msgid "La cause racine et les enseignements tirés sont obligatoires pour clôturer un incident de sécurité."
+msgstr "La cause racine et les enseignements tirés sont obligatoires pour clôturer un incident de sécurité."
+
+msgid "Axe(s) confidentialité/intégrité/disponibilité affecté(s) par cet incident."
+msgstr "Axe(s) confidentialité/intégrité/disponibilité affecté(s) par cet incident."
+
+msgid "Type d'élément lié"
+msgstr "Type d'élément lié"
+
+msgid "Ticket/Problem lié (optionnel)"
+msgstr "Ticket/Problem lié (optionnel)"
+
+msgid "Choisir d'abord un type ci-contre pour filtrer la liste."
+msgstr "Choisir d'abord un type ci-contre pour filtrer la liste."
+
+msgid "À renseigner si cet incident a mis en évidence un risque identifié dans le registre de risques (ou en a révélé un nouveau)."
+msgstr "À renseigner si cet incident a mis en évidence un risque identifié dans le registre de risques (ou en a révélé un nouveau)."
+
+msgid "Obligatoire, avec les enseignements tirés ci-dessous, pour clôturer cet incident."
+msgstr "Obligatoire, avec les enseignements tirés ci-dessous, pour clôturer cet incident."
+
+msgid "Ce qui a été appris de cet incident (clause A.5.27) : à documenter avant clôture."
+msgstr "Ce qui a été appris de cet incident (clause A.5.27) : à documenter avant clôture."
+
+msgid "Incidents de sécurité par statut"
+msgstr "Incidents de sécurité par statut"
+
+msgid "Incidents de sécurité par sévérité"
+msgstr "Incidents de sécurité par sévérité"

@@ -36,6 +36,11 @@ Objectif : une plateforme GRC/ISO 27001 générique fonctionnelle de bout en bou
 - Objectifs ISMS et suivi de KPI dans le temps (issue #32, clause 6.2 ISO 27001) : fixer des
   objectifs de sécurité mesurables et suivre leur trajectoire dans le temps (historique de mesures
   manuel), lié aux revues de direction existantes
+- Registre des incidents de sécurité de l'information (issue #29, Annexe A A.5.24-27 ISO/IEC
+  27001:2022) : classification (catégorie, sévérité, axes C/I/D affectés), référence légère
+  optionnelle vers un Ticket/Problem GLPI existant, lien optionnel vers une entrée du registre de
+  risques et cause racine/enseignements tirés obligatoires à la clôture, pour boucler la clause
+  A.5.27 sans dupliquer le système de tickets natif de GLPI
 
 ## Version 1.5
 

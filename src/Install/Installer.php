@@ -81,6 +81,10 @@ final class Installer
     private const MANAGEMENT_REVIEWS_OBJECTIVES_TABLE
         = 'glpi_plugin_grcmanager_managementreviews_objectives';
 
+    // Issue #29 (registre des incidents de sécurité de l'information, A.5.24-27), même dérivation
+    // de nom de table que toutes les autres tables ci-dessus.
+    private const SECURITY_INCIDENTS_TABLE = 'glpi_plugin_grcmanager_securityincidents';
+
     public function install(Migration $migration): bool
     {
         global $DB;
@@ -628,6 +632,54 @@ final class Installer
                     (`plugin_grcmanager_managementreviews_id`, `plugin_grcmanager_objectives_id`),
                 KEY `reviews_id` (`plugin_grcmanager_managementreviews_id`),
                 KEY `objectives_id` (`plugin_grcmanager_objectives_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
+
+            $DB->doQuery($query) or die($DB->error());
+        }
+
+        // Issue #29 (registre des incidents de sécurité de l'information, ISO/IEC 27001:2022
+        // Annexe A A.5.24-27) : `linked_itemtype`/`linked_items_id` référencent un Ticket/Problem
+        // GLPI déjà existant EN COLONNES DIRECTES (pas une table de liaison polymorphe comme
+        // RISKS_ITEMS_TABLE ci-dessus) : un incident correspond au plus à un seul Ticket/Problem en
+        // pratique, cardinalité plus simple que le lien risque <-> actifs CMDB many-to-many de
+        // l'issue #25 - voir le docblock de PluginGrcmanagerSecurityIncident. `plugin_grcmanager_risks_id`
+        // suit exactement la même convention zéro-ou-un que COMPLIANCE_OBLIGATIONS_TABLE ci-dessus
+        // (issue #30). `cia_impact` est une liste de valeurs séparées par des virgules sur une
+        // seule colonne, même convention que `risk_categories` sur AUDITS_TABLE ci-dessus (Sprint
+        // 4) pour un ensemble fixe et petit de valeurs. `root_cause`/`lessons_learned` restent
+        // toutes deux nullables : ni obligatoires pour ouvrir un incident, seulement validées
+        // avant clôture côté PluginGrcmanagerSecurityIncident (clause A.5.27, même convention que
+        // `corrective_action` sur NONCONFORMITIES_TABLE ci-dessus).
+        if (!$DB->tableExists(self::SECURITY_INCIDENTS_TABLE)) {
+            $query = "CREATE TABLE `" . self::SECURITY_INCIDENTS_TABLE . "` (
+                `id` int {$keySign} NOT NULL AUTO_INCREMENT,
+                `title` varchar(255) NOT NULL,
+                `description` text,
+                `incident_date` datetime DEFAULT NULL,
+                `category` varchar(32) NOT NULL DEFAULT 'other'
+                    COMMENT 'data_breach, malware, unauthorized_access, availability, other',
+                `severity` varchar(16) NOT NULL DEFAULT 'minor' COMMENT 'minor, major, critical',
+                `cia_impact` varchar(64) NOT NULL DEFAULT ''
+                    COMMENT 'Axes confidentiality/integrity/availability separes par des virgules, vide = non evalue',
+                `status` varchar(16) NOT NULL DEFAULT 'open'
+                    COMMENT 'open, investigating, contained, closed',
+                `root_cause` text,
+                `lessons_learned` text,
+                `users_id` int {$keySign} NOT NULL DEFAULT 0 COMMENT 'Responsable',
+                `linked_itemtype` varchar(100) NOT NULL DEFAULT ''
+                    COMMENT 'Ticket, Problem, vide = aucune reference',
+                `linked_items_id` int {$keySign} NOT NULL DEFAULT 0,
+                `plugin_grcmanager_risks_id` int {$keySign} NOT NULL DEFAULT 0
+                    COMMENT 'Lien optionnel zero-ou-un vers un risque, 0 = aucun',
+                `date_creation` timestamp NULL DEFAULT NULL,
+                `date_mod` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                KEY `category` (`category`),
+                KEY `severity` (`severity`),
+                KEY `status` (`status`),
+                KEY `users_id` (`users_id`),
+                KEY `item` (`linked_itemtype`, `linked_items_id`),
+                KEY `plugin_grcmanager_risks_id` (`plugin_grcmanager_risks_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
 
             $DB->doQuery($query) or die($DB->error());
@@ -1203,6 +1255,7 @@ final class Installer
         $migration->dropTable(self::MANAGEMENT_REVIEWS_OBJECTIVES_TABLE);
         $migration->dropTable(self::OBJECTIVE_MEASUREMENTS_TABLE);
         $migration->dropTable(self::OBJECTIVES_TABLE);
+        $migration->dropTable(self::SECURITY_INCIDENTS_TABLE);
 
         $migration->executeMigration();
 

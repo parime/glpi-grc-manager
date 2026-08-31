@@ -9,6 +9,31 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce p
 
 ### Added
 
+- **Registre des incidents de sécurité de l'information** (issue #29, ISO/IEC 27001:2022 Annexe A
+  A.5.24-27) : les contrôles A.5.24-27 (planification/réponse/apprentissage des incidents)
+  n'existaient jusqu'ici que comme lignes à cocher dans la SoA - GLPI dispose nativement de
+  Ticket/Problem, mais rien ne les qualifiait comme "incident de sécurité de l'information" au sens
+  ISO ni ne les reliait au registre de risques de ce plugin. Nouveau registre indépendant
+  (`PluginGrcmanagerSecurityIncident`, table `glpi_plugin_grcmanager_securityincidents`) : intitulé,
+  date de l'incident, catégorie (violation de données/logiciel malveillant/accès non autorisé/
+  indisponibilité/autre), sévérité (mineure/majeure/critique, même échelle que
+  `PluginGrcmanagerNonconformity`), axes confidentialité/intégrité/disponibilité affectés (cases à
+  cocher, liste séparée par des virgules en base, même convention que `PluginGrcmanagerAudit.
+  risk_categories`), statut (ouvert/en investigation/contenu/clôturé), cause racine et enseignements
+  tirés. Référence légère optionnelle vers un Ticket ou Problem GLPI déjà existant
+  (`linked_itemtype`/`linked_items_id`, lien construit via `CommonDBTM::getLinkURL()` natif, jamais
+  une duplication du contenu du ticket), et lien optionnel zéro-ou-un vers une entrée du registre de
+  risques (`plugin_grcmanager_risks_id`, même convention que le lien obligation <-> risque de
+  l'issue #30) pour boucler la clause A.5.27 ("tirer des enseignements des incidents"). La cause
+  racine et les enseignements tirés ne sont obligatoires qu'à la clôture de l'incident, jamais pour
+  l'ouvrir ou le mettre en investigation (même convention "obligatoire seulement à la clôture" que
+  l'action corrective de `PluginGrcmanagerNonconformity`, issue #27). Nouvel écran sous Outils
+  (liste filtrable, formulaire), 2 nouvelles cartes de tableau de bord (incidents par statut, par
+  sévérité) ajoutées au tableau de bord ISMS seedé à l'installation. Logique pure (normalisation
+  catégorie/sévérité/statut, liste C/I/D, liens optionnels, validation de clôture) extraite dans
+  `GlpiPlugin\Grcmanager\Services\Incident\SecurityIncidentRules`, testée unitairement. Réutilise le
+  droit plat existant `plugin_grcmanager`, aucune preuve d'un besoin de droit dédié par
+  fonctionnalité dans ce plugin.
 - **Bibliothèque de politiques de sécurité versionnées** (issue #28, ISO/IEC 27001:2022
   A.5.1/A.5.1.1/A.5.1.2) : le contrôle A.5.1 de la SoA n'existait jusqu'ici que comme ligne à
   cocher, sans aucun outil derrière. Nouveau registre natif (`PluginGrcmanagerPolicy`, table
