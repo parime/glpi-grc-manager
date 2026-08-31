@@ -74,12 +74,17 @@ Journal des limites connues et compromis assumés, tenu à jour à chaque sprint
   Assumé pour une première version plutôt que de risquer un join GLPI mal configuré non validé en
   direct ; à reconsidérer si le nombre d'audits croît au point de rendre le filtrage par ID
   impraticable.
-- **`severity` fait à la fois office de sévérité et de catégorie de non-conformité.** La demande
+- ~~**`severity` fait à la fois office de sévérité et de catégorie de non-conformité.** La demande
   initiale (« severity/category ») a été résolue par une seule échelle ordinale
   (mineure/majeure/critique) plutôt que deux énumérations distinctes (par exemple séparer
   « non-conformité » et « observation » au sens strict ISO 27001), pour rester simple et cohérent
   avec l'échelle probabilité x impact déjà utilisée par le registre de risques. À réévaluer si un
-  besoin réel de distinguer les deux axes apparaît.
+  besoin réel de distinguer les deux axes apparaît.~~ **Résolu (issue #27)** : nouveau champ
+  `finding_type` (non-conformité/observation, vocabulaire ISO 19011) ajouté en tant qu'axe
+  indépendant de `severity`, avec CAPA obligatoire uniquement pour une vraie non-conformité (voir
+  `PluginGrcmanagerNonconformity::getFindingTypes()`,
+  `GlpiPlugin\Grcmanager\Services\Capa\CapaRequirementService` et `src/Install/Installer.php` pour
+  la migration).
 - **Rappel de CAPA en retard sans déduplication**, même limite assumée que
   `ReviewReminderService::notify()` au Sprint 2 (voir ci-dessus) : une action encore en retard
   plusieurs jours après son échéance génère une notification à chaque exécution quotidienne de la

@@ -7,6 +7,18 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce p
 
 ## [Non publié]
 
+### Added
+
+- **Distinction non-conformité / observation-remarque dans les audits** (issue #27, vocabulaire ISO
+  19011) : nouveau champ `finding_type` sur `PluginGrcmanagerNonconformity`, indépendant de
+  `severity`. Une observation/remarque suit le même workflow CAPA qu'une non-conformité mais sans
+  action corrective/préventive obligatoire pour être clôturée/vérifiée (elle peut toujours en
+  recevoir une volontairement). Liste filtrable par type de constat avec badge coloré, formulaire
+  mis à jour, migration idempotente (`Migration::addField()`) avec valeur par défaut
+  `nonconformity` pour ne reclasser aucun constat d'audit existant. La carte de tableau de bord
+  « Non-conformités ouvertes » ne compte désormais plus que les vraies non-conformités. Résout la
+  dette documentée dans TECH_DEBT.md Sprint 4.
+
 ## [1.0.1] - 2026-08-26
 
 ### Added

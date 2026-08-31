@@ -582,6 +582,15 @@ msgstr "A corrective action is required to close or verify a non-conformity."
 msgid "Obligatoire pour clôturer ou vérifier cette non-conformité."
 msgstr "Required to close or verify this non-conformity."
 
+msgid "Type de constat"
+msgstr "Finding type"
+
+msgid "Observation / remarque"
+msgstr "Observation / remark"
+
+msgid "Optionnelle pour une observation : peut néanmoins être renseignée si besoin."
+msgstr "Optional for an observation: it may still be filled in if useful."
+
 msgid "Responsable de la non-conformité"
 msgstr "Non-conformity owner"
 

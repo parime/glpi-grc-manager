@@ -22,7 +22,9 @@ final class DefaultSearchColumns
         'PluginGrcmanagerControl' => [8, 2, 1, 3, 4, 6, 7],
         // Sprint 4 (audits internes et CAPA), same "id first" convention.
         'PluginGrcmanagerAudit'         => [9, 1, 2, 3, 4, 5, 6],
-        'PluginGrcmanagerNonconformity' => [12, 1, 2, 3, 4, 5, 7],
+        // Issue #27 : id 13 (finding_type) juste apres le titre, avant severite (2), pour que le
+        // type de constat (non-conformite/observation) soit visible d'emblee dans la liste.
+        'PluginGrcmanagerNonconformity' => [12, 1, 13, 2, 3, 4, 5, 7],
         // Sprint 5 (risques fournisseurs/tiers), same "id first" convention, supplier column
         // second (the whole point of this register) then the same scoring/treatment order as
         // PluginGrcmanagerRisk above.

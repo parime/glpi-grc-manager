@@ -13,7 +13,8 @@ Objectif : une plateforme GRC/ISO 27001 générique fonctionnelle de bout en bou
   administrable
 - Déclaration d'Applicabilité (SoA), 93 contrôles Annexe A ISO 27001:2022 (clause 6.1.3)
 - Acceptation de risque avec propriétaire, justification, date de revue
-- Programme d'audit interne : non-conformités, actions correctives et préventives (CAPA)
+- Programme d'audit interne : non-conformités et observations/remarques distinctes (vocabulaire
+  ISO 19011, issue #27), actions correctives et préventives (CAPA)
 - Registre de risques fournisseurs/tiers
 - Suivi des formations de sensibilisation à la sécurité
 - Revues de direction
