@@ -385,6 +385,55 @@ Journal des limites connues et compromis assumés, tenu à jour à chaque sprint
   assumée pour `glpi_plugin_grcmanager_risks_items` (issue #25) et
   `glpi_plugin_grcmanager_assetclassifications` (issue #26), voir leurs points respectifs ci-dessus.
 
+## Objectifs ISMS et suivi de KPI dans le temps (issue #32)
+
+- **Mesures manuelles, jamais auto-calculées depuis d'autres données du plugin.** Une mesure
+  (`PluginGrcmanagerObjectiveMeasurement`) est toujours saisie à la main ("à cette date, nous en
+  sommes à X"), jamais dérivée automatiquement d'un décompte réel ailleurs dans le plugin (ex. le
+  nombre de non-conformités récurrentes pour un objectif qui viserait explicitement à les réduire).
+  Assumé délibérément pour cette première version, même philosophie "une version minimale et
+  testée vaut mieux qu'une version élaborée et non testée" que le reste de ce plugin (voir Sprint 2
+  ci-dessus) : un calcul automatique demanderait de définir, objectif par objectif, QUELLE requête
+  du plugin nourrit sa trajectoire, un mapping qui n'a pas de réponse générique évidente. Une
+  évolution possible (non retenue ici) serait un futur champ optionnel "source de calcul" sur
+  l'objectif, résolu par une nouvelle tâche Cron qui insérerait alors ses propres mesures.
+- **`plugin_grcmanager_objectives_id` sur `PluginGrcmanagerObjectiveMeasurement` n'est pas une clé
+  étrangère GLPI réelle**, même simplification déjà assumée pour
+  `PluginGrcmanagerNonconformity.plugin_grcmanager_audits_id` (Sprint 4, voir ci-dessus) : pas de
+  `ON DELETE CASCADE` natif si un objectif est supprimé, ses mesures resteraient orphelines en
+  base. Un objectif n'ayant pas de bouton de suppression retiré côté formulaire (contrairement aux
+  93 contrôles du Sprint 3), ce cas reste possible en pratique ; assumé pour cette première version
+  plutôt que de complexifier `PluginGrcmanagerObjective::prepareInputForDelete()`/un hook de purge
+  dédié, à reconsidérer si des mesures orphelines s'avèrent gênantes en usage réel.
+- **Historique de mesures en simple tableau chronologique, pas de graphique.** L'issue elle-même
+  suggère un "historique de mesures dans le temps" sans imposer de visualisation particulière ; un
+  tableau simple montre une trajectoire de façon honnête sans introduire de nouvelle dépendance de
+  rendu (bibliothèque de graphiques), cohérent avec le choix déjà assumé pour `showForm()` depuis
+  le Sprint 1 (HTML/PHP manuel, pas de logique JS avancée). À réévaluer si un besoin réel de
+  visualisation graphique apparaît en usage réel (le tableau de bord natif GLPI, lui, offre déjà
+  des rendus `pie`/`bar`/`donut` pour la répartition PAR STATUT, voir
+  `DashboardCardService::objectivesByStatus()`, mais pas pour une série temporelle par objectif).
+- **Suppression d'une mesure sans confirmation serveur, uniquement une confirmation JS
+  `confirm()`.** Même niveau de protection que les boutons purge/delete natifs de GLPI ailleurs
+  dans ce plugin (voir Sprint 3, "pas de bouton de suppression dans l'écran, mais pas de blocage
+  serveur non plus") : une requête POST forgée par un compte disposant du droit `plugin_grcmanager`
+  pourrait encore supprimer une mesure sans passer par la boîte de dialogue JS. Assumé pour ce
+  sprint, même niveau de risque que n'importe quel autre itemtype GLPI administrable de ce plugin.
+- **Lien revue de direction <-> objectifs en accès direct `$DB`, pas en itemtype
+  `CommonDBRelation`.** Même simplification assumée que tous les autres liens many-to-many de ce
+  plugin depuis le Sprint 3 (voir ci-dessus) :
+  `glpi_plugin_grcmanager_managementreviews_objectives` est géré par de simples méthodes statiques
+  sur `PluginGrcmanagerManagementReview` (`getLinkedObjectives()`/`syncLinkedObjectives()`),
+  suffisant pour un nombre d'objectifs discutés par revue toujours faible en pratique.
+- **`.mo` régénérés sans `msgfmt`/gettext** (outil absent de l'environnement de développement
+  utilisé pour cette issue) : compilés depuis les `.po` mis à jour avec un petit script Python
+  interne (format binaire GNU MO standard, vérifié par relecture avec `gettext.GNUTranslations` de
+  Python avant commit, y compris pour les entrées plurielles et les entrées déjà existantes). À
+  recompiler avec le `msgfmt` réel du système au prochain changement de traduction si l'outil est
+  disponible dans un environnement ultérieur, pour rester sur l'outillage standard de l'écosystème
+  gettext plutôt qu'un compilateur maison, conservé ici uniquement parce qu'aucune alternative
+  n'était disponible.
+
 - **`docs/design/` ne contient qu'un seul document (`DEVELOPMENT_PLAN.md`), pas d'ADR dédiées.**
   Évalué lors de la même revue : il n'existe pas de série de fichiers "Architecture Decision
   Record" formels comme le ferait un projet plus mature. Jugé suffisant pour l'instant (pas

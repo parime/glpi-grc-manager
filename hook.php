@@ -173,6 +173,13 @@ function plugin_grcmanager_dashboard_cards(?array $cards = null): array
             'group' => $group,
             'provider' => DashboardCardService::class . '::obligationsByComplianceStatus',
         ],
+        // Issue #32 (objectifs ISMS et suivi de KPI dans le temps, clause 6.2).
+        'grcmanager_objectives_by_status' => [
+            'widgettype' => ['multipleNumber', 'pie', 'donut', 'bar', 'hbar'],
+            'label' => __('Objectifs ISMS par statut', 'grcmanager'),
+            'group' => $group,
+            'provider' => DashboardCardService::class . '::objectivesByStatus',
+        ],
     ];
 }
 

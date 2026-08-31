@@ -638,4 +638,46 @@ final class DashboardCardService
             'icon' => 'ti ti-chart-pie',
         ];
     }
+
+    /**
+     * Issue #32 (objectifs ISMS et suivi de KPI dans le temps, clause 6.2) : répartition par
+     * statut (non démarré/sur la bonne voie/à risque/atteint/manqué), même schéma que
+     * managementReviewsByStatus()/auditsByStatus() ci-dessus. Le status enum
+     * (GlpiPlugin\Grcmanager\Services\Objective\ObjectiveStatuses) n'est pas réutilisé ici pour
+     * garder ce fichier hors du périmètre GLPI-indépendant de phpstan.neon.dist (voir sa propre
+     * note), les valeurs sont dupliquées littéralement comme le fait déjà auditsByStatus() pour
+     * son propre enum de statuts.
+     */
+    public static function objectivesByStatus(array $params = []): array
+    {
+        global $DB;
+
+        $countsByStatus = array_fill_keys(
+            ['not_started', 'on_track', 'at_risk', 'achieved', 'missed'],
+            0
+        );
+
+        $rows = $DB->request([
+            'SELECT' => ['status', new QueryExpression('COUNT(*) AS c')],
+            'FROM' => 'glpi_plugin_grcmanager_objectives',
+            'GROUPBY' => 'status',
+        ]);
+
+        foreach ($rows as $row) {
+            if (isset($countsByStatus[$row['status']])) {
+                $countsByStatus[$row['status']] = (int) $row['c'];
+            }
+        }
+
+        $data = [];
+        foreach ($countsByStatus as $status => $count) {
+            $data[] = ['label' => $status, 'number' => $count];
+        }
+
+        return [
+            'data' => $data,
+            'label' => $params['label'] ?? __('Objectifs ISMS par statut', 'grcmanager'),
+            'icon' => 'ti ti-chart-pie',
+        ];
+    }
 }

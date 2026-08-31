@@ -47,7 +47,34 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce p
   statut de conformité, qui ne dispense jamais de la revue périodique). Logique pure (normalisation
   type/statut, lien zéro-ou-un, fenêtre de rappel de revue) extraite dans
   `GlpiPlugin\Grcmanager\Services\Compliance\ComplianceObligationRules`, testée unitairement.
-
+- **Objectifs ISMS et suivi de KPI dans le temps** (issue #32, ISO 27001 clause 6.2) : le tableau
+  de bord ISMS (15 cartes) montrait l'état actuel du système de management, une photo instantanée,
+  mais rien ne permettait de fixer des objectifs de sécurité mesurables (ex. « réduire de 20% les
+  non-conformités récurrentes d'ici fin d'année ») ni de suivre leur progression dans le temps —
+  une trajectoire. Nouvelle classe `PluginGrcmanagerObjective` (table
+  `glpi_plugin_grcmanager_objectives`) : titre, description, propriétaire (vrai `User` GLPI),
+  échéance, statut (non démarré/sur la bonne voie/à risque/atteint/manqué), et une cible en DEUX
+  champs indépendants tous deux optionnels — `target_value` (numérique) pour un objectif chiffré et
+  `target_description` (texte libre) pour un objectif purement qualitatif ("obtenir la
+  certification ISO 27001") — plutôt que de forcer chaque objectif dans une case numérique
+  artificielle. Nouvelle classe `PluginGrcmanagerObjectiveMeasurement` (table
+  `glpi_plugin_grcmanager_objectivemeasurements`) : historique manuel de mesures dans le temps
+  ("à cette date, nous en sommes à X"), volontairement PAS auto-calculé depuis d'autres données du
+  plugin pour cette première version (même philosophie "version minimale et testée" que le reste de
+  ce plugin, voir `TECH_DEBT.md`) ; une mesure sur un objectif chiffré exige une valeur numérique,
+  une mesure sur un objectif purement qualitatif accepte une valeur vide mais exige alors un
+  commentaire (`GlpiPlugin\Grcmanager\Services\Objective\ObjectiveMeasurementValidator`, testé
+  unitairement). Nouvel écran sous Outils (liste + formulaire), avec sur la fiche de chaque
+  objectif un mini-formulaire d'ajout de mesure et l'historique chronologique complet en simple
+  tableau (pas de graphique : une trajectoire honnête sans nouvelle dépendance de rendu). Lien léger
+  many-to-many vers les revues de direction (`PluginGrcmanagerManagementReview`, nouveau champ
+  "Objectifs ISMS abordés", même convention de lien direct `$DB` que le lien contrôle <-> risque) :
+  la clause 9.3 ISO 27001 liste explicitement "l'étendue de l'atteinte des objectifs de sécurité de
+  l'information" parmi les données d'entrée attendues d'une revue de direction. Nouvelle carte de
+  tableau de bord "Objectifs ISMS par statut" (`DashboardCardService::objectivesByStatus()`),
+  reprise dans le tableau de bord seedé à l'installation (`DefaultDashboardService`, 16e carte).
+  Réutilise le droit plat existant `plugin_grcmanager`, aucune preuve d'un besoin de droit dédié par
+  fonctionnalité dans ce plugin.
 - **Classification Confidentialité/Intégrité/Disponibilité (C/I/D) des actifs** (issue #26,
   ISO/IEC 27001:2022 A.5.9/A.5.12/A.8.2) : nouveau registre natif, indépendant du lien registre de
   risques <-> actifs de l'issue #25 (`PluginGrcmanagerAssetClassification`, table

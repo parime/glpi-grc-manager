@@ -56,7 +56,15 @@ function plugin_init_grcmanager(): void
     // PluginGrcmanagerTraining and PluginGrcmanagerManagementReview. Issue #28 (bibliothèque de
     // politiques de sécurité versionnées, clause A.5.1) adds PluginGrcmanagerPolicy. Issue #30
     // (registre des obligations légales/réglementaires/contractuelles, clause 4.2/A.5.31-36) adds
-    // PluginGrcmanagerComplianceObligation right after the SoA it complements.
+    // PluginGrcmanagerComplianceObligation right after the SoA it complements. Issue #32
+    // (objectifs ISMS et suivi de KPI dans le temps, clause 6.2) adds PluginGrcmanagerObjective
+    // last: the dashboard (Sprint 7) shows the ISMS's current state, this screen is where an admin
+    // sets and tracks measurable objectives over time, a natural final entry in this same menu.
+    // PluginGrcmanagerObjectiveMeasurement (the per-objective measurement history) deliberately
+    // has NO menu entry of its own: it is only ever added/removed inline from its parent
+    // objective's own form (see PluginGrcmanagerObjective::showMeasurementHistory()), same
+    // "no menu entry for a pure link/child table" convention as every many-to-many link in this
+    // plugin family.
     $PLUGIN_HOOKS[Hooks::MENU_TOADD]['grcmanager'] = [
         'tools' => [
             PluginGrcmanagerRisk::class,
@@ -68,6 +76,7 @@ function plugin_init_grcmanager(): void
             PluginGrcmanagerTraining::class,
             PluginGrcmanagerManagementReview::class,
             PluginGrcmanagerPolicy::class,
+            PluginGrcmanagerObjective::class,
         ],
     ];
 

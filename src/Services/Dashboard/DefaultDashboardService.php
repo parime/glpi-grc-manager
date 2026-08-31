@@ -13,7 +13,8 @@ use Glpi\Dashboard\Dashboard;
  * Reprend telles quelles les 15 cartes déjà posées aux Sprints 1 à 6 (voir
  * hook.php::plugin_grcmanager_dashboard_cards() / DashboardCardService) : aucune carte
  * « résumé » supplémentaire n'a été ajoutée pour ce sprint, ce tableau de bord EST la vue de
- * synthèse qui les relie entre elles.
+ * synthèse qui les relie entre elles. Une 16e carte (« Objectifs ISMS par statut ») a depuis été
+ * ajoutée par l'issue #32, suivant exactement ce même principe de report direct dans la grille.
  *
  * Issue #30 (registre des obligations légales/réglementaires/contractuelles) ajoute 4 nouvelles
  * cartes à ce tableau de bord seedé (2 chiffres clés en rangée 2, 2 répartitions en rangées 4/5),
@@ -154,11 +155,12 @@ final class DefaultDashboardService
             $pie('grcmanager_supplierrisks_by_level', 6, 8),
             $pie('grcmanager_management_reviews_by_status', 12, 8),
             $pie('grcmanager_policies_by_status', 18, 8),
-            // Rangée 5 (y=12) : répartitions/chiffre clé restants, obligations (issue #30) et
-            // politiques en attente de revue (issue #28).
+            // Rangée 5 (y=12) : obligations (issue #30), politiques en attente de revue (issue
+            // #28), objectifs ISMS (issue #32).
             $pie('grcmanager_obligations_by_type', 0, 12),
             $pie('grcmanager_obligations_by_compliance_status', 6, 12),
-            $bigNumber('grcmanager_policies_pending_review', 12, 12, '#f8911f'),
+            $pie('grcmanager_objectives_by_status', 12, 12),
+            $bigNumber('grcmanager_policies_pending_review', 18, 12, '#f8911f'),
         ];
     }
 }

@@ -33,6 +33,9 @@ Objectif : une plateforme GRC/ISO 27001 générique fonctionnelle de bout en bou
 - Registre des obligations légales, réglementaires et contractuelles (issue #30, clause 4.2/Annexe A
   A.5.31-36 ISO/IEC 27001:2022), avec lien optionnel vers une entrée du registre de risques quand le
   non-respect d'une obligation constitue un risque identifié
+- Objectifs ISMS et suivi de KPI dans le temps (issue #32, clause 6.2 ISO 27001) : fixer des
+  objectifs de sécurité mesurables et suivre leur trajectoire dans le temps (historique de mesures
+  manuel), lié aux revues de direction existantes
 
 ## Version 1.5
 
