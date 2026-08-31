@@ -258,14 +258,20 @@ final class Installer
         // existante d'avant l'issue #27, premiere migration de champ de ce fichier (v1.0 n'avait
         // encore jamais eu besoin d'en ajouter une sur une table deja creee), suivant exactement la
         // meme convention idempotente fieldExists/addField/migrationOneTable que le plugin jumeau
-        // assetsign-glpi (src/GlpiPlugin/Assetsign/Config.php). Valeur par defaut 'nonconformity'
-        // pour ne jamais reclasser silencieusement en simple observation un constat d'audit deja
-        // existant.
+        // assetsign-glpi (src/GlpiPlugin/Assetsign/Config.php). Type 'string' (pas un fragment SQL
+        // brut comme 'varchar(16)') delibere : Migration::fieldFormat() ne sait appliquer un
+        // DEFAULT que pour ses types nommes reconnus (string/bool/integer/...), un fragment SQL
+        // brut passe tel quel sans jamais honorer l'option 'value' ci-dessous (verifie en conditions
+        // reelles contre GLPI 11). VARCHAR(255) plutot que VARCHAR(16) comme dans le CREATE TABLE
+        // ci-dessus : largeur suffisante, l'essentiel est que la valeur par defaut 'nonconformity'
+        // soit reellement appliquee (MySQL retro-remplit alors chaque ligne existante avec ce
+        // defaut lors de l'ADD COLUMN NOT NULL DEFAULT, jamais laissee a NULL) pour ne jamais
+        // reclasser silencieusement en simple observation un constat d'audit deja existant.
         if (!$DB->fieldExists(self::NONCONFORMITIES_TABLE, 'finding_type')) {
             $migration->addField(
                 self::NONCONFORMITIES_TABLE,
                 'finding_type',
-                'varchar(16)',
+                'string',
                 [
                     'value'   => 'nonconformity',
                     'comment' => 'nonconformity, observation (issue #27, deux axes independants de severity)',
