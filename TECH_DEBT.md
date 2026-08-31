@@ -204,6 +204,49 @@ Journal des limites connues et compromis assumés, tenu à jour à chaque sprint
   ajoutées. Le texte d'introduction et l'Étape 1 ont été corrigés : le plugin ajoute bien « sept
   écrans » au menu Outils, plus la mention du registre de risques fournisseurs fantôme qui ne
   correspondait à aucun écran réel a été retirée.
+## Lien registre de risques <-> actifs GLPI/CMDB (issue #25)
+
+- **Lien risque <-> actif en accès direct `$DB`, pas en itemtype `CommonDBRelation`.** Même
+  simplification assumée pour tous les autres liens de ce plugin depuis le Sprint 3 (voir
+  ci-dessus) : `glpi_plugin_grcmanager_risks_items` est géré par de simples méthodes statiques sur
+  `PluginGrcmanagerRisk` (`getLinkedAssets()`/`syncLinkedAssets()`/`getRisksLinkedToItem()`), pas par
+  une vraie classe de liaison GLPI. Suffisant pour un nombre d'actifs liés par risque toujours
+  faible en pratique (l'issue elle-même ne décrit que des exemples à un ou quelques actifs) ; à
+  reconsidérer si un besoin réel de journalisation GLPI native (`Log`) sur ce lien apparaît, ou si
+  un futur besoin de recherche/filtrage riche sur les actifs liés se présente (voir aussi le point
+  "aucune colonne de recherche" ci-dessous).
+- **Un multi-select par itemtype liable, jamais un unique widget polymorphe
+  `Dropdown::showSelectItemFromItemtypes()`.** Ce widget natif GLPI existe précisément pour ce cas
+  d'usage (choisir un itemtype puis un item de ce type), mais son fonctionnement réel dépend d'un
+  second appel Ajax déclenché en JS au changement du premier `<select>` — irait à l'encontre du
+  choix déjà assumé pour `showForm()` depuis le Sprint 1 ("HTML/PHP manuel, pas de logique JS
+  avancée", voir ci-dessus). Un multi-select par itemtype (même widget `Dropdown::showFromArray(...,
+  ['multiple' => true])` que `PluginGrcmanagerControl::showForm()` pour son propre lien vers les
+  risques) reste cohérent avec ce choix, au prix de lister tous les actifs d'un type sans
+  pagination ni recherche - assumé pour ce qui est explicitement une v1 de la fonctionnalité,
+  chaque itemtype sans aucun enregistrement dans l'instance GLPI n'affichant simplement aucune
+  ligne. À réévaluer si le volume réel d'actifs par type dans une instance de production rend cette
+  liste impraticable (voir aussi la limitation similaire déjà assumée pour
+  `PluginGrcmanagerControl::showForm()`/tous les risques du registre).
+- **Onglet retour "Risques" posé sur une liste FIXE d'itemtypes (`LinkableItemtypes::
+  DEFAULT_ITEMTYPES`), pas sur le résultat dynamique de `PluginGrcmanagerRisk::
+  getLinkableItemtypes()`.** Un actif personnalisé actif reste bien liable depuis le formulaire du
+  risque (`getLinkableItemtypes()` l'inclut), mais ne reçoit pas l'onglet "Risques" sur sa propre
+  fiche : `Plugin::registerClass()`/`addtabon` s'exécute au chargement du plugin (listener
+  `InitializePlugins`), avant que GLPI ne charge les définitions d'actifs personnalisés en mémoire
+  (listener `CustomObjectsBoot`, plus tardif) - même limitation de séquencement déjà documentée par
+  le plugin jumeau assetsign-glpi pour sa propre `Config::getAllManageableItemtypes()`. Assumé pour
+  cette version plutôt que de risquer un enregistrement d'onglet dynamique non validé en direct.
+- **Aucune colonne "actifs liés" dans `PluginGrcmanagerRisk::rawSearchOptions()`.** Une relation à
+  plusieurs actifs polymorphes (many-to-many, cible variable selon la ligne) ne correspond à aucun
+  des `datatype` natifs du moteur de recherche GLPI (`dropdown`, `itemlink`...), tous conçus pour
+  une jointure vers UNE table cible fixe (voir par exemple `Document_Item`, dont le compte de
+  documents liés n'est lui-même pas non plus exposé comme colonne de recherche générique dans le
+  cœur GLPI). Une fiche de détail avec le lien fonctionnel (formulaire + onglet retour ci-dessus)
+  est le livrable de cette issue ; une colonne de recherche resterait un besoin à traiter sur mesure
+  (ex. sous-requête `COUNT(*)` par risque, sans filtre par actif précis) si un besoin réel de tri/
+  filtre sur ce critère apparaît en usage réel.
+
 - **`docs/design/` ne contient qu'un seul document (`DEVELOPMENT_PLAN.md`), pas d'ADR dédiées.**
   Évalué lors de la même revue : il n'existe pas de série de fichiers "Architecture Decision
   Record" formels comme le ferait un projet plus mature. Jugé suffisant pour l'instant (pas

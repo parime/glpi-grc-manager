@@ -20,6 +20,9 @@ Objectif : une plateforme GRC/ISO 27001 générique fonctionnelle de bout en bou
 - Revues de direction
 - Dashboards technique et RSSI de base
 - Documentation utilisateur, administrateur et développeur complète
+- Lien optionnel entre un risque et un ou plusieurs actifs réels de la CMDB GLPI (issue #25,
+  constat d'un audit ISO 27001 du plugin lui-même : le registre de risques était complètement
+  déconnecté de la CMDB)
 
 ## Version 1.5
 

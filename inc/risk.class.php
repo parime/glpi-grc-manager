@@ -15,7 +15,9 @@
  * -------------------------------------------------------------------------
  */
 
+use GlpiPlugin\Grcmanager\Services\Risk\LinkableItemtypes;
 use GlpiPlugin\Grcmanager\Services\Risk\ReviewReminderService;
+use GlpiPlugin\Grcmanager\Services\Risk\RiskItemLinkNormalizer;
 use GlpiPlugin\Grcmanager\Traits\RiskAssessmentTrait;
 
 /**
@@ -41,6 +43,17 @@ class PluginGrcmanagerRisk extends CommonDBTM
      * Cron entry point below.
      */
     public const REVIEW_DUE_EVENT = 'review_due';
+
+    /**
+     * Issue #25 (lien registre de risques <-> actifs GLPI/CMDB) : table de liaison polymorphe
+     * (itemtype/items_id), voir src/Install/Installer.php pour le schéma et son commentaire, et
+     * getLinkedAssets()/syncLinkedAssets()/getRisksLinkedToItem() ci-dessous. Gérée en accès direct
+     * $DB par de simples méthodes statiques, même simplification assumée depuis le Sprint 3 pour
+     * les autres liens de ce plugin (glpi_plugin_grcmanager_controls_risks, etc.), voir
+     * TECH_DEBT.md : pas une vraie classe CommonDBRelation, un nombre d'actifs liés par risque
+     * toujours faible en pratique.
+     */
+    private const ITEMS_LINK_TABLE = 'glpi_plugin_grcmanager_risks_items';
 
     public static function getTable($classname = null)
     {
@@ -209,6 +222,8 @@ class PluginGrcmanagerRisk extends CommonDBTM
 
     public function showForm($ID, array $options = []): bool
     {
+        global $DB;
+
         $this->initForm($ID, $options);
         $this->showFormHeader($options);
 
@@ -281,7 +296,327 @@ class PluginGrcmanagerRisk extends CommonDBTM
             . htmlescape($this->fields['justification'] ?? '') . '</textarea>';
         echo '</td></tr>';
 
+        // Issue #25 (lien registre de risques <-> actifs GLPI/CMDB) : un multi-select PAR itemtype
+        // liable (jamais un unique widget polymorphe façon Dropdown::showSelectItemFromItemtypes(),
+        // qui exige de la JS conditionnelle absente de ce formulaire, voir TECH_DEBT.md "showForm()
+        // en HTML/PHP manuel") — même widget Dropdown::showFromArray(..., ['multiple' => true]) que
+        // PluginGrcmanagerControl::showForm() pour son propre lien vers les risques, un par type
+        // pour couvrir plusieurs itemtypes cibles à la fois. Un type sans aucun enregistrement dans
+        // cette instance GLPI n'affiche aucune ligne, pour ne pas encombrer le formulaire avec des
+        // listes vides.
+        echo '<tr class="tab_bg_1"><td colspan="4"><strong>'
+            . __('Actifs liés (CMDB)', 'grcmanager') . '</strong></td></tr>';
+
+        $linkedIdsByType = $this->isNewID($ID) ? [] : self::getLinkedAssetIdsByType((int) $ID);
+
+        foreach (self::getLinkableItemtypes() as $itemtype) {
+            if (!is_a($itemtype, CommonDBTM::class, true)) {
+                continue;
+            }
+
+            $options = [];
+            foreach ($DB->request(['FROM' => $itemtype::getTable(), 'ORDER' => 'name']) as $row) {
+                $options[(int) $row['id']] = $row['name'] !== '' ? $row['name'] : sprintf('#%d', $row['id']);
+            }
+
+            if ($options === []) {
+                continue;
+            }
+
+            echo '<tr class="tab_bg_1"><td>' . htmlescape($itemtype::getTypeName(2)) . '</td>';
+            echo '<td colspan="3">';
+            Dropdown::showFromArray(self::linkedAssetFieldName($itemtype), $options, [
+                'values'   => $linkedIdsByType[$itemtype] ?? [],
+                'multiple' => true,
+                'width'    => '100%',
+            ]);
+            echo '</td></tr>';
+        }
+
         $this->showFormButtons($options);
+
+        return true;
+    }
+
+    /**
+     * @return array<int, string> itemtype class names a risk may be linked to. The fixed default
+     *         list (LinkableItemtypes::DEFAULT_ITEMTYPES) plus any active GLPI custom asset
+     *         definition, enumerated dynamically at each call so an asset type created or
+     *         activated after this plugin's install is usable without reinstalling it — same
+     *         dynamic-discovery approach and same `glpi_assets_assetdefinitions` query as the
+     *         sibling plugin assetsign-glpi's own Config::getAllManageableItemtypes().
+     */
+    public static function getLinkableItemtypes(): array
+    {
+        global $DB;
+
+        $itemtypes = LinkableItemtypes::DEFAULT_ITEMTYPES;
+
+        if ($DB->tableExists('glpi_assets_assetdefinitions')) {
+            foreach ($DB->request(['FROM' => 'glpi_assets_assetdefinitions', 'WHERE' => ['is_active' => 1]]) as $row) {
+                $itemtypes[] = 'Glpi\\CustomAsset\\' . $row['system_name'] . 'Asset';
+            }
+        }
+
+        return $itemtypes;
+    }
+
+    /**
+     * @return array<int, array{itemtype:string, items_id:int, name:string, url:string}>
+     */
+    public static function getLinkedAssets(int $riskId): array
+    {
+        global $DB;
+
+        $items = [];
+
+        $rows = $DB->request([
+            'FROM'  => self::ITEMS_LINK_TABLE,
+            'WHERE' => ['plugin_grcmanager_risks_id' => $riskId],
+        ]);
+
+        foreach ($rows as $row) {
+            $itemtype = (string) $row['itemtype'];
+            $itemsId  = (int) $row['items_id'];
+
+            if (!is_a($itemtype, CommonDBTM::class, true)) {
+                // Classe disparue depuis la création du lien (ex. désinstallation du plugin qui
+                // fournissait un actif personnalisé) : ignorée plutôt que de faire échouer tout
+                // l'affichage du formulaire pour un seul lien orphelin.
+                continue;
+            }
+
+            $item = new $itemtype();
+            $name = $item->getFromDB($itemsId)
+                ? $item->getName()
+                : sprintf(__('%1$s #%2$d (supprimé)', 'grcmanager'), $itemtype::getTypeName(1), $itemsId);
+
+            $items[] = [
+                'itemtype' => $itemtype,
+                'items_id' => $itemsId,
+                'name'     => $name,
+                'url'      => $item->getFormURLWithID($itemsId),
+            ];
+        }
+
+        return $items;
+    }
+
+    /**
+     * @return array<string, array<int, int>> itemtype => linked item ids, to pre-select each
+     *         per-itemtype multi-select in showForm() above.
+     */
+    public static function getLinkedAssetIdsByType(int $riskId): array
+    {
+        $byType = [];
+        foreach (self::getLinkedAssets($riskId) as $item) {
+            $byType[$item['itemtype']][] = $item['items_id'];
+        }
+
+        return $byType;
+    }
+
+    /**
+     * Reverse lookup (issue #25: "inversement partir d'un risque pour voir les actifs concernés",
+     * and its mirror direction): every risk currently linked to one specific CMDB item, for the
+     * read-only "Risques" tab this plugin adds on each linkable itemtype (see setup.php,
+     * getTabNameForItem()/displayTabContentForItem() below).
+     *
+     * @return array<int, array{id:int, title:string, risk_level:?string}>
+     */
+    public static function getRisksLinkedToItem(string $itemtype, int $itemsId): array
+    {
+        global $DB;
+
+        // Filtre SQL uniquement sur itemtype (indexé, voir la clé `item` du schéma) : le nombre de
+        // liens pour un seul type reste faible en pratique, le filtre exact sur items_id est fait
+        // ensuite en PHP par RiskItemLinkNormalizer::findRiskIdsForItem(), la même logique que
+        // celle couverte par les tests unitaires (voir
+        // tests/Unit/Services/Risk/RiskItemLinkNormalizerTest.php), pour ne jamais diverger entre
+        // le code réellement exécuté et celui testé.
+        $links = iterator_to_array($DB->request([
+            'FROM'  => self::ITEMS_LINK_TABLE,
+            'WHERE' => ['itemtype' => $itemtype],
+        ]));
+
+        $riskIds = RiskItemLinkNormalizer::findRiskIdsForItem($links, $itemtype, $itemsId);
+        if ($riskIds === []) {
+            return [];
+        }
+
+        $risks = [];
+
+        $rows = $DB->request([
+            'SELECT' => ['id', 'title', 'risk_level'],
+            'FROM'   => self::getTable(),
+            'WHERE'  => ['id' => $riskIds],
+        ]);
+
+        foreach ($rows as $row) {
+            $risks[] = [
+                'id'         => (int) $row['id'],
+                'title'      => $row['title'],
+                'risk_level' => $row['risk_level'],
+            ];
+        }
+
+        return $risks;
+    }
+
+    /**
+     * Replaces the full set of CMDB items linked to this risk with exactly $pairs (delete then
+     * re-insert), same "supprimer-puis-réinsérer" convention already used by every other simple
+     * link table in this plugin (PluginGrcmanagerControl::syncLinkedRisks(),
+     * PluginGrcmanagerAudit::syncLinkedControls()...), see TECH_DEBT.md. An empty $pairs array is
+     * the expected, non-error baseline for a purely organizational risk with no CMDB counterpart
+     * (issue #25, "processus de recrutement").
+     *
+     * @param array<int, array{itemtype:string, items_id:int}> $pairs
+     */
+    private static function syncLinkedAssets(int $riskId, array $pairs): void
+    {
+        global $DB;
+
+        $DB->delete(self::ITEMS_LINK_TABLE, ['plugin_grcmanager_risks_id' => $riskId]);
+
+        $allowed = self::getLinkableItemtypes();
+
+        foreach ($pairs as $pair) {
+            $itemtype = (string) ($pair['itemtype'] ?? '');
+            $itemsId  = (int) ($pair['items_id'] ?? 0);
+
+            if (!RiskItemLinkNormalizer::isLinkable($itemtype, $itemsId, $allowed)) {
+                continue;
+            }
+
+            $DB->insert(self::ITEMS_LINK_TABLE, [
+                'plugin_grcmanager_risks_id' => $riskId,
+                'itemtype'                   => $itemtype,
+                'items_id'                   => $itemsId,
+                'date_creation'              => date('Y-m-d H:i:s'),
+            ]);
+        }
+    }
+
+    /**
+     * Rebuilds the candidate itemtype/items_id pairs from the per-itemtype multi-selects rendered
+     * in showForm() above, then delegates to syncLinkedAssets(). Does nothing if NONE of the
+     * `linked_items_<Itemtype>` fields are present in the submitted input: an HTML multi-select
+     * with zero selections submits no field at all, indistinguishable from "this form section
+     * wasn't rendered" (e.g. a future programmatic/API caller that doesn't know about this block) —
+     * only ever wipes existing links when the real form was genuinely submitted.
+     */
+    private function syncLinkedAssetsFromInput(): void
+    {
+        $itemtypes = self::getLinkableItemtypes();
+
+        $formWasSubmitted = false;
+        foreach ($itemtypes as $itemtype) {
+            if (array_key_exists(self::linkedAssetFieldName($itemtype), $this->input)) {
+                $formWasSubmitted = true;
+                break;
+            }
+        }
+
+        if (!$formWasSubmitted) {
+            return;
+        }
+
+        $pairs = [];
+        foreach ($itemtypes as $itemtype) {
+            foreach ((array) ($this->input[self::linkedAssetFieldName($itemtype)] ?? []) as $itemsId) {
+                $pairs[] = ['itemtype' => $itemtype, 'items_id' => (int) $itemsId];
+            }
+        }
+
+        self::syncLinkedAssets((int) $this->fields['id'], $pairs);
+    }
+
+    private static function linkedAssetFieldName(string $itemtype): string
+    {
+        return 'linked_items_' . str_replace('\\', '_', $itemtype);
+    }
+
+    public function post_addItem()
+    {
+        parent::post_addItem();
+        $this->syncLinkedAssetsFromInput();
+    }
+
+    public function post_updateItem($history = true)
+    {
+        parent::post_updateItem($history);
+        $this->syncLinkedAssetsFromInput();
+    }
+
+    /**
+     * Purges this risk's own rows in the polymorphic link table when the risk itself is purged, so
+     * a deleted risk never leaves orphaned `glpi_plugin_grcmanager_risks_items` rows behind. Not
+     * strictly forced by a real GLPI foreign key (same reason as every other simple link table in
+     * this plugin, see TECH_DEBT.md), but cheap and worth doing here since this table can grow
+     * unboundedly with real CMDB items, unlike this plugin's small fixed-catalog link tables
+     * (controls_risks, audits_controls).
+     */
+    public function post_purgeItem()
+    {
+        parent::post_purgeItem();
+
+        global $DB;
+        $DB->delete(self::ITEMS_LINK_TABLE, ['plugin_grcmanager_risks_id' => $this->fields['id']]);
+    }
+
+    /**
+     * Issue #25, reverse view: read-only "Risques" tab on every linkable itemtype's own page (see
+     * setup.php, Plugin::registerClass()/addtabon). Guarded to only fire for a genuinely linkable
+     * $item (this method is invoked by GLPI core for every plugin class registered via addtabon,
+     * regardless of which item is currently displayed) and behind the plugin's own read right,
+     * same right as every other screen of this plugin.
+     */
+    public function getTabNameForItem(CommonGLPI $item, $withtemplate = 0)
+    {
+        if (!in_array($item->getType(), self::getLinkableItemtypes(), true)) {
+            return '';
+        }
+
+        if (!Session::haveRight(self::$rightname, READ)) {
+            return '';
+        }
+
+        $count = count(self::getRisksLinkedToItem($item->getType(), (int) $item->getID()));
+
+        return self::createTabEntry(self::getTypeName(2), $count);
+    }
+
+    /**
+     * Minimal read-only list (title + risk level badge, linked to the risk's own form): this
+     * plugin registers no other reverse tab anywhere else (confirmed by inspecting every other
+     * inc/*.class.php file), so there is no richer existing convention to match here, and the
+     * "many risks per asset" cardinality this issue describes (issue #25, "panne électrique du
+     * site") stays small enough that a full itemtype/list-search screen would be over-engineering
+     * for what this issue actually asks for.
+     */
+    public static function displayTabContentForItem(CommonGLPI $item, $tabnum = 1, $withtemplate = 0)
+    {
+        $risks = self::getRisksLinkedToItem($item->getType(), (int) $item->getID());
+
+        if ($risks === []) {
+            echo '<p class="p-2 text-muted">' . __('Aucun risque lié à cet actif.', 'grcmanager') . '</p>';
+            return true;
+        }
+
+        $riskItem = new self();
+
+        echo '<table class="table table-striped">';
+        echo '<thead><tr><th>' . __('Titre', 'grcmanager') . '</th>'
+            . '<th>' . __('Niveau de risque', 'grcmanager') . '</th></tr></thead><tbody>';
+
+        foreach ($risks as $risk) {
+            echo '<tr><td><a href="' . htmlescape($riskItem->getFormURLWithID($risk['id'])) . '">'
+                . htmlescape($risk['title']) . '</a></td>';
+            echo '<td>' . self::riskLevelBadge($risk['risk_level']) . '</td></tr>';
+        }
+
+        echo '</tbody></table>';
 
         return true;
     }
