@@ -53,8 +53,9 @@ function plugin_init_grcmanager(): void
     // PluginGrcmanagerAudit and PluginGrcmanagerNonconformity the same way. Sprint 5 (risques
     // fournisseurs/tiers) adds PluginGrcmanagerSupplierRisk right after the generic risk register
     // it mirrors. Sprint 6 (formations et revues de direction, clauses 7.2/7.3/9.3) adds
-    // PluginGrcmanagerTraining and PluginGrcmanagerManagementReview. Issue #30 (registre des
-    // obligations légales/réglementaires/contractuelles, clause 4.2/A.5.31-36) adds
+    // PluginGrcmanagerTraining and PluginGrcmanagerManagementReview. Issue #28 (bibliothèque de
+    // politiques de sécurité versionnées, clause A.5.1) adds PluginGrcmanagerPolicy. Issue #30
+    // (registre des obligations légales/réglementaires/contractuelles, clause 4.2/A.5.31-36) adds
     // PluginGrcmanagerComplianceObligation right after the SoA it complements. Issue #32
     // (objectifs ISMS et suivi de KPI dans le temps, clause 6.2) adds PluginGrcmanagerObjective
     // last: the dashboard (Sprint 7) shows the ISMS's current state, this screen is where an admin
@@ -74,9 +75,25 @@ function plugin_init_grcmanager(): void
             PluginGrcmanagerNonconformity::class,
             PluginGrcmanagerTraining::class,
             PluginGrcmanagerManagementReview::class,
+            PluginGrcmanagerPolicy::class,
             PluginGrcmanagerObjective::class,
         ],
     ];
+
+    // Issue #28 (bibliothèque de politiques de sécurité versionnées, A.5.1) : le fichier joint
+    // (PDF, Word...) d'une politique est stocké via le mécanisme natif GLPI Document/Document_Item,
+    // jamais un système de stockage propre à ce plugin. Un CommonDBTM de plugin ne reçoit l'onglet
+    // "Documents" que si son propre itemtype figure dans $CFG_GLPI['document_types'] (voir
+    // src/Glpi/Asset/Capacity/HasDocumentsCapacity::enable(), qui fait exactement ce push pour les
+    // actifs personnalisés dotés de la capacité "Documents", et src/autoload/CFG_GLPI.php pour la
+    // liste figée des itemtypes cœur), en plus de l'appel explicite à
+    // addStandardTab(Document_Item::class, ...) fait dans PluginGrcmanagerPolicy::defineTabs().
+    // Sans cette ligne, l'onglet s'afficherait quand même (Document_Item::getTabNameForItem() ne
+    // vérifie que Document::canView(), pas getItemtypesThatCanHave()), mais
+    // Document::getItemtypesThatCanHave() - utilisée ailleurs dans GLPI core (API, nettoyage
+    // polymorphe CommonDBTM::cleanDBonPurge()) - ignorerait cette politique.
+    global $CFG_GLPI;
+    $CFG_GLPI['document_types'][] = PluginGrcmanagerPolicy::class;
 
     // Sprint 2 (matrice de risque administrable, front/config.php) : reachable via
     // Configuration > Plugins > wrench icon on this plugin's row, same minimal-footprint pattern

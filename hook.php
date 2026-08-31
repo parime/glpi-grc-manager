@@ -135,6 +135,19 @@ function plugin_grcmanager_dashboard_cards(?array $cards = null): array
             'group' => $group,
             'provider' => DashboardCardService::class . '::managementReviewsByStatus',
         ],
+        // Issue #28 (bibliothèque de politiques de sécurité versionnées, A.5.1).
+        'grcmanager_policies_pending_review' => [
+            'widgettype' => ['bigNumber'],
+            'label' => __('Politiques en attente de revue', 'grcmanager'),
+            'group' => $group,
+            'provider' => DashboardCardService::class . '::policiesPendingReviewCount',
+        ],
+        'grcmanager_policies_by_status' => [
+            'widgettype' => ['multipleNumber', 'pie', 'donut', 'bar', 'hbar'],
+            'label' => __('Politiques de sécurité par statut', 'grcmanager'),
+            'group' => $group,
+            'provider' => DashboardCardService::class . '::policiesByStatus',
+        ],
         // Issue #30 (registre des obligations légales/réglementaires/contractuelles, clause 4.2).
         'grcmanager_obligations_non_compliant' => [
             'widgettype' => ['bigNumber'],

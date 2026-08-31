@@ -773,6 +773,46 @@ msgstr "Un actif lié porte une classification C/I/D élevée : vérifiez l'impa
 msgid "(C : %1$s, I : %2$s, D : %3$s)"
 msgstr "(C : %1$s, I : %2$s, D : %3$s)"
 
+msgid "Politique de sécurité"
+msgid_plural "Politiques de sécurité"
+msgstr[0] "Politique de sécurité"
+msgstr[1] "Politiques de sécurité"
+
+msgid "Brouillon"
+msgstr "Brouillon"
+
+msgid "Approuvée"
+msgstr "Approuvée"
+
+msgid "Archivée"
+msgstr "Archivée"
+
+msgid "Version"
+msgstr "Version"
+
+msgid "Date d'approbation"
+msgstr "Date d'approbation"
+
+msgid "Prochaine revue"
+msgstr "Prochaine revue"
+
+msgid "Une date d'approbation est obligatoire pour marquer une politique comme approuvée."
+msgstr "Une date d'approbation est obligatoire pour marquer une politique comme approuvée."
+
+msgid "Une date d'approbation est obligatoire pour passer au statut \"Approuvée\"."
+msgstr "Une date d'approbation est obligatoire pour passer au statut \"Approuvée\"."
+
+msgid "Revue de politique à échéance"
+msgstr "Revue de politique à échéance"
+
+msgid "Propriétaire de la politique"
+msgstr "Propriétaire de la politique"
+
+msgid "Politiques en attente de revue"
+msgstr "Politiques en attente de revue"
+
+msgid "Politiques de sécurité par statut"
+msgstr "Politiques de sécurité par statut"
 
 msgid "Obligation légale, réglementaire ou contractuelle"
 msgid_plural "Obligations légales, réglementaires et contractuelles"

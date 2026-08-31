@@ -150,14 +150,17 @@ final class DefaultDashboardService
             $pie('grcmanager_soa_by_applicability', 12, 4),
             $pie('grcmanager_soa_by_implementation_status', 18, 4),
             // Rangée 4 (y=8) : répartitions, audits/CAPA, fournisseurs, revues de direction,
-            // obligations (issue #30).
+            // politiques (issue #28).
             $pie('grcmanager_audits_by_status', 0, 8),
             $pie('grcmanager_supplierrisks_by_level', 6, 8),
             $pie('grcmanager_management_reviews_by_status', 12, 8),
-            $pie('grcmanager_obligations_by_type', 18, 8),
-            // Rangée 5 (y=12) : obligations (suite, issue #30), objectifs ISMS (issue #32).
-            $pie('grcmanager_obligations_by_compliance_status', 0, 12),
-            $pie('grcmanager_objectives_by_status', 6, 12),
+            $pie('grcmanager_policies_by_status', 18, 8),
+            // Rangée 5 (y=12) : obligations (issue #30), politiques en attente de revue (issue
+            // #28), objectifs ISMS (issue #32).
+            $pie('grcmanager_obligations_by_type', 0, 12),
+            $pie('grcmanager_obligations_by_compliance_status', 6, 12),
+            $pie('grcmanager_objectives_by_status', 12, 12),
+            $bigNumber('grcmanager_policies_pending_review', 18, 12, '#f8911f'),
         ];
     }
 }
