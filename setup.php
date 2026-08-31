@@ -53,7 +53,15 @@ function plugin_init_grcmanager(): void
     // PluginGrcmanagerAudit and PluginGrcmanagerNonconformity the same way. Sprint 5 (risques
     // fournisseurs/tiers) adds PluginGrcmanagerSupplierRisk right after the generic risk register
     // it mirrors. Sprint 6 (formations et revues de direction, clauses 7.2/7.3/9.3) adds
-    // PluginGrcmanagerTraining and PluginGrcmanagerManagementReview.
+    // PluginGrcmanagerTraining and PluginGrcmanagerManagementReview. Issue #32 (objectifs ISMS et
+    // suivi de KPI dans le temps, clause 6.2) adds PluginGrcmanagerObjective last: the dashboard
+    // (Sprint 7) shows the ISMS's current state, this screen is where an admin sets and tracks
+    // measurable objectives over time, a natural final entry in this same menu.
+    // PluginGrcmanagerObjectiveMeasurement (the per-objective measurement history) deliberately
+    // has NO menu entry of its own: it is only ever added/removed inline from its parent
+    // objective's own form (see PluginGrcmanagerObjective::showMeasurementHistory()), same
+    // "no menu entry for a pure link/child table" convention as every many-to-many link in this
+    // plugin family.
     $PLUGIN_HOOKS[Hooks::MENU_TOADD]['grcmanager'] = [
         'tools' => [
             PluginGrcmanagerRisk::class,
@@ -63,6 +71,7 @@ function plugin_init_grcmanager(): void
             PluginGrcmanagerNonconformity::class,
             PluginGrcmanagerTraining::class,
             PluginGrcmanagerManagementReview::class,
+            PluginGrcmanagerObjective::class,
         ],
     ];
 

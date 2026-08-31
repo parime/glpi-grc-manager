@@ -27,6 +27,9 @@ Objectif : une plateforme GRC/ISO 27001 générique fonctionnelle de bout en bou
   (issue #26, clauses A.5.9/A.5.12/A.8.2 ISO/IEC 27001:2022), registre indépendant du lien
   risque <-> actif ci-dessus : une classification est une propriété de l'actif lui-même, pas d'un
   risque particulier
+- Objectifs ISMS et suivi de KPI dans le temps (issue #32, clause 6.2 ISO 27001) : fixer des
+  objectifs de sécurité mesurables et suivre leur trajectoire dans le temps (historique de mesures
+  manuel), lié aux revues de direction existantes
 
 ## Version 1.5
 

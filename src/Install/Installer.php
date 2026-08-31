@@ -66,6 +66,13 @@ final class Installer
     // frontière camelCase) que toutes les autres tables ci-dessus.
     private const ASSET_CLASSIFICATIONS_TABLE = 'glpi_plugin_grcmanager_assetclassifications';
 
+    // Issue #32 (objectifs ISMS et suivi de KPI dans le temps, clause 6.2), même dérivation de nom
+    // de table que toutes les autres ci-dessus.
+    private const OBJECTIVES_TABLE = 'glpi_plugin_grcmanager_objectives';
+    private const OBJECTIVE_MEASUREMENTS_TABLE = 'glpi_plugin_grcmanager_objectivemeasurements';
+    private const MANAGEMENT_REVIEWS_OBJECTIVES_TABLE
+        = 'glpi_plugin_grcmanager_managementreviews_objectives';
+
     public function install(Migration $migration): bool
     {
         global $DB;
@@ -470,6 +477,86 @@ final class Installer
                 `date_mod` timestamp NULL DEFAULT NULL,
                 PRIMARY KEY (`id`),
                 UNIQUE KEY `unicity_item` (`itemtype`, `items_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
+
+            $DB->doQuery($query) or die($DB->error());
+        }
+
+        // Issue #32 (objectifs ISMS et suivi de KPI dans le temps, clause 6.2) : `target_value` et
+        // `target_description` sont deux colonnes INDÉPENDANTES et toutes deux nullables plutôt
+        // qu'une seule colonne numérique obligatoire — certains objectifs ont une vraie cible
+        // chiffrée ("réduire de 20%"), d'autres sont purement qualitatifs ("obtenir la
+        // certification ISO 27001") et n'ont rien de sensé à mettre dans une colonne numérique
+        // obligatoire (voir PluginGrcmanagerObjective::hasNumericTarget() et
+        // GlpiPlugin\Grcmanager\Services\Objective\ObjectiveMeasurementValidator, qui utilisent
+        // cette même distinction pour savoir si une mesure doit obligatoirement porter une valeur
+        // chiffrée).
+        if (!$DB->tableExists(self::OBJECTIVES_TABLE)) {
+            $query = "CREATE TABLE `" . self::OBJECTIVES_TABLE . "` (
+                `id` int {$keySign} NOT NULL AUTO_INCREMENT,
+                `title` varchar(255) NOT NULL,
+                `description` text,
+                `target_value` decimal(10,2) DEFAULT NULL
+                    COMMENT 'Cible numerique, NULL si objectif purement qualitatif',
+                `target_description` text
+                    COMMENT 'Cible qualitative en texte libre, en complement ou a la place de target_value',
+                `target_date` date DEFAULT NULL,
+                `users_id` int {$keySign} NOT NULL DEFAULT 0 COMMENT 'Proprietaire de l''objectif',
+                `status` varchar(16) NOT NULL DEFAULT 'not_started'
+                    COMMENT 'not_started, on_track, at_risk, achieved, missed',
+                `date_creation` timestamp NULL DEFAULT NULL,
+                `date_mod` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                KEY `status` (`status`),
+                KEY `users_id` (`users_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
+
+            $DB->doQuery($query) or die($DB->error());
+        }
+
+        // Historique de mesures manuel (issue #32) : une ligne par point de mesure dans le temps
+        // ("à cette date, nous en sommes à X"), volontairement PAS auto-calculé depuis d'autres
+        // données du plugin (ex. décompte de non-conformités) pour cette première version, même
+        // philosophie "version minimale et testée" que le reste de ce plugin (voir TECH_DEBT.md
+        // Sprint 2). `plugin_grcmanager_objectives_id` n'est pas une vraie clé étrangère GLPI
+        // (pas de ON DELETE CASCADE natif ici), même simplification assumée que
+        // `PluginGrcmanagerNonconformity.plugin_grcmanager_audits_id` (TECH_DEBT.md Sprint 4).
+        // `value` nullable : une mesure sur un objectif purement qualitatif peut n'avoir aucune
+        // valeur chiffrée, voir ObjectiveMeasurementValidator ci-dessus.
+        if (!$DB->tableExists(self::OBJECTIVE_MEASUREMENTS_TABLE)) {
+            $query = "CREATE TABLE `" . self::OBJECTIVE_MEASUREMENTS_TABLE . "` (
+                `id` int {$keySign} NOT NULL AUTO_INCREMENT,
+                `plugin_grcmanager_objectives_id` int {$keySign} NOT NULL,
+                `measurement_date` date DEFAULT NULL,
+                `value` decimal(10,2) DEFAULT NULL
+                    COMMENT 'Valeur mesuree, NULL si objectif qualitatif sans indicateur chiffre',
+                `comment` text,
+                `date_creation` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                KEY `objectives_id` (`plugin_grcmanager_objectives_id`),
+                KEY `measurement_date` (`measurement_date`)
+            ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
+
+            $DB->doQuery($query) or die($DB->error());
+        }
+
+        // Many-to-many : objectif(s) ISMS abordés lors d'une revue de direction (issue #32, lien
+        // léger demandé par l'issue elle-même : "le comité de direction voit une trajectoire...
+        // lors des revues de direction, qui référencent déjà ces objectifs"), même convention
+        // "lien simple en accès direct $DB" que CONTROLS_RISKS_TABLE/MANAGEMENT_REVIEWS_USERS_TABLE
+        // ci-dessus (voir PluginGrcmanagerManagementReview::getLinkedObjectives()/
+        // syncLinkedObjectives()).
+        if (!$DB->tableExists(self::MANAGEMENT_REVIEWS_OBJECTIVES_TABLE)) {
+            $query = "CREATE TABLE `" . self::MANAGEMENT_REVIEWS_OBJECTIVES_TABLE . "` (
+                `id` int {$keySign} NOT NULL AUTO_INCREMENT,
+                `plugin_grcmanager_managementreviews_id` int {$keySign} NOT NULL,
+                `plugin_grcmanager_objectives_id` int {$keySign} NOT NULL,
+                `date_creation` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `unicity_link`
+                    (`plugin_grcmanager_managementreviews_id`, `plugin_grcmanager_objectives_id`),
+                KEY `reviews_id` (`plugin_grcmanager_managementreviews_id`),
+                KEY `objectives_id` (`plugin_grcmanager_objectives_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
 
             $DB->doQuery($query) or die($DB->error());
@@ -905,6 +992,9 @@ final class Installer
         $migration->dropTable(self::MANAGEMENT_REVIEWS_TABLE);
         $migration->dropTable(self::RISKS_ITEMS_TABLE);
         $migration->dropTable(self::ASSET_CLASSIFICATIONS_TABLE);
+        $migration->dropTable(self::MANAGEMENT_REVIEWS_OBJECTIVES_TABLE);
+        $migration->dropTable(self::OBJECTIVE_MEASUREMENTS_TABLE);
+        $migration->dropTable(self::OBJECTIVES_TABLE);
 
         $migration->executeMigration();
 

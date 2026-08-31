@@ -13,7 +13,8 @@ use Glpi\Dashboard\Dashboard;
  * Reprend telles quelles les 15 cartes déjà posées aux Sprints 1 à 6 (voir
  * hook.php::plugin_grcmanager_dashboard_cards() / DashboardCardService) : aucune carte
  * « résumé » supplémentaire n'a été ajoutée pour ce sprint, ce tableau de bord EST la vue de
- * synthèse qui les relie entre elles.
+ * synthèse qui les relie entre elles. Une 16e carte (« Objectifs ISMS par statut ») a depuis été
+ * ajoutée par l'issue #32, suivant exactement ce même principe de report direct dans la grille.
  *
  * Construit avec l'API native `Glpi\Dashboard\Dashboard` (mêmes méthodes que celles appelées par
  * l'écran natif Configuration > Tableaux de bord : save()/saveItems(), voir
@@ -141,10 +142,12 @@ final class DefaultDashboardService
             $pie('grcmanager_risks_by_category', 6, 4),
             $pie('grcmanager_soa_by_applicability', 12, 4),
             $pie('grcmanager_soa_by_implementation_status', 18, 4),
-            // Rangée 4 (y=8) : répartitions, audits/CAPA, fournisseurs, revues de direction.
+            // Rangée 4 (y=8) : répartitions, audits/CAPA, fournisseurs, revues de direction,
+            // objectifs ISMS (issue #32).
             $pie('grcmanager_audits_by_status', 0, 8),
             $pie('grcmanager_supplierrisks_by_level', 6, 8),
             $pie('grcmanager_management_reviews_by_status', 12, 8),
+            $pie('grcmanager_objectives_by_status', 18, 8),
         ];
     }
 }
