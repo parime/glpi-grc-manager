@@ -467,6 +467,120 @@ final class DashboardCardService
     }
 
     /**
+     * Issue #30 (registre des obligations légales/réglementaires/contractuelles, clause 4.2) :
+     * nombre d'obligations actuellement évaluées `non_compliant`, le chiffre qui appelle le plus
+     * directement à l'action pour un RSSI/DPO.
+     */
+    public static function obligationsNonCompliantCount(array $params = []): array
+    {
+        global $DB;
+
+        $count = (int) $DB->request([
+            'COUNT' => 'c',
+            'FROM' => 'glpi_plugin_grcmanager_complianceobligations',
+            'WHERE' => ['compliance_status' => 'non_compliant'],
+        ])->current()['c'];
+
+        return [
+            'number' => $count,
+            'label' => $params['label'] ?? __('Obligations non conformes', 'grcmanager'),
+            'icon' => 'ti ti-gavel',
+        ];
+    }
+
+    /**
+     * Obligations dont la date de revue est dépassée ou approche, même définition (fenêtre de 30
+     * jours) que GlpiPlugin\Grcmanager\Services\Compliance\ComplianceObligationRules::isReviewDue()
+     * et la tâche Cron PluginGrcmanagerComplianceObligation::cronReviewreminder(), pour que la
+     * carte de tableau de bord et le rappel automatique ne divergent jamais sur ce qui compte comme
+     * "en attente de revue". Contrairement à risksPendingReviewCount() ci-dessus, aucune exclusion
+     * de statut : `compliance_status` ne dit rien sur si l'obligation est encore suivie, voir
+     * ReviewReminderService.
+     */
+    public static function obligationsPendingReviewCount(array $params = []): array
+    {
+        global $DB;
+
+        $count = (int) $DB->request([
+            'COUNT' => 'c',
+            'FROM' => 'glpi_plugin_grcmanager_complianceobligations',
+            'WHERE' => [
+                new QueryExpression('review_date IS NOT NULL'),
+                new QueryExpression('review_date <= CURDATE()'),
+            ],
+        ])->current()['c'];
+
+        return [
+            'number' => $count,
+            'label' => $params['label'] ?? __('Obligations en attente de revue', 'grcmanager'),
+            'icon' => 'ti ti-calendar-due',
+        ];
+    }
+
+    public static function obligationsByType(array $params = []): array
+    {
+        global $DB;
+
+        $countsByType = array_fill_keys(['legal', 'regulatory', 'contractual'], 0);
+
+        $rows = $DB->request([
+            'SELECT' => ['type', new QueryExpression('COUNT(*) AS c')],
+            'FROM' => 'glpi_plugin_grcmanager_complianceobligations',
+            'GROUPBY' => 'type',
+        ]);
+
+        foreach ($rows as $row) {
+            if (isset($countsByType[$row['type']])) {
+                $countsByType[$row['type']] = (int) $row['c'];
+            }
+        }
+
+        $data = [];
+        foreach ($countsByType as $type => $count) {
+            $data[] = ['label' => $type, 'number' => $count];
+        }
+
+        return [
+            'data' => $data,
+            'label' => $params['label'] ?? __('Obligations par type', 'grcmanager'),
+            'icon' => 'ti ti-chart-pie',
+        ];
+    }
+
+    public static function obligationsByComplianceStatus(array $params = []): array
+    {
+        global $DB;
+
+        $countsByStatus = array_fill_keys(
+            ['compliant', 'partially_compliant', 'non_compliant', 'not_assessed'],
+            0
+        );
+
+        $rows = $DB->request([
+            'SELECT' => ['compliance_status', new QueryExpression('COUNT(*) AS c')],
+            'FROM' => 'glpi_plugin_grcmanager_complianceobligations',
+            'GROUPBY' => 'compliance_status',
+        ]);
+
+        foreach ($rows as $row) {
+            if (isset($countsByStatus[$row['compliance_status']])) {
+                $countsByStatus[$row['compliance_status']] = (int) $row['c'];
+            }
+        }
+
+        $data = [];
+        foreach ($countsByStatus as $status => $count) {
+            $data[] = ['label' => $status, 'number' => $count];
+        }
+
+        return [
+            'data' => $data,
+            'label' => $params['label'] ?? __('Obligations par statut de conformité', 'grcmanager'),
+            'icon' => 'ti ti-chart-pie',
+        ];
+    }
+
+    /**
      * Issue #32 (objectifs ISMS et suivi de KPI dans le temps, clause 6.2) : répartition par
      * statut (non démarré/sur la bonne voie/à risque/atteint/manqué), même schéma que
      * managementReviewsByStatus()/auditsByStatus() ci-dessus. Le status enum

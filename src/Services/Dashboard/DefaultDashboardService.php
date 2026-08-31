@@ -16,6 +16,10 @@ use Glpi\Dashboard\Dashboard;
  * synthèse qui les relie entre elles. Une 16e carte (« Objectifs ISMS par statut ») a depuis été
  * ajoutée par l'issue #32, suivant exactement ce même principe de report direct dans la grille.
  *
+ * Issue #30 (registre des obligations légales/réglementaires/contractuelles) ajoute 4 nouvelles
+ * cartes à ce tableau de bord seedé (2 chiffres clés en rangée 2, 2 répartitions en rangées 4/5),
+ * la première évolution de ce tableau de bord depuis le Sprint 7 lui-même.
+ *
  * Construit avec l'API native `Glpi\Dashboard\Dashboard` (mêmes méthodes que celles appelées par
  * l'écran natif Configuration > Tableaux de bord : save()/saveItems(), voir
  * src/Glpi/Dashboard/Dashboard.php du cœur GLPI 11) plutôt qu'une insertion SQL directe dans
@@ -134,20 +138,26 @@ final class DefaultDashboardService
             $bigNumber('grcmanager_overdue_capa', 12, 0, '#f08d7b'),
             $bigNumber('grcmanager_suppliers_with_high_risk', 16, 0, '#8e5ea2'),
             $bigNumber('grcmanager_training_overdue_renewal', 20, 0, '#ffdc64'),
-            // Rangée 2 (y=2) : progression.
+            // Rangée 2 (y=2) : progression, complétée par les 2 chiffres clés de l'issue #30
+            // (obligations légales/réglementaires/contractuelles).
             $bigNumber('grcmanager_soa_reviewed', 0, 2, '#0e87a0', 6),
             $bigNumber('grcmanager_training_completion_rate', 6, 2, '#27ab3c', 6),
+            $bigNumber('grcmanager_obligations_non_compliant', 12, 2, '#cc2936', 6),
+            $bigNumber('grcmanager_obligations_pending_review', 18, 2, '#f8911f', 6),
             // Rangée 3 (y=4) : répartitions, registre de risques et SoA.
             $pie('grcmanager_risks_by_level', 0, 4),
             $pie('grcmanager_risks_by_category', 6, 4),
             $pie('grcmanager_soa_by_applicability', 12, 4),
             $pie('grcmanager_soa_by_implementation_status', 18, 4),
             // Rangée 4 (y=8) : répartitions, audits/CAPA, fournisseurs, revues de direction,
-            // objectifs ISMS (issue #32).
+            // obligations (issue #30).
             $pie('grcmanager_audits_by_status', 0, 8),
             $pie('grcmanager_supplierrisks_by_level', 6, 8),
             $pie('grcmanager_management_reviews_by_status', 12, 8),
-            $pie('grcmanager_objectives_by_status', 18, 8),
+            $pie('grcmanager_obligations_by_type', 18, 8),
+            // Rangée 5 (y=12) : obligations (suite, issue #30), objectifs ISMS (issue #32).
+            $pie('grcmanager_obligations_by_compliance_status', 0, 12),
+            $pie('grcmanager_objectives_by_status', 6, 12),
         ];
     }
 }

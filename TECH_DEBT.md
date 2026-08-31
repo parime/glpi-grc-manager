@@ -288,6 +288,49 @@ Journal des limites connues et compromis assumés, tenu à jour à chaque sprint
   assumée pour ce même formulaire depuis l'issue #25 ("un nombre d'actifs liés par risque toujours
   faible en pratique"). À revoir si ce nombre cesse d'être faible en usage réel.
 
+## Registre des obligations légales, réglementaires et contractuelles (issue #30)
+
+- **Lien optionnel vers un risque en colonne directe (`plugin_grcmanager_risks_id`), pas une table
+  de liaison many-to-many.** Contrairement au lien contrôle <-> risque du Sprint 3
+  (`glpi_plugin_grcmanager_controls_risks`, plusieurs risques par contrôle), l'issue #30 demande
+  explicitement une cardinalité zéro-ou-un ("une obligation correspond au plus à une entrée de
+  risque précise, si tant est qu'il y en ait une") : une colonne directe (même modèle que
+  `users_id`/propriétaire sur chaque autre registre de ce plugin) est plus simple qu'une table de
+  liaison dédiée pour cette cardinalité, et reste cohérente avec l'esprit "simples méthodes
+  statiques, pas une vraie classe CommonDBRelation" déjà assumé pour tous les autres liens de ce
+  plugin (voir Sprint 3 ci-dessus) - ici, pas même besoin d'une table du tout. Voir
+  `GlpiPlugin\Grcmanager\Services\Compliance\ComplianceObligationRules::normalizeLinkedRiskId()`/
+  `isLinkedToRisk()` pour la logique pure testée, et le docblock de
+  `PluginGrcmanagerComplianceObligation` pour le raisonnement complet.
+- **`ReviewReminderService` généralisé une seconde fois (après le Sprint 5) pour accepter un
+  `$excludeCriteria` optionnel.** Le service appliquait jusqu'ici inconditionnellement
+  `'status' => ['<>', 'closed']`, une colonne que `PluginGrcmanagerComplianceObligation` n'a pas
+  (elle a `compliance_status`, qui grade la conformité, pas si l'obligation est encore suivie).
+  Généralisé avec un paramètre de constructeur dont la valeur par défaut reproduit exactement
+  l'ancien comportement figé (aucun changement pour `PluginGrcmanagerRisk`/
+  `PluginGrcmanagerSupplierRisk`, qui ne passent jamais cet argument) ; l'obligation, elle, passe un
+  tableau vide - même une obligation `compliant` reste due à sa date de revue. Ce fichier n'a
+  toujours aucun test unitaire direct (dépendance runtime GLPI, voir `phpstan.neon.dist`) : la
+  logique de fenêtre de rappel (30 jours, exclusion des dates nulles) qu'il applique est dupliquée
+  intentionnellement et testée dans `ComplianceObligationRules::isReviewDue()`
+  (`REMINDER_WINDOW_DAYS` doit rester synchronisé entre les deux fichiers si jamais modifié).
+- **`seedReviewReminderNotification()` généralisé pour un contenu de notification à 2 lignes
+  configurable.** Codait en dur "Catégorie"/"Niveau de risque" (`PluginGrcmanagerRisk`/
+  `PluginGrcmanagerSupplierRisk`) ; l'obligation n'a ni catégorie ni niveau de risque
+  (`type`/`compliance_status` à la place), d'où un nouveau paramètre `$detailLines` avec la même
+  valeur par défaut que l'ancien comportement figé pour les deux registres de risques existants.
+- **Aucun onglet retour sur `PluginGrcmanagerRisk`** contrairement au lien risque <-> actifs CMDB de
+  l'issue #25 : une obligation n'est pas un itemtype "liable" au sens de `LinkableItemtypes`/
+  `getLinkableItemtypes()` (ce ne sont pas des actifs CMDB), et le nombre d'obligations pouvant
+  citer un même risque reste faible en pratique - consulter la fiche de l'obligation elle-même
+  (qui affiche le lien vers le risque, voir `riskLink()`) a été jugé suffisant pour cette première
+  version plutôt que d'ajouter un second onglet "Obligations" sur la fiche de chaque risque.
+- **Aucun nettoyage automatique si le risque lié est supprimé.** `plugin_grcmanager_risks_id` reste
+  en base avec un identifiant de risque orphelin si ce risque est purgé (ni erreur, ni lien affiché
+  puisque `riskLink()` retourne une chaîne vide dès que `getFromDB()` échoue) - même limitation déjà
+  assumée pour `glpi_plugin_grcmanager_risks_items` (issue #25) et
+  `glpi_plugin_grcmanager_assetclassifications` (issue #26), voir leurs points respectifs ci-dessus.
+
 ## Objectifs ISMS et suivi de KPI dans le temps (issue #32)
 
 - **Mesures manuelles, jamais auto-calculées depuis d'autres données du plugin.** Une mesure

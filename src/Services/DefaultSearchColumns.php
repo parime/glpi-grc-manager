@@ -32,6 +32,9 @@ final class DefaultSearchColumns
         // Sprint 6 (formations et revues de direction), same "id first" convention.
         'PluginGrcmanagerTraining'         => [8, 1, 2, 3, 4, 5, 6],
         'PluginGrcmanagerManagementReview' => [6, 1, 2, 3, 4, 5],
+        // Issue #30 (registre des obligations légales/réglementaires/contractuelles), same
+        // "id first" convention.
+        'PluginGrcmanagerComplianceObligation' => [9, 1, 2, 3, 4, 5, 6, 7],
         // Issue #32 (objectifs ISMS et suivi de KPI dans le temps), same "id first" convention:
         // titre, statut, échéance, valeur cible, propriétaire.
         'PluginGrcmanagerObjective' => [8, 1, 2, 3, 4, 6],
