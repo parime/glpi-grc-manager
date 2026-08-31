@@ -1025,3 +1025,53 @@ msgstr "Incidents de sécurité par statut"
 
 msgid "Incidents de sécurité par sévérité"
 msgstr "Incidents de sécurité par sévérité"
+
+msgid "Action de traitement de risque"
+msgid_plural "Actions de traitement de risque"
+msgstr[0] "Action de traitement de risque"
+msgstr[1] "Actions de traitement de risque"
+
+msgid "Réalisée"
+msgstr "Réalisée"
+
+msgid "Risque introuvable."
+msgstr "Risque introuvable."
+
+msgid "Action de traitement de risque en retard"
+msgstr "Action de traitement de risque en retard"
+
+msgid "Responsable de l'action"
+msgstr "Responsable de l'action"
+
+msgid "Description de l'action"
+msgstr "Description de l'action"
+
+msgid "Un plan de traitement (une ou plusieurs actions concrètes) est attendu pour ce choix, voir plus bas sur cette fiche."
+msgstr "Un plan de traitement (une ou plusieurs actions concrètes) est attendu pour ce choix, voir plus bas sur cette fiche."
+
+msgid "Un plan de traitement (au moins une action) est requis pour clôturer un risque à mitiger ou transférer."
+msgstr "Un plan de traitement (au moins une action) est requis pour clôturer un risque à mitiger ou transférer."
+
+msgid "Enregistrez d'abord ce risque pour pouvoir renseigner son plan de traitement."
+msgstr "Enregistrez d'abord ce risque pour pouvoir renseigner son plan de traitement."
+
+msgid "Plan de traitement du risque"
+msgstr "Plan de traitement du risque"
+
+msgid "Actions concrètes mises en œuvre pour appliquer la décision de traitement (clause 8.3/6.1.3 ISO 27001) : chacune a son propre responsable, sa propre échéance et son propre statut."
+msgstr "Actions concrètes mises en œuvre pour appliquer la décision de traitement (clause 8.3/6.1.3 ISO 27001) : chacune a son propre responsable, sa propre échéance et son propre statut."
+
+msgid "Aucune action de traitement enregistrée pour le moment."
+msgstr "Aucune action de traitement enregistrée pour le moment."
+
+msgid "En retard"
+msgstr "En retard"
+
+msgid "Mettre à jour"
+msgstr "Mettre à jour"
+
+msgid "Actions de traitement de risque en retard"
+msgstr "Actions de traitement de risque en retard"
+
+msgid "Risques à mitiger/transférer sans plan de traitement"
+msgstr "Risques à mitiger/transférer sans plan de traitement"

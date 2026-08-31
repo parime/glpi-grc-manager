@@ -85,6 +85,10 @@ final class Installer
     // de nom de table que toutes les autres tables ci-dessus.
     private const SECURITY_INCIDENTS_TABLE = 'glpi_plugin_grcmanager_securityincidents';
 
+    // Issue #31 (plan d'action de traitement des risques, clause 8.3/6.1.3), même dérivation de nom
+    // de table que toutes les autres ci-dessus.
+    private const RISK_TREATMENT_ACTIONS_TABLE = 'glpi_plugin_grcmanager_risktreatmentactions';
+
     public function install(Migration $migration): bool
     {
         global $DB;
@@ -685,6 +689,39 @@ final class Installer
             $DB->doQuery($query) or die($DB->error());
         }
 
+        // Issue #31 (plan d'action de traitement des risques, clause 8.3/6.1.3) : PLUSIEURS
+        // actions concrètes par risque (contrairement au CAPA d'une non-conformité, qui n'a
+        // qu'une action corrective ET une action préventive fixes, voir NONCONFORMITIES_TABLE
+        // ci-dessus) - véritable table enfant one-to-many, comme OBJECTIVE_MEASUREMENTS_TABLE
+        // ci-dessus, pas un simple lien polymorphe comme RISKS_ITEMS_TABLE (chaque action porte
+        // ses propres données : description, responsable, échéance, statut, date de réalisation).
+        // `plugin_grcmanager_risks_id` n'est pas une vraie clé étrangère GLPI (pas de ON DELETE
+        // CASCADE natif ici), même simplification assumée que
+        // `PluginGrcmanagerObjectiveMeasurement.plugin_grcmanager_objectives_id` ci-dessus, mais
+        // voir PluginGrcmanagerRisk::post_purgeItem() pour le nettoyage explicite ajouté malgré
+        // tout (coût marginal nul, ce hook existe déjà pour RISKS_ITEMS_TABLE).
+        if (!$DB->tableExists(self::RISK_TREATMENT_ACTIONS_TABLE)) {
+            $query = "CREATE TABLE `" . self::RISK_TREATMENT_ACTIONS_TABLE . "` (
+                `id` int {$keySign} NOT NULL AUTO_INCREMENT,
+                `plugin_grcmanager_risks_id` int {$keySign} NOT NULL,
+                `description` text,
+                `users_id` int {$keySign} NOT NULL DEFAULT 0 COMMENT 'Responsable de l''action',
+                `due_date` date DEFAULT NULL,
+                `status` varchar(16) NOT NULL DEFAULT 'planned'
+                    COMMENT 'planned, in_progress, done',
+                `completion_date` date DEFAULT NULL,
+                `date_creation` timestamp NULL DEFAULT NULL,
+                `date_mod` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                KEY `risks_id` (`plugin_grcmanager_risks_id`),
+                KEY `status` (`status`),
+                KEY `users_id` (`users_id`),
+                KEY `due_date` (`due_date`)
+            ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
+
+            $DB->doQuery($query) or die($DB->error());
+        }
+
         $this->seedControls();
 
         $this->seedReviewReminderNotification(
@@ -709,6 +746,7 @@ final class Installer
         $this->seedCapaOverdueNotification();
         $this->seedTrainingRenewalNotification();
         $this->seedPolicyReviewReminderNotification();
+        $this->seedTreatmentActionOverdueNotification();
 
         // Sprint 2 (rappels de date de revue) : évalue chaque jour les risques dont la date de
         // revue est dépassée ou approche, et déclenche la notification GLPI seedée ci-dessus (voir
@@ -798,6 +836,22 @@ final class Installer
             [
                 'comment' => 'Notifie le propriétaire de chaque politique de sécurité dont la '
                     . 'prochaine date de revue est dépassée ou approche',
+                'mode'    => CronTask::MODE_EXTERNAL,
+            ]
+        );
+
+        // Issue #31 (plan d'action de traitement des risques, clause 8.3/6.1.3) : évalue chaque
+        // jour les actions de traitement dont l'échéance est dépassée et qui ne sont pas encore
+        // réalisées, et déclenche la notification GLPI seedée ci-dessus (voir
+        // PluginGrcmanagerRiskTreatmentAction::cronOverduetreatmentaction(),
+        // src/Services/Risk/OverdueTreatmentActionService.php).
+        CronTask::Register(
+            'PluginGrcmanagerRiskTreatmentAction',
+            'overduetreatmentaction',
+            DAY_TIMESTAMP,
+            [
+                'comment' => 'Notifie le responsable de chaque action de traitement de risque dont '
+                    . 'l\'échéance est dépassée',
                 'mode'    => CronTask::MODE_EXTERNAL,
             ]
         );
@@ -1150,6 +1204,76 @@ final class Installer
     }
 
     /**
+     * Same structure as seedCapaOverdueNotification() above, for the issue #31 overdue treatment
+     * action Cron task (PluginGrcmanagerRiskTreatmentAction::cronOverduetreatmentaction(), event
+     * 'treatment_action_overdue', see inc/notificationtargetrisktreatmentaction.class.php).
+     * Idempotent for the same reason.
+     */
+    private function seedTreatmentActionOverdueNotification(): void
+    {
+        global $DB;
+
+        $itemtype = 'PluginGrcmanagerRiskTreatmentAction';
+        $event    = 'treatment_action_overdue';
+
+        $alreadySeeded = $DB->request([
+            'FROM'  => 'glpi_notifications',
+            'WHERE' => ['itemtype' => $itemtype, 'event' => $event],
+        ])->count() > 0;
+
+        if ($alreadySeeded) {
+            return;
+        }
+
+        $template = new NotificationTemplate();
+        $templateId = $template->add([
+            'name'     => 'GRC Manager - Action de traitement de risque en retard',
+            'itemtype' => $itemtype,
+            'comment'  => 'Notification envoyée par la tâche automatique GRC Manager lorsqu\'une '
+                . 'action du plan de traitement d\'un risque dépasse son échéance sans être réalisée.',
+        ]);
+
+        $DB->insert('glpi_notificationtemplatetranslations', [
+            'notificationtemplates_id' => $templateId,
+            'language'                 => '',
+            'subject'                  => '##treatmentaction.action## : ##treatmentaction.risktitle##',
+            'content_text'             => "##treatmentaction.action## : ##treatmentaction.risktitle##\n\n"
+                . "Action : ##treatmentaction.description##\n"
+                . "Échéance : ##treatmentaction.duedate##\n\n"
+                . "Voir le risque : ##treatmentaction.url##",
+            'content_html'             => '<p><strong>##treatmentaction.action## : '
+                . '##treatmentaction.risktitle##</strong></p>'
+                . '<p>Action : ##treatmentaction.description##<br>'
+                . 'Échéance : ##treatmentaction.duedate##</p>'
+                . '<p><a href="##treatmentaction.url##">Voir le risque</a></p>',
+        ]);
+
+        $notification = new Notification();
+        $notificationId = $notification->add([
+            'name'         => 'GRC Manager - Action de traitement de risque en retard',
+            'entities_id'  => 0,
+            'is_recursive' => 1,
+            'itemtype'     => $itemtype,
+            'event'        => $event,
+            'is_active'    => 1,
+        ]);
+
+        $DB->insert('glpi_notifications_notificationtemplates', [
+            'notifications_id'         => $notificationId,
+            'mode'                     => 'mailing',
+            'notificationtemplates_id' => $templateId,
+        ]);
+
+        // Default recipient: the treatment action's own responsible owner (`users_id`), same
+        // generic resolution as seedCapaOverdueNotification() above.
+        $DB->insert('glpi_notificationtargets', [
+            'items_id'         => Notification::ITEM_USER,
+            'type'             => Notification::USER_TYPE,
+            'notifications_id' => $notificationId,
+        ]);
+    }
+
+    /**
      * Idempotent like seedSource() on the sibling plugin glpi-vulnerability-manager (same author,
      * same guard shape): each of the 93 controls is looked up by its unique `code` before
      * inserting, so re-running install() (upgrade path, `plugin:install --force`) never duplicates
@@ -1227,6 +1351,7 @@ final class Installer
         $this->unseedNotification('PluginGrcmanagerNonconformity');
         $this->unseedNotification('PluginGrcmanagerTraining');
         $this->unseedNotification('PluginGrcmanagerPolicy');
+        $this->unseedNotification('PluginGrcmanagerRiskTreatmentAction');
 
         // Sprint 7 (tableaux de bord) : retire le tableau de bord natif seedé par
         // DefaultDashboardService::seed() ci-dessus, avant que ses tables ne disparaissent.
@@ -1256,6 +1381,7 @@ final class Installer
         $migration->dropTable(self::OBJECTIVE_MEASUREMENTS_TABLE);
         $migration->dropTable(self::OBJECTIVES_TABLE);
         $migration->dropTable(self::SECURITY_INCIDENTS_TABLE);
+        $migration->dropTable(self::RISK_TREATMENT_ACTIONS_TABLE);
 
         $migration->executeMigration();
 

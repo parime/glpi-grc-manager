@@ -100,6 +100,34 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce p
   reprise dans le tableau de bord seedé à l'installation (`DefaultDashboardService`, 16e carte).
   Réutilise le droit plat existant `plugin_grcmanager`, aucune preuve d'un besoin de droit dédié par
   fonctionnalité dans ce plugin.
+- **Plan d'action de traitement des risques** (issue #31, ISO 27001 clause 8.3/6.1.3) : un risque
+  "à mitiger"/"à transférer" n'avait jusqu'ici que sa décision (`treatment`) et une justification en
+  texte libre, rien ne suivait les actions concrètes menant réellement à sa clôture, contrairement
+  au CAPA structuré des non-conformités. Nouvelle table enfant one-to-many
+  `PluginGrcmanagerRiskTreatmentAction` (`glpi_plugin_grcmanager_risktreatmentactions`, un risque
+  peut avoir zéro, une ou plusieurs actions, chacune avec sa propre description, son responsable
+  (vrai `User` GLPI), son échéance et son statut planifiée/en cours/réalisée) plutôt qu'un simple
+  ensemble de champs plats façon CAPA d'une non-conformité : contrairement à une non-conformité (une
+  action corrective ET une action préventive, fixes), un plan de traitement de risque compte
+  naturellement plusieurs actions indépendantes ("corriger le système" ET "ajouter une supervision"
+  ET "former les équipes"), chacune suivie jusqu'à sa propre clôture - voir le docblock de
+  `PluginGrcmanagerRiskTreatmentAction` pour le raisonnement complet et l'alternative "champs plats"
+  écartée. Uniquement pertinent quand `treatment` vaut "mitiger" ou "transférer"
+  (`TreatmentPlanRules::isTreatmentPlanRelevant()`, testée unitairement) : "accepter" n'a par
+  définition aucun plan de traitement, "éviter" élimine la source du risque sans action à suivre
+  dans la durée. Mini-formulaire d'ajout et liste des actions (mise à jour de statut, suppression)
+  affichés directement sur la fiche du risque concerné (`PluginGrcmanagerRisk::showTreatmentPlan()`,
+  hors du `<form>` principal comme `PluginGrcmanagerObjective::showMeasurementHistory()`, voir la
+  Pull Request pour le détail de cette contrainte HTML). Un risque à mitiger/transférer ne peut plus
+  être clôturé sans au moins une action de traitement enregistrée (validation serveur réelle,
+  message d'erreur, même mécanisme que l'action corrective obligatoire à la clôture d'une
+  non-conformité). "En retard" reste une condition dérivée (échéance dépassée et statut différent de
+  "réalisée"), jamais un statut choisi dans un menu déroulant, même convention que le CAPA en retard,
+  les revues de risque, le renouvellement de formation et la revue de politique. Tâche Cron
+  quotidienne dédiée (`cronOverduetreatmentaction()`, notification GLPI native vers le responsable
+  de l'action) et 2 nouvelles cartes de tableau de bord ("Actions de traitement de risque en
+  retard", "Risques à mitiger/transférer sans plan de traitement"), ajoutées au tableau de bord ISMS
+  seedé à l'installation.
 - **Classification Confidentialité/Intégrité/Disponibilité (C/I/D) des actifs** (issue #26,
   ISO/IEC 27001:2022 A.5.9/A.5.12/A.8.2) : nouveau registre natif, indépendant du lien registre de
   risques <-> actifs de l'issue #25 (`PluginGrcmanagerAssetClassification`, table

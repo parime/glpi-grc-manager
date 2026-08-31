@@ -19,6 +19,7 @@ use GlpiPlugin\Grcmanager\Services\Classification\ClassificationLevels;
 use GlpiPlugin\Grcmanager\Services\Risk\LinkableItemtypes;
 use GlpiPlugin\Grcmanager\Services\Risk\ReviewReminderService;
 use GlpiPlugin\Grcmanager\Services\Risk\RiskItemLinkNormalizer;
+use GlpiPlugin\Grcmanager\Services\Risk\TreatmentPlanRules;
 use GlpiPlugin\Grcmanager\Traits\RiskAssessmentTrait;
 
 /**
@@ -30,6 +31,11 @@ use GlpiPlugin\Grcmanager\Traits\RiskAssessmentTrait;
  * The probability x impact scoring, treatment/status enums and their badge rendering are shared
  * with the Sprint 5 supplier/third-party risk register (PluginGrcmanagerSupplierRisk) via
  * RiskAssessmentTrait, see its own docblock: one implementation, never two that could drift apart.
+ *
+ * Issue #31 (plan d'action de traitement des risques, clause 8.3/6.1.3) adds a genuine, trackable
+ * treatment plan for a `mitigate`/`transfer` decision (see TreatmentPlanRules,
+ * PluginGrcmanagerRiskTreatmentAction, showTreatmentPlan() below) - `treatment` and `justification`
+ * alone only ever recorded the DECISION, never whether it was actually carried out.
  */
 class PluginGrcmanagerRisk extends CommonDBTM
 {
@@ -69,6 +75,64 @@ class PluginGrcmanagerRisk extends CommonDBTM
     public static function getIcon()
     {
         return 'ti ti-shield-exclamation';
+    }
+
+    /**
+     * The one validation this class adds on top of RiskAssessmentTrait's shared scoring (issue #31,
+     * ISO 27001 clause 8.3/6.1.3) : a risk being closed while its decision is `mitigate`/`transfer`
+     * (see TreatmentPlanRules::isTreatmentPlanRelevant()) must have at least one recorded treatment
+     * action - mirrors PluginGrcmanagerNonconformity's own "corrective action mandatory to
+     * close/verify" pattern (CapaRequirementService::isCapaMandatory()), applied here to closing a
+     * risk instead of closing a non-conformity. Delegates the actual probability x impact scoring
+     * to the trait's own computeRiskLevel() so this override never duplicates that logic, same
+     * pattern as PluginGrcmanagerSupplierRisk::validateSupplierAndComputeRiskLevel().
+     *
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>|false
+     */
+    public function prepareInputForAdd($input)
+    {
+        return $this->validateTreatmentPlanAndComputeRiskLevel($input);
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>|false
+     */
+    public function prepareInputForUpdate($input)
+    {
+        return $this->validateTreatmentPlanAndComputeRiskLevel($input);
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>|false
+     */
+    private function validateTreatmentPlanAndComputeRiskLevel(array $input)
+    {
+        $status    = (string) ($input['status'] ?? ($this->fields['status'] ?? 'identified'));
+        $treatment = (string) ($input['treatment'] ?? ($this->fields['treatment'] ?? ''));
+        $riskId    = (int) ($this->fields['id'] ?? 0);
+
+        if (
+            $status === 'closed'
+            && TreatmentPlanRules::isTreatmentPlanRelevant($treatment)
+            && ($riskId <= 0 || PluginGrcmanagerRiskTreatmentAction::countForRisk($riskId) === 0)
+        ) {
+            Session::addMessageAfterRedirect(
+                __(
+                    'Un plan de traitement (au moins une action) est requis pour clôturer un risque '
+                    . 'à mitiger ou transférer.',
+                    'grcmanager'
+                ),
+                false,
+                ERROR
+            );
+
+            return false;
+        }
+
+        return $this->computeRiskLevel($input);
     }
 
     public function rawSearchOptions()
@@ -286,9 +350,21 @@ class PluginGrcmanagerRisk extends CommonDBTM
         }
 
         echo '<tr class="tab_bg_1"><td>' . __('Traitement', 'grcmanager') . '</td><td>';
+        $treatment = (string) ($this->fields['treatment'] ?? '');
         Dropdown::showFromArray('treatment', self::getTreatments(), [
-            'value' => $this->fields['treatment'] ?? '',
+            'value' => $treatment,
         ]);
+        // Issue #31 : signal precoce, au plus pres de la decision elle-meme, que ce choix
+        // implique un plan de traitement plus bas dans ce meme formulaire (voir
+        // showTreatmentPlan() ci-dessous) - meme "form-hint" texte simple que le reste de ce
+        // plugin (TECH_DEBT.md "showForm() en HTML/PHP manuel"), jamais de bascule JS.
+        if (TreatmentPlanRules::isTreatmentPlanRelevant($treatment)) {
+            echo '<br><small class="form-hint">' . __(
+                'Un plan de traitement (une ou plusieurs actions concrètes) est attendu pour ce '
+                . 'choix, voir plus bas sur cette fiche.',
+                'grcmanager'
+            ) . '</small>';
+        }
         echo '</td>';
 
         echo '<td>' . __('Statut', 'grcmanager') . '</td><td>';
@@ -373,7 +449,147 @@ class PluginGrcmanagerRisk extends CommonDBTM
 
         $this->showFormButtons($options);
 
+        // Issue #31 (plan d'action de traitement des risques, clause 8.3/6.1.3 ISO 27001) : placé
+        // en DEHORS de showFormHeader()/showFormButtons() ci-dessus (donc en dehors du <form>
+        // qu'ils ouvrent/ferment), exactement comme PluginGrcmanagerObjective::
+        // showMeasurementHistory() - le précédent le plus proche pour un vrai enfant one-to-many
+        // avec sa propre identité/cycle de vie par ligne (ajout/mise à jour de statut/suppression
+        // indépendants dans le temps), par opposition au multi-select "Actifs liés (CMDB)" plus
+        // haut sur cette même fiche (issue #25), qui soumet ses valeurs dans le MÊME formulaire que
+        // le risque lui-même et n'a donc pas cette contrainte. Un <form> HTML ne peut pas en
+        // contenir un second : ce mini formulaire poste vers un contrôleur différent
+        // (front/risktreatmentaction.form.php) de celui du risque, il ne peut donc pas être imbriqué
+        // plus haut "juste après Justification" comme le sont les sections issue #25/#26, malgré la
+        // ressemblance visuelle recherchée - voir la description de la Pull Request pour ce
+        // raisonnement complet.
+        if (!$this->isNewID($ID) && TreatmentPlanRules::isTreatmentPlanRelevant($treatment)) {
+            $this->showTreatmentPlan((int) $ID);
+        } elseif ($this->isNewID($ID) && TreatmentPlanRules::isTreatmentPlanRelevant($treatment)) {
+            echo '<div class="alert alert-info mt-3">' . __(
+                'Enregistrez d\'abord ce risque pour pouvoir renseigner son plan de traitement.',
+                'grcmanager'
+            ) . '</div>';
+        }
+
         return true;
+    }
+
+    /**
+     * Mini formulaire d'ajout (description + responsable + échéance, voir
+     * front/risktreatmentaction.form.php) suivi de la liste des actions déjà enregistrées, chacune
+     * avec son propre mini formulaire de mise à jour de statut et son bouton de suppression - même
+     * structure que PluginGrcmanagerObjective::showMeasurementHistory() (issue #32), adaptée pour
+     * porter un statut/une échéance par ligne plutôt qu'un simple historique chronologique en
+     * lecture continue.
+     */
+    private function showTreatmentPlan(int $riskId): void
+    {
+        global $CFG_GLPI;
+
+        $canEdit = Session::haveRight(self::$rightname, UPDATE);
+        $formUrl = $CFG_GLPI['root_doc'] . '/plugins/grcmanager/front/risktreatmentaction.form.php';
+
+        echo '<div class="card mt-3"><div class="card-body">';
+        echo '<h3>' . __('Plan de traitement du risque', 'grcmanager') . '</h3>';
+        echo '<small class="form-hint d-block mb-2">' . __(
+            'Actions concrètes mises en œuvre pour appliquer la décision de traitement (clause '
+            . '8.3/6.1.3 ISO 27001) : chacune a son propre responsable, sa propre échéance et son '
+            . 'propre statut.',
+            'grcmanager'
+        ) . '</small>';
+
+        if ($canEdit) {
+            echo '<form method="post" action="' . htmlescape($formUrl) . '" class="mb-3">';
+            echo Html::hidden('plugin_grcmanager_risks_id', ['value' => $riskId]);
+            echo Html::hidden('_glpi_csrf_token', ['value' => Session::getNewCSRFToken()]);
+
+            echo '<table class="table">';
+            echo '<tr>';
+            echo '<td>' . __('Description de l\'action', 'grcmanager') . '</td>';
+            echo '<td>' . __('Responsable', 'grcmanager') . '</td>';
+            echo '<td>' . __('Échéance', 'grcmanager') . '</td>';
+            echo '<td></td>';
+            echo '</tr>';
+            echo '<tr>';
+            echo '<td><input type="text" name="description" class="form-control"></td>';
+            echo '<td>';
+            User::dropdown(['name' => 'users_id', 'value' => 0, 'right' => 'all']);
+            echo '</td>';
+            echo '<td>';
+            Html::showDateField('due_date', ['value' => '']);
+            echo '</td>';
+            echo '<td>' . Html::submit(__('Ajouter'), ['name' => 'add']) . '</td>';
+            echo '</tr>';
+            echo '</table>';
+            echo '</form>';
+        }
+
+        echo '<table class="table">';
+        echo '<thead><tr>';
+        echo '<th>' . __('Description de l\'action', 'grcmanager') . '</th>';
+        echo '<th>' . __('Responsable', 'grcmanager') . '</th>';
+        echo '<th>' . __('Échéance', 'grcmanager') . '</th>';
+        echo '<th>' . __('Statut', 'grcmanager') . '</th>';
+        echo '<th>' . __('Date de réalisation', 'grcmanager') . '</th>';
+        if ($canEdit) {
+            echo '<th></th>';
+        }
+        echo '</tr></thead><tbody>';
+
+        $actions = PluginGrcmanagerRiskTreatmentAction::getActionsForRisk($riskId);
+
+        if (count($actions) === 0) {
+            $colspan = $canEdit ? 6 : 5;
+            echo '<tr><td colspan="' . $colspan . '" class="text-muted">'
+                . __('Aucune action de traitement enregistrée pour le moment.', 'grcmanager') . '</td></tr>';
+        }
+
+        foreach ($actions as $action) {
+            $isOverdue = TreatmentPlanRules::isOverdue($action['due_date'] ?? null, (string) $action['status']);
+
+            echo '<tr' . ($isOverdue ? ' class="table-danger"' : '') . '>';
+            echo '<td>' . htmlescape((string) ($action['description'] ?? '')) . '</td>';
+            echo '<td>' . htmlescape(getUserName((int) $action['users_id'])) . '</td>';
+            echo '<td>' . htmlescape(Html::convDate($action['due_date'] ?? ''));
+            if ($isOverdue) {
+                echo ' <span class="badge bg-red-lt"><i class="ti ti-alert-triangle me-1"></i>'
+                    . __('En retard', 'grcmanager') . '</span>';
+            }
+            echo '</td>';
+            echo '<td>' . PluginGrcmanagerRiskTreatmentAction::statusBadge($action['status'] ?? null) . '</td>';
+            echo '<td>' . htmlescape(Html::convDate($action['completion_date'] ?? '')) . '</td>';
+
+            if ($canEdit) {
+                echo '<td class="d-flex gap-1">';
+
+                echo '<form method="post" action="' . htmlescape($formUrl) . '" '
+                    . 'class="d-flex gap-1 align-items-center mb-0">';
+                echo Html::hidden('id', ['value' => $action['id']]);
+                echo Html::hidden('plugin_grcmanager_risks_id', ['value' => $riskId]);
+                echo Html::hidden('_glpi_csrf_token', ['value' => Session::getNewCSRFToken()]);
+                Dropdown::showFromArray('status', PluginGrcmanagerRiskTreatmentAction::getStatuses(), [
+                    'value' => $action['status'] ?? TreatmentPlanRules::DEFAULT_STATUS,
+                ]);
+                echo Html::submit(__('Mettre à jour', 'grcmanager'), ['name' => 'update']);
+                echo '</form>';
+
+                echo '<form method="post" action="' . htmlescape($formUrl) . '" class="mb-0" '
+                    . 'onsubmit="return confirm(\'' . __('Confirmer la suppression ?', 'grcmanager') . '\');">';
+                echo Html::hidden('id', ['value' => $action['id']]);
+                echo Html::hidden('plugin_grcmanager_risks_id', ['value' => $riskId]);
+                echo Html::hidden('_glpi_csrf_token', ['value' => Session::getNewCSRFToken()]);
+                echo '<button type="submit" name="purge" class="btn btn-sm btn-outline-danger">'
+                    . '<i class="ti ti-trash"></i></button>';
+                echo '</form>';
+
+                echo '</td>';
+            }
+
+            echo '</tr>';
+        }
+
+        echo '</tbody></table>';
+        echo '</div></div>';
     }
 
     /**
@@ -632,6 +848,16 @@ class PluginGrcmanagerRisk extends CommonDBTM
 
         global $DB;
         $DB->delete(self::ITEMS_LINK_TABLE, ['plugin_grcmanager_risks_id' => $this->fields['id']]);
+
+        // Issue #31 : contrairement à PluginGrcmanagerObjectiveMeasurement (jamais nettoyée quand
+        // son objectif parent est supprimé, voir TECH_DEBT.md issue #32), on nettoie ici : ce hook
+        // existe déjà pour ITEMS_LINK_TABLE ci-dessus, le coût marginal d'un second $DB->delete()
+        // est nul, et une action de traitement orpheline ne serait, elle, plus jamais visible ni
+        // supprimable (aucun menu, aucun écran de recherche propre à cet itemtype).
+        $DB->delete(
+            PluginGrcmanagerRiskTreatmentAction::getTable(),
+            ['plugin_grcmanager_risks_id' => $this->fields['id']]
+        );
     }
 
     /**

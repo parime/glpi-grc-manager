@@ -41,6 +41,9 @@ Objectif : une plateforme GRC/ISO 27001 générique fonctionnelle de bout en bou
   optionnelle vers un Ticket/Problem GLPI existant, lien optionnel vers une entrée du registre de
   risques et cause racine/enseignements tirés obligatoires à la clôture, pour boucler la clause
   A.5.27 sans dupliquer le système de tickets natif de GLPI
+- Plan d'action de traitement des risques (issue #31, clause 8.3/6.1.3 ISO 27001) : suivi des
+  actions concrètes (responsable, échéance, statut) mettant réellement en œuvre une décision de
+  traitement "mitiger"/"transférer", jusqu'à leur clôture effective
 
 ## Version 1.5
 
