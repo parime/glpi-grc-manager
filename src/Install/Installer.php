@@ -229,6 +229,8 @@ final class Installer
                 `title` varchar(255) NOT NULL,
                 `description` text,
                 `plugin_grcmanager_audits_id` int {$keySign} NOT NULL DEFAULT 0,
+                `finding_type` varchar(16) NOT NULL DEFAULT 'nonconformity'
+                    COMMENT 'nonconformity, observation (issue #27, deux axes independants de severity)',
                 `severity` varchar(16) NOT NULL DEFAULT 'minor' COMMENT 'minor, major, critical',
                 `root_cause` text,
                 `corrective_action` text,
@@ -242,6 +244,7 @@ final class Installer
                 `date_mod` timestamp NULL DEFAULT NULL,
                 PRIMARY KEY (`id`),
                 KEY `plugin_grcmanager_audits_id` (`plugin_grcmanager_audits_id`),
+                KEY `finding_type` (`finding_type`),
                 KEY `severity` (`severity`),
                 KEY `status` (`status`),
                 KEY `users_id` (`users_id`),
@@ -249,6 +252,37 @@ final class Installer
             ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
 
             $DB->doQuery($query) or die($DB->error());
+        }
+
+        // Issue #27 (distinguer non-conformité et observation/remarque, vocabulaire ISO 19011) :
+        // deuxième axe independant de `severity` (voir TECH_DEBT.md Sprint 4, résolu, et le
+        // docblock de PluginGrcmanagerNonconformity). `finding_type` est deja dans le CREATE TABLE
+        // ci-dessus pour une installation neuve ; ce bloc gere le meme ajout pour une installation
+        // existante d'avant l'issue #27, premiere migration de champ de ce fichier (v1.0 n'avait
+        // encore jamais eu besoin d'en ajouter une sur une table deja creee), suivant exactement la
+        // meme convention idempotente fieldExists/addField/migrationOneTable que le plugin jumeau
+        // assetsign-glpi (src/GlpiPlugin/Assetsign/Config.php). Type 'string' (pas un fragment SQL
+        // brut comme 'varchar(16)') delibere : Migration::fieldFormat() ne sait appliquer un
+        // DEFAULT que pour ses types nommes reconnus (string/bool/integer/...), un fragment SQL
+        // brut passe tel quel sans jamais honorer l'option 'value' ci-dessous (verifie en conditions
+        // reelles contre GLPI 11). VARCHAR(255) plutot que VARCHAR(16) comme dans le CREATE TABLE
+        // ci-dessus : largeur suffisante, l'essentiel est que la valeur par defaut 'nonconformity'
+        // soit reellement appliquee (MySQL retro-remplit alors chaque ligne existante avec ce
+        // defaut lors de l'ADD COLUMN NOT NULL DEFAULT, jamais laissee a NULL) pour ne jamais
+        // reclasser silencieusement en simple observation un constat d'audit deja existant.
+        if (!$DB->fieldExists(self::NONCONFORMITIES_TABLE, 'finding_type')) {
+            $migration->addField(
+                self::NONCONFORMITIES_TABLE,
+                'finding_type',
+                'string',
+                [
+                    'value'   => 'nonconformity',
+                    'comment' => 'nonconformity, observation (issue #27, deux axes independants de severity)',
+                    'after'   => 'plugin_grcmanager_audits_id',
+                ]
+            );
+            $migration->addKey(self::NONCONFORMITIES_TABLE, 'finding_type', 'finding_type');
+            $migration->migrationOneTable(self::NONCONFORMITIES_TABLE);
         }
 
         // Sprint 5 (risques fournisseurs/tiers) : même structure que RISKS_TABLE ci-dessus (mêmes

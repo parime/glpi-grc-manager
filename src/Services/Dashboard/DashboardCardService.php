@@ -213,6 +213,11 @@ final class DashboardCardService
     /**
      * Sprint 4 (audits internes et CAPA, clause 10.2) : non-conformités encore ouvertes ou en
      * traitement, quel que soit l'audit d'origine.
+     *
+     * Filtree sur `finding_type = 'nonconformity'` depuis l'issue #27 : le libelle de cette carte
+     * annonce explicitement des "non-conformités", elle ne doit donc pas mélanger de simples
+     * observations/remarques dans son compte (le point même de l'issue #27 est que le RSSI et
+     * l'auditeur ne confondent plus les deux natures de constat dans un même chiffre).
      */
     public static function openNonconformitiesCount(array $params = []): array
     {
@@ -221,7 +226,10 @@ final class DashboardCardService
         $count = (int) $DB->request([
             'COUNT' => 'c',
             'FROM' => 'glpi_plugin_grcmanager_nonconformities',
-            'WHERE' => ['status' => ['open', 'in_progress']],
+            'WHERE' => [
+                'status'       => ['open', 'in_progress'],
+                'finding_type' => 'nonconformity',
+            ],
         ])->current()['c'];
 
         return [
