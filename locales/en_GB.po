@@ -1025,3 +1025,53 @@ msgstr "Security incidents by status"
 
 msgid "Incidents de sécurité par sévérité"
 msgstr "Security incidents by severity"
+
+msgid "Action de traitement de risque"
+msgid_plural "Actions de traitement de risque"
+msgstr[0] "Risk treatment action"
+msgstr[1] "Risk treatment actions"
+
+msgid "Réalisée"
+msgstr "Done"
+
+msgid "Risque introuvable."
+msgstr "Risk not found."
+
+msgid "Action de traitement de risque en retard"
+msgstr "Overdue risk treatment action"
+
+msgid "Responsable de l'action"
+msgstr "Action owner"
+
+msgid "Description de l'action"
+msgstr "Action description"
+
+msgid "Un plan de traitement (une ou plusieurs actions concrètes) est attendu pour ce choix, voir plus bas sur cette fiche."
+msgstr "A treatment plan (one or more concrete actions) is expected for this choice, see further down this record."
+
+msgid "Un plan de traitement (au moins une action) est requis pour clôturer un risque à mitiger ou transférer."
+msgstr "A treatment plan (at least one action) is required to close a risk being mitigated or transferred."
+
+msgid "Enregistrez d'abord ce risque pour pouvoir renseigner son plan de traitement."
+msgstr "Save this risk first to be able to fill in its treatment plan."
+
+msgid "Plan de traitement du risque"
+msgstr "Risk treatment plan"
+
+msgid "Actions concrètes mises en œuvre pour appliquer la décision de traitement (clause 8.3/6.1.3 ISO 27001) : chacune a son propre responsable, sa propre échéance et son propre statut."
+msgstr "Concrete actions implementing the treatment decision (ISO 27001 clause 8.3/6.1.3): each has its own owner, its own due date and its own status."
+
+msgid "Aucune action de traitement enregistrée pour le moment."
+msgstr "No treatment action recorded yet."
+
+msgid "En retard"
+msgstr "Overdue"
+
+msgid "Mettre à jour"
+msgstr "Update"
+
+msgid "Actions de traitement de risque en retard"
+msgstr "Overdue risk treatment actions"
+
+msgid "Risques à mitiger/transférer sans plan de traitement"
+msgstr "Risks to mitigate/transfer with no treatment plan"

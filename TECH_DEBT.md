@@ -497,6 +497,85 @@ Journal des limites connues et compromis assumés, tenu à jour à chaque sprint
   test automatisé, cohérent avec le fait qu'aucun `InstallerTest.php` n'existe nulle part ailleurs
   dans ce projet non plus.
 
+## Plan d'action de traitement des risques (issue #31)
+
+- **`.mo` régénérés sans `msgfmt`/gettext**, même limite déjà documentée pour l'issue #32 ci-dessus
+  (outil absent de l'environnement de développement utilisé pour cette issue) : compilés depuis les
+  `.po` mis à jour avec un petit script Python interne, ré-écrit intégralement (pas un simple ajout
+  binaire) à partir d'un parseur PO minimal couvrant les entrées existantes ET les nouvelles,
+  vérifié par relecture avec `gettext.GNUTranslations` de Python avant commit (chaîne d'en-tête
+  `Plural-Forms`/`Content-Type` incluse, formes plurielles testées). À recompiler avec le `msgfmt`
+  réel du système au prochain changement de traduction si l'outil est disponible dans un
+  environnement ultérieur.
+
+- **Table enfant one-to-many (`PluginGrcmanagerRiskTreatmentAction`) plutôt que des champs plats
+  façon CAPA sur `PluginGrcmanagerRisk` lui-même.** L'issue laissait le choix ouvert entre les deux.
+  Un CAPA de non-conformité a exactement une action corrective ET une action préventive, deux
+  champs texte fixes suffisent. Un plan de traitement de risque compte en pratique souvent plusieurs
+  actions indépendantes (« corriger le système » ET « ajouter une supervision » ET « former les
+  équipes »), chacune avec son propre responsable/échéance/statut suivi jusqu'à sa propre clôture -
+  une seule paire de champs texte aurait forcé à tout entasser dans un seul bloc non structuré,
+  perdant le suivi individuel que l'issue demande explicitement. Ce plugin a déjà un précédent direct
+  pour ce choix : `PluginGrcmanagerObjectiveMeasurement` (issue #32), un enfant one-to-many sans menu
+  ni écran de recherche propre, ajouté/mis à jour/supprimé uniquement depuis le formulaire de son
+  parent - repris ici quasi à l'identique plutôt que le lien polymorphe simple `$DB` type
+  `glpi_plugin_grcmanager_risks_items` (issue #25), qui convient à un simple ensemble de références
+  sans donnée propre par ligne, pas à une entité qui porte elle-même statut/échéance/responsable.
+- **`overdue` n'est PAS un des statuts stockés (`planned`/`in_progress`/`done`), contrairement à ce
+  qu'une première lecture de l'issue pouvait suggérer.** Chaque autre notion de « retard » déjà
+  présente dans ce plugin (CAPA, revues de risque, renouvellement de formation, revue de politique)
+  est une condition DÉRIVÉE (échéance dépassée ET statut non terminal), jamais une valeur choisie
+  dans un menu déroulant - voir `GlpiPlugin\Grcmanager\Services\Capa\OverdueCapaService` et
+  TECH_DEBT.md Sprint 4. `TreatmentPlanRules::isOverdue()` suit exactement cette même convention
+  établie, pour que le badge affiché sur la fiche du risque, la carte de tableau de bord et la tâche
+  Cron de rappel ne puissent jamais diverger sur ce qui compte comme « en retard ».
+- **Un risque « à mitiger »/« à transférer » ne peut plus être clôturé sans au moins une action de
+  traitement enregistrée (validation serveur réelle qui bloque l'enregistrement).** L'issue demandait
+  seulement que le plan soit « pertinent/quasi-obligatoire » pour ces deux décisions, sans imposer
+  explicitement un blocage à la clôture. Le blocage a été ajouté malgré tout, en miroir exact de la
+  règle déjà en place sur `PluginGrcmanagerNonconformity` (action corrective obligatoire pour
+  clôturer/vérifier une vraie non-conformité, voir `CapaRequirementService` et TECH_DEBT.md Sprint
+  4) : sans cette vérification, la clause 8.3/6.1.3 (mise en œuvre EFFECTIVE du traitement) resterait
+  aussi peu vérifiée qu'avant cette issue, un risque pourrait être déclaré « clôturé » sans qu'aucune
+  action n'ait jamais été enregistrée. Seule l'EXISTENCE d'au moins une action est vérifiée, pas que
+  toutes les actions soient elles-mêmes au statut « réalisée » - cohérent avec la philosophie
+  « version minimale et testée » de ce plugin, à réévaluer si un besoin réel de blocage plus strict
+  apparaît en usage réel.
+- **Section « Plan de traitement du risque » affichée EN DEHORS du `<form>` principal du risque
+  (juste après `showFormButtons()`), pas littéralement « juste après Justification » comme les
+  sections des issues #25/#26 sur cette même fiche.** Contrainte HTML, pas un choix de confort : ce
+  mini-CRUD poste vers un contrôleur différent (`front/risktreatmentaction.form.php`) de celui du
+  risque lui-même, et un `<form>` HTML ne peut pas en contenir un second - exactement la même
+  contrainte déjà documentée et résolue de la même façon par
+  `PluginGrcmanagerObjective::showMeasurementHistory()` (issue #32, voir son propre docblock). Les
+  sections des issues #25 (actifs liés)/#26 (indice de classification) n'ont pas cette contrainte :
+  elles soumettent leurs valeurs dans le MÊME formulaire que le risque, via de simples
+  multi-select/texte, pas un contrôleur indépendant avec sa propre identité par ligne. Une petite
+  aide contextuelle est malgré tout affichée au plus près de la décision elle-même (juste sous le
+  champ Traitement) pour limiter l'écart avec le placement demandé.
+- **`PluginGrcmanagerRisk::post_purgeItem()` nettoie désormais aussi
+  `glpi_plugin_grcmanager_risktreatmentactions`, contrairement à `PluginGrcmanagerObjectiveMeasurement`
+  qui, elle, reste orpheline quand son objectif parent est supprimé (voir TECH_DEBT.md issue #32).**
+  Décision volontairement différente de son propre précédent le plus proche : ce hook existe déjà sur
+  `PluginGrcmanagerRisk` (issue #25, nettoyage de `glpi_plugin_grcmanager_risks_items`), le coût
+  marginal d'un second `$DB->delete()` est nul, et une action de traitement orpheline ne serait, elle,
+  plus jamais visible ni supprimable ensuite (aucun menu, aucun écran de recherche propre à cet
+  itemtype, contrairement à un objectif ISMS qui, lui, reste consultable même après suppression d'une
+  revue de direction qui le référençait).
+- **Limité à `PluginGrcmanagerRisk`, pas étendu à `PluginGrcmanagerSupplierRisk`** bien que les deux
+  partagent le même `treatment`/`status` via `RiskAssessmentTrait` : l'issue #31 ne mentionne que « le
+  registre de risques », pas le registre fournisseurs/tiers. Le lien créé ici
+  (`PluginGrcmanagerRiskTreatmentAction`) est spécifique à `PluginGrcmanagerRisk`
+  (`plugin_grcmanager_risks_id`), pas générique par itemtype ; à réévaluer si un besoin réel de plan
+  de traitement pour un risque fournisseur apparaît (une généralisation à la
+  `ReviewReminderService`/`$itemtype` paramétrable serait alors le point de départ naturel).
+- **Aucune colonne "actions de traitement" dans `PluginGrcmanagerRisk::rawSearchOptions()`.** Même
+  raisonnement déjà documenté pour l'absence de colonne "actifs liés" (issue #25 ci-dessus) : une
+  relation one-to-many n'a pas de `datatype` natif du moteur de recherche GLPI adapté à un simple
+  ajout de colonne : la fiche de détail (formulaire + plan de traitement inline) est le livrable de
+  cette issue, une colonne de recherche (ex. compteur d'actions en retard par risque) resterait à
+  construire sur mesure si un besoin réel de tri/filtre sur ce critère apparaît en usage réel.
+
 - **`docs/design/` ne contient qu'un seul document (`DEVELOPMENT_PLAN.md`), pas d'ADR dédiées.**
   Évalué lors de la même revue : il n'existe pas de série de fichiers "Architecture Decision
   Record" formels comme le ferait un projet plus mature. Jugé suffisant pour l'instant (pas

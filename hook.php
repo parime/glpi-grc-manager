@@ -193,6 +193,19 @@ function plugin_grcmanager_dashboard_cards(?array $cards = null): array
             'group' => $group,
             'provider' => DashboardCardService::class . '::securityIncidentsBySeverity',
         ],
+        // Issue #31 (plan d'action de traitement des risques, clause 8.3/6.1.3).
+        'grcmanager_overdue_treatment_actions' => [
+            'widgettype' => ['bigNumber'],
+            'label' => __('Actions de traitement de risque en retard', 'grcmanager'),
+            'group' => $group,
+            'provider' => DashboardCardService::class . '::overdueTreatmentActionsCount',
+        ],
+        'grcmanager_risks_missing_treatment_plan' => [
+            'widgettype' => ['bigNumber'],
+            'label' => __('Risques à mitiger/transférer sans plan de traitement', 'grcmanager'),
+            'group' => $group,
+            'provider' => DashboardCardService::class . '::risksMissingTreatmentPlanCount',
+        ],
     ];
 }
 

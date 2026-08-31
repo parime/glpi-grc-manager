@@ -640,15 +640,6 @@ final class DashboardCardService
     }
 
     /**
-     * Issue #32 (objectifs ISMS et suivi de KPI dans le temps, clause 6.2) : répartition par
-     * statut (non démarré/sur la bonne voie/à risque/atteint/manqué), même schéma que
-     * managementReviewsByStatus()/auditsByStatus() ci-dessus. Le status enum
-     * (GlpiPlugin\Grcmanager\Services\Objective\ObjectiveStatuses) n'est pas réutilisé ici pour
-     * garder ce fichier hors du périmètre GLPI-indépendant de phpstan.neon.dist (voir sa propre
-     * note), les valeurs sont dupliquées littéralement comme le fait déjà auditsByStatus() pour
-     * son propre enum de statuts.
-     */
-    /**
      * Issue #29 (registre des incidents de sécurité de l'information, A.5.24-27) : répartition par
      * statut (ouvert/en investigation/contenu/clôturé), même schéma que
      * auditsByStatus()/managementReviewsByStatus() ci-dessus.
@@ -721,6 +712,81 @@ final class DashboardCardService
         ];
     }
 
+    /**
+     * Issue #31 (plan d'action de traitement des risques, clause 8.3/6.1.3) : même définition "en
+     * retard" que GlpiPlugin\Grcmanager\Services\Risk\TreatmentPlanRules::isOverdue() et la tâche
+     * Cron PluginGrcmanagerRiskTreatmentAction::cronOverduetreatmentaction() (échéance dépassée,
+     * statut différent de "done"), pour que cette carte et le rappel automatique ne divergent
+     * jamais sur ce qui compte comme "en retard", même schéma que overdueCapaCount() ci-dessus.
+     */
+    public static function overdueTreatmentActionsCount(array $params = []): array
+    {
+        global $DB;
+
+        $count = (int) $DB->request([
+            'COUNT' => 'c',
+            'FROM' => 'glpi_plugin_grcmanager_risktreatmentactions',
+            'WHERE' => [
+                'status' => ['<>', 'done'],
+                new QueryExpression('due_date IS NOT NULL'),
+                new QueryExpression('due_date < CURDATE()'),
+            ],
+        ])->current()['c'];
+
+        return [
+            'number' => $count,
+            'label' => $params['label'] ?? __('Actions de traitement de risque en retard', 'grcmanager'),
+            'icon' => 'ti ti-calendar-due',
+        ];
+    }
+
+    /**
+     * Issue #31 : le "gap" que ce sprint cherche précisément à révéler - un risque encore ouvert
+     * dont la décision de traitement est "mitiger"/"transférer" (donc censée être mise en œuvre,
+     * voir TreatmentPlanRules::isTreatmentPlanRelevant()) mais qui n'a encore AUCUNE action de
+     * traitement enregistrée : une décision prise, sans plan derrière. Un risque déjà `closed` est
+     * exclu (voir PluginGrcmanagerRisk::validateTreatmentPlanAndComputeRiskLevel(), qui empêche
+     * désormais de clôturer un tel risque sans au moins une action, donc plus rien à signaler ici
+     * une fois clôturé), même définition "ouvert" que openRisksCount() ci-dessus.
+     */
+    public static function risksMissingTreatmentPlanCount(array $params = []): array
+    {
+        global $DB;
+
+        $count = (int) $DB->request([
+            'SELECT' => [new QueryExpression('COUNT(DISTINCT r.id) AS c')],
+            'FROM' => 'glpi_plugin_grcmanager_risks AS r',
+            'LEFT JOIN' => [
+                'glpi_plugin_grcmanager_risktreatmentactions AS a' => [
+                    'FKEY' => ['r' => 'id', 'a' => 'plugin_grcmanager_risks_id'],
+                ],
+            ],
+            'WHERE' => [
+                'r.treatment' => ['mitigate', 'transfer'],
+                'r.status'    => ['identified', 'in_treatment'],
+                new QueryExpression('a.id IS NULL'),
+            ],
+        ])->current()['c'];
+
+        return [
+            'number' => $count,
+            'label' => $params['label'] ?? __(
+                'Risques à mitiger/transférer sans plan de traitement',
+                'grcmanager'
+            ),
+            'icon' => 'ti ti-list-details',
+        ];
+    }
+
+    /**
+     * Issue #32 (objectifs ISMS et suivi de KPI dans le temps, clause 6.2) : répartition par
+     * statut (non démarré/sur la bonne voie/à risque/atteint/manqué), même schéma que
+     * managementReviewsByStatus()/auditsByStatus() ci-dessus. Le status enum
+     * (GlpiPlugin\Grcmanager\Services\Objective\ObjectiveStatuses) n'est pas réutilisé ici pour
+     * garder ce fichier hors du périmètre GLPI-indépendant de phpstan.neon.dist (voir sa propre
+     * note), les valeurs sont dupliquées littéralement comme le fait déjà auditsByStatus() pour
+     * son propre enum de statuts.
+     */
     public static function objectivesByStatus(array $params = []): array
     {
         global $DB;
