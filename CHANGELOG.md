@@ -7,6 +7,23 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce p
 
 ## [Non publié]
 
+### Added
+
+- **Lien registre de risques <-> actifs GLPI/CMDB** (issue #25) : un risque peut désormais être
+  lié à zéro, un ou plusieurs actifs réels de la CMDB (Computer, Monitor, NetworkEquipment,
+  Peripheral, Phone, Printer, Software, ainsi que tout actif personnalisé actif) via une nouvelle
+  table de liaison polymorphe `glpi_plugin_grcmanager_risks_items` (itemtype/items_id, sur le même
+  modèle que les tables de liaison polymorphes du cœur GLPI, ex. `glpi_documents_items`) —
+  volontairement PAS une colonne `itemtype`/`items_id` directe sur `glpi_plugin_grcmanager_risks`
+  elle-même, qui aurait imposé à tort une cardinalité 1-vers-1. Un multi-select par itemtype liable
+  dans le formulaire du risque (`PluginGrcmanagerRisk::showForm()`), et un nouvel onglet "Risques"
+  en lecture seule sur la fiche de chaque actif liable (`getTabNameForItem()`/
+  `displayTabContentForItem()`, `Plugin::registerClass()`/`addtabon` dans `setup.php`) pour
+  répondre au besoin inverse ("quels risques pèsent sur cet actif ?"). Gérée par de simples
+  méthodes statiques en accès direct `$DB` (`getLinkedAssets()`/`syncLinkedAssets()`/
+  `getRisksLinkedToItem()`), pas une vraie classe `CommonDBRelation`, même simplification déjà
+  assumée pour tous les autres liens de ce plugin depuis le Sprint 3 (voir TECH_DEBT.md).
+
 ## [1.0.1] - 2026-08-26
 
 ### Added
