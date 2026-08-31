@@ -741,3 +741,35 @@ msgstr "%1$s #%2$d (supprimé)"
 msgid "Aucun risque lié à cet actif."
 msgstr "Aucun risque lié à cet actif."
 
+msgid "Classification C/I/D"
+msgid_plural "Classifications C/I/D"
+msgstr[0] "Classification C/I/D"
+msgstr[1] "Classifications C/I/D"
+
+msgid "Type d'actif"
+msgstr "Type d'actif"
+
+msgid "Confidentialité"
+msgstr "Confidentialité"
+
+msgid "Intégrité"
+msgstr "Intégrité"
+
+msgid "Disponibilité"
+msgstr "Disponibilité"
+
+msgid "Non classifié"
+msgstr "Non classifié"
+
+msgid "Classification actuelle : Confidentialité %1$s / Intégrité %2$s / Disponibilité %3$s"
+msgstr "Classification actuelle : Confidentialité %1$s / Intégrité %2$s / Disponibilité %3$s"
+
+msgid "Cet actif n'a pas encore été classifié (confidentialité/intégrité/disponibilité)."
+msgstr "Cet actif n'a pas encore été classifié (confidentialité/intégrité/disponibilité)."
+
+msgid "Un actif lié porte une classification C/I/D élevée : vérifiez l'impact de ce risque."
+msgstr "Un actif lié porte une classification C/I/D élevée : vérifiez l'impact de ce risque."
+
+msgid "(C : %1$s, I : %2$s, D : %3$s)"
+msgstr "(C : %1$s, I : %2$s, D : %3$s)"
+

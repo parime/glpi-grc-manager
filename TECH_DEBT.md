@@ -247,6 +247,47 @@ Journal des limites connues et compromis assumés, tenu à jour à chaque sprint
   (ex. sous-requête `COUNT(*)` par risque, sans filtre par actif précis) si un besoin réel de tri/
   filtre sur ce critère apparaît en usage réel.
 
+## Classification C/I/D des actifs (issue #26)
+
+- **Table `glpi_plugin_grcmanager_assetclassifications` (pas `..._asset_classifications`).**
+  L'issue suggérait un nom avec underscore ; la dérivation réellement utilisée partout ailleurs
+  dans ce plugin (suffixe de classe en minuscules, sans underscore ajouté à la frontière camelCase,
+  voir `src/Install/Installer.php`) donne `assetclassifications`, cohérente avec `assetclassifications`,
+  `supplierrisks`, `managementreviews`... Choisi délibérément pour ne pas introduire une seule table
+  au nom incohérent avec toutes les autres du même plugin.
+- **Aucun nettoyage automatique quand l'actif classifié lui-même est supprimé.** Une classification
+  reste en base avec un couple itemtype/items_id orphelin si le `Computer` (ou autre actif) qu'elle
+  décrit est supprimé côté GLPI : même limitation déjà assumée pour
+  `glpi_plugin_grcmanager_risks_items` (issue #25, voir ci-dessus), qui ne se nettoie elle non plus
+  que lorsque c'est le RISQUE qui est purgé, jamais quand c'est l'actif lié qui disparaît. Un
+  registre indépendant du risque qui commettrait la même impasse pour son propre côté « actif » n'a
+  pas semblé justifier un mécanisme de nettoyage plus riche pour cette première version ; à
+  reconsidérer si un besoin réel de cohérence stricte apparaît (ex. hook générique sur la
+  suppression de tout itemtype liable, plutôt qu'un cas par cas par registre).
+- **Droit d'édition de l'onglet vérifié uniquement via `UPDATE` sur le droit plat
+  `plugin_grcmanager`**, jamais `CREATE` séparément pour le cas "cet actif n'a encore aucune
+  ligne de classification" : `displayTabContentForItem()` n'affiche le formulaire d'édition que
+  si l'utilisateur a `UPDATE`, alors que `front/assetclassification.form.php` vérifie bien `CREATE`
+  pour un premier enregistrement et `UPDATE` pour une modification. Un profil qui aurait `CREATE`
+  sans `UPDATE` (combinaison jamais utilisée en pratique dans ce plugin, qui accorde toujours le
+  droit plat en bloc, voir `ProfileRight::updateProfileRights()` dans `src/Install/Installer.php`)
+  ne verrait donc pas le formulaire alors qu'il pourrait légitimement classifier un actif vierge.
+  Assumé pour rester simple (une seule condition d'affichage) plutôt que de dupliquer la logique
+  add-vs-update du contrôleur dans l'onglet lui-même.
+- **Onglet posé sur la même liste FIXE d'itemtypes que l'issue #25**
+  (`LinkableItemtypes::DEFAULT_ITEMTYPES`), pas sur `PluginGrcmanagerRisk::getLinkableItemtypes()`
+  (qui ajoute aussi les actifs personnalisés actifs) : exactement la même limitation de
+  séquencement `InitializePlugins`/`CustomObjectsBoot` déjà documentée pour l'onglet "Risques" de
+  l'issue #25 ci-dessus, voir son propre point pour le détail complet. Un actif personnalisé actif
+  reste malgré tout classifiable *si* un risque le lie déjà (le multi-select de
+  `PluginGrcmanagerRisk::showForm()` l'inclut), mais ne reçoit pas son propre onglet "Classification
+  C/I/D" sur sa fiche.
+- **La suggestion douce sur le champ Impact (`hasHighClassificationAmongLinkedAssets()`) refait une
+  requête par actif lié**, pas une seule requête groupée : cohérent avec `getLinkedAssets()`
+  lui-même qui fait déjà une requête par actif pour résoudre son nom, et avec la limitation déjà
+  assumée pour ce même formulaire depuis l'issue #25 ("un nombre d'actifs liés par risque toujours
+  faible en pratique"). À revoir si ce nombre cesse d'être faible en usage réel.
+
 - **`docs/design/` ne contient qu'un seul document (`DEVELOPMENT_PLAN.md`), pas d'ADR dédiées.**
   Évalué lors de la même revue : il n'existe pas de série de fichiers "Architecture Decision
   Record" formels comme le ferait un projet plus mature. Jugé suffisant pour l'instant (pas
