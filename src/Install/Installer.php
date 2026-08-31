@@ -61,6 +61,11 @@ final class Installer
     // Issue #25 (lien registre de risques <-> actifs GLPI/CMDB), même dérivation de nom de table.
     private const RISKS_ITEMS_TABLE = 'glpi_plugin_grcmanager_risks_items';
 
+    // Issue #26 (classification Confidentialité/Intégrité/Disponibilité des actifs), même
+    // dérivation de nom de table (suffixe de classe en minuscules, sans underscore ajouté à la
+    // frontière camelCase) que toutes les autres tables ci-dessus.
+    private const ASSET_CLASSIFICATIONS_TABLE = 'glpi_plugin_grcmanager_assetclassifications';
+
     public function install(Migration $migration): bool
     {
         global $DB;
@@ -433,6 +438,38 @@ final class Installer
                 UNIQUE KEY `unicity_link` (`plugin_grcmanager_risks_id`, `itemtype`, `items_id`),
                 KEY `risks_id` (`plugin_grcmanager_risks_id`),
                 KEY `item` (`itemtype`, `items_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
+
+            $DB->doQuery($query) or die($DB->error());
+        }
+
+        // Issue #26 (classification C/I/D des actifs, ISO/IEC 27001:2022 A.5.9/A.5.12/A.8.2) :
+        // registre INDÉPENDANT du lien risque <-> actif de l'issue #25 ci-dessus (RISKS_ITEMS_TABLE)
+        // — une classification est une propriété de l'actif lui-même, pas d'un risque particulier
+        // qui le mentionne, voir PluginGrcmanagerAssetClassification. Clé composite unique
+        // itemtype/items_id (une seule ligne par actif réel, jamais deux classifications
+        // concurrentes pour le même actif), même modèle polymorphe que RISKS_ITEMS_TABLE mais SANS
+        // second membre de relation (`plugin_grcmanager_risks_id`) : ici l'actif EST l'entité
+        // classifiée, pas un lien entre deux entités. Les trois axes sont chacun un varchar
+        // optionnel avec défaut '' ("non classifié sur cet axe"), même convention que
+        // `PluginGrcmanagerRisk.treatment` ci-dessus ("empty = no decision yet") : une
+        // classification partielle (un seul axe renseigné) est un état valide, pas une exigence
+        // tout-ou-rien (voir ClassificationLevels::isClassified()).
+        if (!$DB->tableExists(self::ASSET_CLASSIFICATIONS_TABLE)) {
+            $query = "CREATE TABLE `" . self::ASSET_CLASSIFICATIONS_TABLE . "` (
+                `id` int {$keySign} NOT NULL AUTO_INCREMENT,
+                `itemtype` varchar(100) NOT NULL,
+                `items_id` int {$keySign} NOT NULL DEFAULT 0,
+                `confidentiality` varchar(16) NOT NULL DEFAULT ''
+                    COMMENT 'low, medium, high, empty = not classified on this axis',
+                `integrity` varchar(16) NOT NULL DEFAULT ''
+                    COMMENT 'low, medium, high, empty = not classified on this axis',
+                `availability` varchar(16) NOT NULL DEFAULT ''
+                    COMMENT 'low, medium, high, empty = not classified on this axis',
+                `date_creation` timestamp NULL DEFAULT NULL,
+                `date_mod` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `unicity_item` (`itemtype`, `items_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
 
             $DB->doQuery($query) or die($DB->error());
@@ -867,6 +904,7 @@ final class Installer
         $migration->dropTable(self::MANAGEMENT_REVIEWS_USERS_TABLE);
         $migration->dropTable(self::MANAGEMENT_REVIEWS_TABLE);
         $migration->dropTable(self::RISKS_ITEMS_TABLE);
+        $migration->dropTable(self::ASSET_CLASSIFICATIONS_TABLE);
 
         $migration->executeMigration();
 

@@ -741,3 +741,35 @@ msgstr "%1$s #%2$d (deleted)"
 msgid "Aucun risque lié à cet actif."
 msgstr "No risk linked to this asset."
 
+msgid "Classification C/I/D"
+msgid_plural "Classifications C/I/D"
+msgstr[0] "C/I/A classification"
+msgstr[1] "C/I/A classifications"
+
+msgid "Type d'actif"
+msgstr "Asset type"
+
+msgid "Confidentialité"
+msgstr "Confidentiality"
+
+msgid "Intégrité"
+msgstr "Integrity"
+
+msgid "Disponibilité"
+msgstr "Availability"
+
+msgid "Non classifié"
+msgstr "Not classified"
+
+msgid "Classification actuelle : Confidentialité %1$s / Intégrité %2$s / Disponibilité %3$s"
+msgstr "Current classification: Confidentiality %1$s / Integrity %2$s / Availability %3$s"
+
+msgid "Cet actif n'a pas encore été classifié (confidentialité/intégrité/disponibilité)."
+msgstr "This asset has not been classified yet (confidentiality/integrity/availability)."
+
+msgid "Un actif lié porte une classification C/I/D élevée : vérifiez l'impact de ce risque."
+msgstr "A linked asset carries a high C/I/A classification: check this risk's impact."
+
+msgid "(C : %1$s, I : %2$s, D : %3$s)"
+msgstr "(C: %1$s, I: %2$s, A: %3$s)"
+

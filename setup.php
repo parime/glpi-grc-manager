@@ -90,6 +90,16 @@ function plugin_init_grcmanager(): void
         'addtabon' => LinkableItemtypes::DEFAULT_ITEMTYPES,
     ]);
 
+    // Issue #26 (classification Confidentialité/Intégrité/Disponibilité des actifs) : même
+    // mécanisme et même liste FIXE d'itemtypes qu'immédiatement ci-dessus pour l'onglet "Risques"
+    // de l'issue #25 (même limitation de séquencement InitializePlugins/CustomObjectsBoot, voir son
+    // commentaire ci-dessus et TECH_DEBT.md), un second onglet indépendant sur la fiche de chaque
+    // actif liable pour consulter/éditer sa classification C/I/D (voir
+    // PluginGrcmanagerAssetClassification::getTabNameForItem()/displayTabContentForItem()).
+    Plugin::registerClass(PluginGrcmanagerAssetClassification::class, [
+        'addtabon' => LinkableItemtypes::DEFAULT_ITEMTYPES,
+    ]);
+
     // Dashboard KPI cards, kept accumulator-safe from the start (?array $cards = null, merged
     // onto rather than replacing): a bare no-argument signature returning only this plugin's own
     // cards would silently discard every other plugin's contribution when

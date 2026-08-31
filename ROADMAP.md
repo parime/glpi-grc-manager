@@ -23,6 +23,10 @@ Objectif : une plateforme GRC/ISO 27001 générique fonctionnelle de bout en bou
 - Lien optionnel entre un risque et un ou plusieurs actifs réels de la CMDB GLPI (issue #25,
   constat d'un audit ISO 27001 du plugin lui-même : le registre de risques était complètement
   déconnecté de la CMDB)
+- Classification Confidentialité/Intégrité/Disponibilité (C/I/D) des actifs réels de la CMDB GLPI
+  (issue #26, clauses A.5.9/A.5.12/A.8.2 ISO/IEC 27001:2022), registre indépendant du lien
+  risque <-> actif ci-dessus : une classification est une propriété de l'actif lui-même, pas d'un
+  risque particulier
 
 ## Version 1.5
 

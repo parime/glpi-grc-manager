@@ -15,6 +15,7 @@
  * -------------------------------------------------------------------------
  */
 
+use GlpiPlugin\Grcmanager\Services\Classification\ClassificationLevels;
 use GlpiPlugin\Grcmanager\Services\Risk\LinkableItemtypes;
 use GlpiPlugin\Grcmanager\Services\Risk\ReviewReminderService;
 use GlpiPlugin\Grcmanager\Services\Risk\RiskItemLinkNormalizer;
@@ -256,6 +257,22 @@ class PluginGrcmanagerRisk extends CommonDBTM
         Dropdown::showFromArray('impact', self::getImpacts(), [
             'value' => $this->fields['impact'] ?? 'medium',
         ]);
+
+        // Issue #26 : suggestion non-bloquante uniquement, ne modifie jamais la valeur choisie par
+        // l'utilisateur (voir ClassificationLevels::hasHighAxis()) - un simple signal visuel quand
+        // au moins un actif déjà lié porte une classification C/I/D élevée, pour orienter la
+        // décision sans jamais la prendre à sa place. Reste dans la structure existante de
+        // showForm() (pas de logique JS conditionnelle, cohérent avec TECH_DEBT.md).
+        if (!$this->isNewID($ID) && self::hasHighClassificationAmongLinkedAssets((int) $ID)) {
+            $hint = __(
+                'Un actif lié porte une classification C/I/D élevée : vérifiez l\'impact de ce risque.',
+                'grcmanager'
+            );
+            echo '<div class="form-hint text-warning mt-1">'
+                . '<i class="ti ti-alert-triangle me-1"></i>' . $hint
+                . '</div>';
+        }
+
         echo '</td></tr>';
 
         if ($this->isNewID($ID) === false) {
@@ -314,9 +331,30 @@ class PluginGrcmanagerRisk extends CommonDBTM
                 continue;
             }
 
+            // Issue #26 : annote chaque option avec sa classification C/I/D existante quand elle en
+            // a une (ex. "web-server-01 (C: Élevé, I: Élevé, D: Moyen)"), en lecture seule - l'édition
+            // reste exclusivement sur l'onglet "Classification C/I/D" propre à l'actif
+            // (PluginGrcmanagerAssetClassification), jamais dupliquée ici. Une seule requête par
+            // itemtype (getByItemtype()), pas une par actif, pour ne pas alourdir une liste déjà non
+            // paginée (voir TECH_DEBT.md, limitation assumée depuis l'issue #25).
+            $classificationsByItemsId = PluginGrcmanagerAssetClassification::getByItemtype($itemtype);
+
             $options = [];
             foreach ($DB->request(['FROM' => $itemtype::getTable(), 'ORDER' => 'name']) as $row) {
-                $options[(int) $row['id']] = $row['name'] !== '' ? $row['name'] : sprintf('#%d', $row['id']);
+                $itemsId = (int) $row['id'];
+                $label   = $row['name'] !== '' ? $row['name'] : sprintf('#%d', $itemsId);
+
+                $classification = $classificationsByItemsId[$itemsId] ?? null;
+                if (ClassificationLevels::isClassified($classification)) {
+                    $label .= ' ' . sprintf(
+                        __('(C : %1$s, I : %2$s, D : %3$s)', 'grcmanager'),
+                        self::classificationLevelLabel($classification['confidentiality'] ?? null),
+                        self::classificationLevelLabel($classification['integrity'] ?? null),
+                        self::classificationLevelLabel($classification['availability'] ?? null)
+                    );
+                }
+
+                $options[$itemsId] = $label;
             }
 
             if ($options === []) {
@@ -414,6 +452,37 @@ class PluginGrcmanagerRisk extends CommonDBTM
         }
 
         return $byType;
+    }
+
+    /**
+     * Issue #26 : soft, non-blocking suggestion backing the hint shown next to the Impact field in
+     * showForm() above - true as soon as ONE of this risk's currently linked CMDB assets carries a
+     * HIGH classification on any of its three C/I/D axes (pure decision in
+     * ClassificationLevels::hasHighAxis(), unit tested there). Never used to change `impact`
+     * itself, only to decide whether to print the hint.
+     */
+    private static function hasHighClassificationAmongLinkedAssets(int $riskId): bool
+    {
+        foreach (self::getLinkedAssets($riskId) as $asset) {
+            $classification = PluginGrcmanagerAssetClassification::getByItem($asset['itemtype'], $asset['items_id']);
+            if (ClassificationLevels::hasHighAxis($classification)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Translated label for one raw C/I/D level value, used only for the inline read-only hint next
+     * to a linked asset's multi-select option above - the color-coded badge
+     * (PluginGrcmanagerAssetClassification::levelBadge()) is HTML and cannot be embedded in a plain
+     * `<option>` label text, hence this plain-text equivalent kept in sync with the same three
+     * levels (ClassificationLevels::ALLOWED).
+     */
+    private static function classificationLevelLabel(?string $value): string
+    {
+        return PluginGrcmanagerAssetClassification::getLevels()[$value] ?? __('Non classifié', 'grcmanager');
     }
 
     /**

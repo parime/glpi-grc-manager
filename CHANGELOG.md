@@ -9,6 +9,25 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce p
 
 ### Added
 
+- **Classification Confidentialité/Intégrité/Disponibilité (C/I/D) des actifs** (issue #26,
+  ISO/IEC 27001:2022 A.5.9/A.5.12/A.8.2) : nouveau registre natif, indépendant du lien registre de
+  risques <-> actifs de l'issue #25 (`PluginGrcmanagerAssetClassification`, table
+  `glpi_plugin_grcmanager_assetclassifications`, clé composite unique itemtype/items_id) — une
+  classification est une propriété de l'actif lui-même (ex. « base RH = confidentialité élevée »),
+  pas d'un risque particulier qui le mentionne. Réutilise exactement la même liste d'itemtypes
+  classifiables que l'issue #25 (`LinkableItemtypes`/`PluginGrcmanagerRisk::getLinkableItemtypes()`),
+  jamais une seconde liste divergente. Nouvel onglet "Classification C/I/D" en lecture + édition sur
+  la fiche de chaque actif liable (même mécanisme `Plugin::registerClass()`/`addtabon` que l'onglet
+  "Risques" de l'issue #25), formulaire à 3 menus déroulants Faible/Moyen/Élevé par axe, chaque axe
+  pouvant être renseigné indépendamment (classification partielle valide, pas de tout-ou-rien). Le
+  formulaire du registre de risques (`PluginGrcmanagerRisk::showForm()`) affiche désormais, en
+  lecture seule, la classification existante de chaque actif déjà lié directement dans le libellé du
+  multi-select, ainsi qu'une suggestion non-bloquante à côté du champ Impact quand au moins un actif
+  lié porte une classification élevée (n'altère jamais la valeur choisie par l'utilisateur). Décision
+  volontaire de ne PAS dépendre du plugin communautaire "Fields" recommandé dans l'issue d'origine :
+  une implémentation native est testable et ne suppose pas la présence d'un plugin tiers sur une
+  instance donnée (le plugin "Fields" reste mentionné en note d'interopérabilité future dans la PR).
+
 - **Distinction non-conformité / observation-remarque dans les audits** (issue #27, vocabulaire ISO
   19011) : nouveau champ `finding_type` sur `PluginGrcmanagerNonconformity`, indépendant de
   `severity`. Une observation/remarque suit le même workflow CAPA qu'une non-conformité mais sans
