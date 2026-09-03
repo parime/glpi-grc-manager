@@ -25,7 +25,7 @@ Session::checkRight(PluginGrcmanagerComplianceObligation::$rightname, READ);
 Html::header(
     PluginGrcmanagerComplianceObligation::getTypeName(2),
     $_SERVER['PHP_SELF'],
-    'tools',
+    'grcmanager',
     PluginGrcmanagerComplianceObligation::class
 );
 

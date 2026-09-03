@@ -25,7 +25,7 @@ Session::checkRight(PluginGrcmanagerSupplierRisk::$rightname, READ);
 Html::header(
     PluginGrcmanagerSupplierRisk::getTypeName(2),
     $_SERVER['PHP_SELF'],
-    'tools',
+    'grcmanager',
     PluginGrcmanagerSupplierRisk::class
 );
 
