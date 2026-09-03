@@ -17,6 +17,7 @@
 
 use Glpi\Plugin\Hooks;
 use GlpiPlugin\Grcmanager\Compatibility\RequirementChecker;
+use GlpiPlugin\Grcmanager\Services\Risk\LinkableItemtypes;
 
 // GLPI does NOT autoload plugin src/ classes on its own (confirmed against a real GLPI 11
 // instance by the sibling plugins of this same author, see docs/design/DEVELOPMENT_PLAN.md
@@ -24,7 +25,7 @@ use GlpiPlugin\Grcmanager\Compatibility\RequirementChecker;
 // must bundle vendor/, see .github/workflows/release.yml.
 require_once __DIR__ . '/vendor/autoload.php';
 
-define('PLUGIN_GRCMANAGER_VERSION', '1.0.1');
+define('PLUGIN_GRCMANAGER_VERSION', '1.1.0');
 define('PLUGIN_GRCMANAGER_MIN_GLPI', '11.0.0');
 define('PLUGIN_GRCMANAGER_MAX_GLPI', '11.99.99');
 define('PLUGIN_GRCMANAGER_MIN_PHP', '8.1.0');
@@ -52,18 +53,51 @@ function plugin_init_grcmanager(): void
     // PluginGrcmanagerAudit and PluginGrcmanagerNonconformity the same way. Sprint 5 (risques
     // fournisseurs/tiers) adds PluginGrcmanagerSupplierRisk right after the generic risk register
     // it mirrors. Sprint 6 (formations et revues de direction, clauses 7.2/7.3/9.3) adds
-    // PluginGrcmanagerTraining and PluginGrcmanagerManagementReview.
+    // PluginGrcmanagerTraining and PluginGrcmanagerManagementReview. Issue #28 (bibliothèque de
+    // politiques de sécurité versionnées, clause A.5.1) adds PluginGrcmanagerPolicy. Issue #30
+    // (registre des obligations légales/réglementaires/contractuelles, clause 4.2/A.5.31-36) adds
+    // PluginGrcmanagerComplianceObligation right after the SoA it complements. Issue #32
+    // (objectifs ISMS et suivi de KPI dans le temps, clause 6.2) adds PluginGrcmanagerObjective
+    // last: the dashboard (Sprint 7) shows the ISMS's current state, this screen is where an admin
+    // sets and tracks measurable objectives over time, a natural final entry in this same menu.
+    // PluginGrcmanagerObjectiveMeasurement (the per-objective measurement history) deliberately
+    // has NO menu entry of its own: it is only ever added/removed inline from its parent
+    // objective's own form (see PluginGrcmanagerObjective::showMeasurementHistory()), same
+    // "no menu entry for a pure link/child table" convention as every many-to-many link in this
+    // plugin family. Issue #29 (registre des incidents de sécurité de l'information, clause
+    // A.5.24-27) adds PluginGrcmanagerSecurityIncident right after the audit/non-conformity screens
+    // it complements (an incident can reveal a non-conformity or feed the CAPA loop, even though
+    // there is no hard link between the two itemtypes in this first version).
     $PLUGIN_HOOKS[Hooks::MENU_TOADD]['grcmanager'] = [
         'tools' => [
             PluginGrcmanagerRisk::class,
             PluginGrcmanagerSupplierRisk::class,
             PluginGrcmanagerControl::class,
+            PluginGrcmanagerComplianceObligation::class,
             PluginGrcmanagerAudit::class,
             PluginGrcmanagerNonconformity::class,
+            PluginGrcmanagerSecurityIncident::class,
             PluginGrcmanagerTraining::class,
             PluginGrcmanagerManagementReview::class,
+            PluginGrcmanagerPolicy::class,
+            PluginGrcmanagerObjective::class,
         ],
     ];
+
+    // Issue #28 (bibliothèque de politiques de sécurité versionnées, A.5.1) : le fichier joint
+    // (PDF, Word...) d'une politique est stocké via le mécanisme natif GLPI Document/Document_Item,
+    // jamais un système de stockage propre à ce plugin. Un CommonDBTM de plugin ne reçoit l'onglet
+    // "Documents" que si son propre itemtype figure dans $CFG_GLPI['document_types'] (voir
+    // src/Glpi/Asset/Capacity/HasDocumentsCapacity::enable(), qui fait exactement ce push pour les
+    // actifs personnalisés dotés de la capacité "Documents", et src/autoload/CFG_GLPI.php pour la
+    // liste figée des itemtypes cœur), en plus de l'appel explicite à
+    // addStandardTab(Document_Item::class, ...) fait dans PluginGrcmanagerPolicy::defineTabs().
+    // Sans cette ligne, l'onglet s'afficherait quand même (Document_Item::getTabNameForItem() ne
+    // vérifie que Document::canView(), pas getItemtypesThatCanHave()), mais
+    // Document::getItemtypesThatCanHave() - utilisée ailleurs dans GLPI core (API, nettoyage
+    // polymorphe CommonDBTM::cleanDBonPurge()) - ignorerait cette politique.
+    global $CFG_GLPI;
+    $CFG_GLPI['document_types'][] = PluginGrcmanagerPolicy::class;
 
     // Sprint 2 (matrice de risque administrable, front/config.php) : reachable via
     // Configuration > Plugins > wrench icon on this plugin's row, same minimal-footprint pattern
@@ -72,6 +106,32 @@ function plugin_init_grcmanager(): void
     // dedicated menu entry only if a later sprint makes this screen something used daily rather
     // than an occasional admin setting.
     $PLUGIN_HOOKS[Hooks::CONFIG_PAGE]['grcmanager'] = 'front/config.php';
+
+    // Issue #25 (lien registre de risques <-> actifs GLPI/CMDB) : onglet "Risques" en lecture
+    // seule sur la fiche de chaque actif potentiellement lié (voir
+    // PluginGrcmanagerRisk::getTabNameForItem()/displayTabContentForItem()), même mécanisme
+    // Plugin::registerClass()/addtabon que le plugin jumeau assetsign-glpi pour ses propres
+    // onglets (voir son setup.php). Liste FIXE (LinkableItemtypes::DEFAULT_ITEMTYPES), pas le
+    // résultat dynamique de PluginGrcmanagerRisk::getLinkableItemtypes() (qui ajoute aussi les
+    // actifs personnalisés actifs) : à l'exécution de ce hook (listener InitializePlugins), GLPI
+    // n'a pas encore chargé les définitions d'actifs personnalisés en mémoire, même limitation de
+    // séquencement déjà documentée par assetsign-glpi pour sa propre
+    // Config::getAllManageableItemtypes() (voir son docblock) — un actif personnalisé reste tout
+    // de même liable depuis le formulaire du risque, seul l'onglet retour sur sa propre fiche n'est
+    // pas posé (voir TECH_DEBT.md).
+    Plugin::registerClass(PluginGrcmanagerRisk::class, [
+        'addtabon' => LinkableItemtypes::DEFAULT_ITEMTYPES,
+    ]);
+
+    // Issue #26 (classification Confidentialité/Intégrité/Disponibilité des actifs) : même
+    // mécanisme et même liste FIXE d'itemtypes qu'immédiatement ci-dessus pour l'onglet "Risques"
+    // de l'issue #25 (même limitation de séquencement InitializePlugins/CustomObjectsBoot, voir son
+    // commentaire ci-dessus et TECH_DEBT.md), un second onglet indépendant sur la fiche de chaque
+    // actif liable pour consulter/éditer sa classification C/I/D (voir
+    // PluginGrcmanagerAssetClassification::getTabNameForItem()/displayTabContentForItem()).
+    Plugin::registerClass(PluginGrcmanagerAssetClassification::class, [
+        'addtabon' => LinkableItemtypes::DEFAULT_ITEMTYPES,
+    ]);
 
     // Dashboard KPI cards, kept accumulator-safe from the start (?array $cards = null, merged
     // onto rather than replacing): a bare no-argument signature returning only this plugin's own

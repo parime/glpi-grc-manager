@@ -13,7 +13,22 @@ use Glpi\Dashboard\Dashboard;
  * Reprend telles quelles les 15 cartes déjà posées aux Sprints 1 à 6 (voir
  * hook.php::plugin_grcmanager_dashboard_cards() / DashboardCardService) : aucune carte
  * « résumé » supplémentaire n'a été ajoutée pour ce sprint, ce tableau de bord EST la vue de
- * synthèse qui les relie entre elles.
+ * synthèse qui les relie entre elles. Une 16e carte (« Objectifs ISMS par statut ») a depuis été
+ * ajoutée par l'issue #32, suivant exactement ce même principe de report direct dans la grille.
+ *
+ * Issue #30 (registre des obligations légales/réglementaires/contractuelles) ajoute 4 nouvelles
+ * cartes à ce tableau de bord seedé (2 chiffres clés en rangée 2, 2 répartitions en rangées 4/5),
+ * la première évolution de ce tableau de bord depuis le Sprint 7 lui-même.
+ *
+ * Issue #29 (registre des incidents de sécurité de l'information, A.5.24-27) et issue #31 (plan
+ * d'action de traitement des risques, clause 8.3/6.1.3), développées en parallèle, ont chacune
+ * ajouté 2 cartes à une même rangée 6 neuve (y=16) plutôt que de réutiliser un `y` déjà occupé : la
+ * grille native GLPI ne détecte aucune collision automatiquement (deux items avec les mêmes
+ * coordonnées se superposent silencieusement). Les deux issues ayant chacune commencé leurs cartes
+ * à x=0 sur cette même rangée, la fusion des deux branches les a repositionnées côte à côte plutôt
+ * que superposées (issue #29 en x=0..12, issue #31 en x=12..20, voir getItems() ci-dessous) - tout
+ * nouvel ajout futur à ce tableau de bord doit choisir un `y` strictement après le maximum déjà
+ * utilisé, ou vérifier l'occupation en x d'une rangée existante avant d'y ajouter une carte.
  *
  * Construit avec l'API native `Glpi\Dashboard\Dashboard` (mêmes méthodes que celles appelées par
  * l'écran natif Configuration > Tableaux de bord : save()/saveItems(), voir
@@ -133,18 +148,37 @@ final class DefaultDashboardService
             $bigNumber('grcmanager_overdue_capa', 12, 0, '#f08d7b'),
             $bigNumber('grcmanager_suppliers_with_high_risk', 16, 0, '#8e5ea2'),
             $bigNumber('grcmanager_training_overdue_renewal', 20, 0, '#ffdc64'),
-            // Rangée 2 (y=2) : progression.
+            // Rangée 2 (y=2) : progression, complétée par les 2 chiffres clés de l'issue #30
+            // (obligations légales/réglementaires/contractuelles).
             $bigNumber('grcmanager_soa_reviewed', 0, 2, '#0e87a0', 6),
             $bigNumber('grcmanager_training_completion_rate', 6, 2, '#27ab3c', 6),
+            $bigNumber('grcmanager_obligations_non_compliant', 12, 2, '#cc2936', 6),
+            $bigNumber('grcmanager_obligations_pending_review', 18, 2, '#f8911f', 6),
             // Rangée 3 (y=4) : répartitions, registre de risques et SoA.
             $pie('grcmanager_risks_by_level', 0, 4),
             $pie('grcmanager_risks_by_category', 6, 4),
             $pie('grcmanager_soa_by_applicability', 12, 4),
             $pie('grcmanager_soa_by_implementation_status', 18, 4),
-            // Rangée 4 (y=8) : répartitions, audits/CAPA, fournisseurs, revues de direction.
+            // Rangée 4 (y=8) : répartitions, audits/CAPA, fournisseurs, revues de direction,
+            // politiques (issue #28).
             $pie('grcmanager_audits_by_status', 0, 8),
             $pie('grcmanager_supplierrisks_by_level', 6, 8),
             $pie('grcmanager_management_reviews_by_status', 12, 8),
+            $pie('grcmanager_policies_by_status', 18, 8),
+            // Rangée 5 (y=12) : obligations (issue #30), politiques en attente de revue (issue
+            // #28), objectifs ISMS (issue #32).
+            $pie('grcmanager_obligations_by_type', 0, 12),
+            $pie('grcmanager_obligations_by_compliance_status', 6, 12),
+            $pie('grcmanager_objectives_by_status', 12, 12),
+            $bigNumber('grcmanager_policies_pending_review', 18, 12, '#f8911f'),
+            // Rangée 6 (y=16) : incidents de sécurité de l'information (issue #29, x=0..12) suivis
+            // du plan d'action de traitement des risques (issue #31, x=12..20) - deux issues
+            // développées en parallèle avaient chacune choisi cette même rangée neuve en partant de
+            // x=0 ; fusionnées côte à côte plutôt que superposées (voir le docblock de cette classe).
+            $pie('grcmanager_security_incidents_by_status', 0, 16),
+            $pie('grcmanager_security_incidents_by_severity', 6, 16),
+            $bigNumber('grcmanager_overdue_treatment_actions', 12, 16, '#cc2936'),
+            $bigNumber('grcmanager_risks_missing_treatment_plan', 16, 16, '#f8911f'),
         ];
     }
 }

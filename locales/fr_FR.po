@@ -582,6 +582,15 @@ msgstr "Une action corrective est obligatoire pour clôturer ou vérifier une no
 msgid "Obligatoire pour clôturer ou vérifier cette non-conformité."
 msgstr "Obligatoire pour clôturer ou vérifier cette non-conformité."
 
+msgid "Type de constat"
+msgstr "Type de constat"
+
+msgid "Observation / remarque"
+msgstr "Observation / remarque"
+
+msgid "Optionnelle pour une observation : peut néanmoins être renseignée si besoin."
+msgstr "Optionnelle pour une observation : peut néanmoins être renseignée si besoin."
+
 msgid "Responsable de la non-conformité"
 msgstr "Responsable de la non-conformité"
 
@@ -723,3 +732,346 @@ msgstr "Version installée"
 msgid "Dernière version sur GitHub"
 msgstr "Dernière version sur GitHub"
 
+msgid "Actifs liés (CMDB)"
+msgstr "Actifs liés (CMDB)"
+
+msgid "%1$s #%2$d (supprimé)"
+msgstr "%1$s #%2$d (supprimé)"
+
+msgid "Aucun risque lié à cet actif."
+msgstr "Aucun risque lié à cet actif."
+
+msgid "Classification C/I/D"
+msgid_plural "Classifications C/I/D"
+msgstr[0] "Classification C/I/D"
+msgstr[1] "Classifications C/I/D"
+
+msgid "Type d'actif"
+msgstr "Type d'actif"
+
+msgid "Confidentialité"
+msgstr "Confidentialité"
+
+msgid "Intégrité"
+msgstr "Intégrité"
+
+msgid "Disponibilité"
+msgstr "Disponibilité"
+
+msgid "Non classifié"
+msgstr "Non classifié"
+
+msgid "Classification actuelle : Confidentialité %1$s / Intégrité %2$s / Disponibilité %3$s"
+msgstr "Classification actuelle : Confidentialité %1$s / Intégrité %2$s / Disponibilité %3$s"
+
+msgid "Cet actif n'a pas encore été classifié (confidentialité/intégrité/disponibilité)."
+msgstr "Cet actif n'a pas encore été classifié (confidentialité/intégrité/disponibilité)."
+
+msgid "Un actif lié porte une classification C/I/D élevée : vérifiez l'impact de ce risque."
+msgstr "Un actif lié porte une classification C/I/D élevée : vérifiez l'impact de ce risque."
+
+msgid "(C : %1$s, I : %2$s, D : %3$s)"
+msgstr "(C : %1$s, I : %2$s, D : %3$s)"
+
+msgid "Politique de sécurité"
+msgid_plural "Politiques de sécurité"
+msgstr[0] "Politique de sécurité"
+msgstr[1] "Politiques de sécurité"
+
+msgid "Brouillon"
+msgstr "Brouillon"
+
+msgid "Approuvée"
+msgstr "Approuvée"
+
+msgid "Archivée"
+msgstr "Archivée"
+
+msgid "Version"
+msgstr "Version"
+
+msgid "Date d'approbation"
+msgstr "Date d'approbation"
+
+msgid "Prochaine revue"
+msgstr "Prochaine revue"
+
+msgid "Une date d'approbation est obligatoire pour marquer une politique comme approuvée."
+msgstr "Une date d'approbation est obligatoire pour marquer une politique comme approuvée."
+
+msgid "Une date d'approbation est obligatoire pour passer au statut \"Approuvée\"."
+msgstr "Une date d'approbation est obligatoire pour passer au statut \"Approuvée\"."
+
+msgid "Revue de politique à échéance"
+msgstr "Revue de politique à échéance"
+
+msgid "Propriétaire de la politique"
+msgstr "Propriétaire de la politique"
+
+msgid "Politiques en attente de revue"
+msgstr "Politiques en attente de revue"
+
+msgid "Politiques de sécurité par statut"
+msgstr "Politiques de sécurité par statut"
+
+msgid "Obligation légale, réglementaire ou contractuelle"
+msgid_plural "Obligations légales, réglementaires et contractuelles"
+msgstr[0] "Obligation légale, réglementaire ou contractuelle"
+msgstr[1] "Obligations légales, réglementaires et contractuelles"
+
+msgid "Légale"
+msgstr "Légale"
+
+msgid "Réglementaire"
+msgstr "Réglementaire"
+
+msgid "Contractuelle"
+msgstr "Contractuelle"
+
+msgid "Conforme"
+msgstr "Conforme"
+
+msgid "Partiellement conforme"
+msgstr "Partiellement conforme"
+
+msgid "Non conforme"
+msgstr "Non conforme"
+
+msgid "Non évaluée"
+msgstr "Non évaluée"
+
+msgid "Type"
+msgstr "Type"
+
+msgid "Référence / source"
+msgstr "Référence / source"
+
+msgid "Statut de conformité"
+msgstr "Statut de conformité"
+
+msgid "Description / notes"
+msgstr "Description / notes"
+
+msgid "Risque lié (optionnel)"
+msgstr "Risque lié (optionnel)"
+
+msgid "À renseigner uniquement si le non-respect de cette obligation constitue un risque identifié dans le registre de risques."
+msgstr "À renseigner uniquement si le non-respect de cette obligation constitue un risque identifié dans le registre de risques."
+
+msgid "Ex. « RGPD », « Contrat client Acme SA », « Loi n°... »."
+msgstr "Ex. « RGPD », « Contrat client Acme SA », « Loi n°... »."
+
+msgid "Revue d'obligation à échéance"
+msgstr "Revue d'obligation à échéance"
+
+msgid "Propriétaire de l'obligation"
+msgstr "Propriétaire de l'obligation"
+
+msgid "Obligations non conformes"
+msgstr "Obligations non conformes"
+
+msgid "Obligations en attente de revue"
+msgstr "Obligations en attente de revue"
+
+msgid "Obligations par type"
+msgstr "Obligations par type"
+
+msgid "Obligations par statut de conformité"
+msgstr "Obligations par statut de conformité"
+
+msgid "Objectif ISMS"
+msgid_plural "Objectifs ISMS"
+msgstr[0] "Objectif ISMS"
+msgstr[1] "Objectifs ISMS"
+
+msgid "Sur la bonne voie"
+msgstr "Sur la bonne voie"
+
+msgid "À risque"
+msgstr "À risque"
+
+msgid "Atteint"
+msgstr "Atteint"
+
+msgid "Manqué"
+msgstr "Manqué"
+
+msgid "Valeur cible"
+msgstr "Valeur cible"
+
+msgid "Cible qualitative"
+msgstr "Cible qualitative"
+
+msgid "Laisser vide si cet objectif n'a pas d'indicateur chiffré (objectif purement qualitatif)."
+msgstr "Laisser vide si cet objectif n'a pas d'indicateur chiffré (objectif purement qualitatif)."
+
+msgid "Description libre de la cible visée, en complément ou à la place d'une valeur chiffrée (ex. \"obtenir la certification ISO 27001\", \"déployer le MFA sur tous les comptes à privilèges\")."
+msgstr "Description libre de la cible visée, en complément ou à la place d'une valeur chiffrée (ex. \"obtenir la certification ISO 27001\", \"déployer le MFA sur tous les comptes à privilèges\")."
+
+msgid "Historique des mesures"
+msgstr "Historique des mesures"
+
+msgid "Date de la mesure"
+msgstr "Date de la mesure"
+
+msgid "Valeur"
+msgstr "Valeur"
+
+msgid "Commentaire"
+msgstr "Commentaire"
+
+msgid "Une valeur numérique est obligatoire pour cet objectif chiffré."
+msgstr "Une valeur numérique est obligatoire pour cet objectif chiffré."
+
+msgid "Objectif qualitatif : la valeur reste optionnelle, mais un commentaire est alors obligatoire."
+msgstr "Objectif qualitatif : la valeur reste optionnelle, mais un commentaire est alors obligatoire."
+
+msgid "Aucune mesure enregistrée pour le moment."
+msgstr "Aucune mesure enregistrée pour le moment."
+
+msgid "Confirmer la suppression ?"
+msgstr "Confirmer la suppression ?"
+
+msgid "Mesure d'objectif ISMS"
+msgid_plural "Mesures d'objectif ISMS"
+msgstr[0] "Mesure d'objectif ISMS"
+msgstr[1] "Mesures d'objectif ISMS"
+
+msgid "Objectif introuvable."
+msgstr "Objectif introuvable."
+
+msgid "Une valeur numérique est obligatoire pour une mesure de cet objectif chiffré."
+msgstr "Une valeur numérique est obligatoire pour une mesure de cet objectif chiffré."
+
+msgid "Un commentaire est obligatoire pour une mesure sans valeur numérique (objectif qualitatif)."
+msgstr "Un commentaire est obligatoire pour une mesure sans valeur numérique (objectif qualitatif)."
+
+msgid "Objectifs ISMS abordés"
+msgstr "Objectifs ISMS abordés"
+
+msgid "Objectif(s) ISO 27001 clause 6.2 dont la progression a été examinée lors de cette revue."
+msgstr "Objectif(s) ISO 27001 clause 6.2 dont la progression a été examinée lors de cette revue."
+
+msgid "Objectifs ISMS par statut"
+msgstr "Objectifs ISMS par statut"
+
+msgid "Incident de sécurité"
+msgid_plural "Incidents de sécurité"
+msgstr[0] "Incident de sécurité"
+msgstr[1] "Incidents de sécurité"
+
+msgid "Violation de données"
+msgstr "Violation de données"
+
+msgid "Logiciel malveillant"
+msgstr "Logiciel malveillant"
+
+msgid "Accès non autorisé"
+msgstr "Accès non autorisé"
+
+msgid "Indisponibilité / déni de service"
+msgstr "Indisponibilité / déni de service"
+
+msgid "Ouvert"
+msgstr "Ouvert"
+
+msgid "En investigation"
+msgstr "En investigation"
+
+msgid "Contenu"
+msgstr "Contenu"
+
+msgid "Date de l'incident"
+msgstr "Date de l'incident"
+
+msgid "Impact C/I/D"
+msgstr "Impact C/I/D"
+
+msgid "Ticket/Problem lié"
+msgstr "Ticket/Problem lié"
+
+msgid "Cause racine"
+msgstr "Cause racine"
+
+msgid "Enseignements tirés"
+msgstr "Enseignements tirés"
+
+msgid "La cause racine et les enseignements tirés sont obligatoires pour clôturer un incident de sécurité."
+msgstr "La cause racine et les enseignements tirés sont obligatoires pour clôturer un incident de sécurité."
+
+msgid "Axe(s) confidentialité/intégrité/disponibilité affecté(s) par cet incident."
+msgstr "Axe(s) confidentialité/intégrité/disponibilité affecté(s) par cet incident."
+
+msgid "Type d'élément lié"
+msgstr "Type d'élément lié"
+
+msgid "Ticket/Problem lié (optionnel)"
+msgstr "Ticket/Problem lié (optionnel)"
+
+msgid "Choisir d'abord un type ci-contre pour filtrer la liste."
+msgstr "Choisir d'abord un type ci-contre pour filtrer la liste."
+
+msgid "À renseigner si cet incident a mis en évidence un risque identifié dans le registre de risques (ou en a révélé un nouveau)."
+msgstr "À renseigner si cet incident a mis en évidence un risque identifié dans le registre de risques (ou en a révélé un nouveau)."
+
+msgid "Obligatoire, avec les enseignements tirés ci-dessous, pour clôturer cet incident."
+msgstr "Obligatoire, avec les enseignements tirés ci-dessous, pour clôturer cet incident."
+
+msgid "Ce qui a été appris de cet incident (clause A.5.27) : à documenter avant clôture."
+msgstr "Ce qui a été appris de cet incident (clause A.5.27) : à documenter avant clôture."
+
+msgid "Incidents de sécurité par statut"
+msgstr "Incidents de sécurité par statut"
+
+msgid "Incidents de sécurité par sévérité"
+msgstr "Incidents de sécurité par sévérité"
+
+msgid "Action de traitement de risque"
+msgid_plural "Actions de traitement de risque"
+msgstr[0] "Action de traitement de risque"
+msgstr[1] "Actions de traitement de risque"
+
+msgid "Réalisée"
+msgstr "Réalisée"
+
+msgid "Risque introuvable."
+msgstr "Risque introuvable."
+
+msgid "Action de traitement de risque en retard"
+msgstr "Action de traitement de risque en retard"
+
+msgid "Responsable de l'action"
+msgstr "Responsable de l'action"
+
+msgid "Description de l'action"
+msgstr "Description de l'action"
+
+msgid "Un plan de traitement (une ou plusieurs actions concrètes) est attendu pour ce choix, voir plus bas sur cette fiche."
+msgstr "Un plan de traitement (une ou plusieurs actions concrètes) est attendu pour ce choix, voir plus bas sur cette fiche."
+
+msgid "Un plan de traitement (au moins une action) est requis pour clôturer un risque à mitiger ou transférer."
+msgstr "Un plan de traitement (au moins une action) est requis pour clôturer un risque à mitiger ou transférer."
+
+msgid "Enregistrez d'abord ce risque pour pouvoir renseigner son plan de traitement."
+msgstr "Enregistrez d'abord ce risque pour pouvoir renseigner son plan de traitement."
+
+msgid "Plan de traitement du risque"
+msgstr "Plan de traitement du risque"
+
+msgid "Actions concrètes mises en œuvre pour appliquer la décision de traitement (clause 8.3/6.1.3 ISO 27001) : chacune a son propre responsable, sa propre échéance et son propre statut."
+msgstr "Actions concrètes mises en œuvre pour appliquer la décision de traitement (clause 8.3/6.1.3 ISO 27001) : chacune a son propre responsable, sa propre échéance et son propre statut."
+
+msgid "Aucune action de traitement enregistrée pour le moment."
+msgstr "Aucune action de traitement enregistrée pour le moment."
+
+msgid "En retard"
+msgstr "En retard"
+
+msgid "Mettre à jour"
+msgstr "Mettre à jour"
+
+msgid "Actions de traitement de risque en retard"
+msgstr "Actions de traitement de risque en retard"
+
+msgid "Risques à mitiger/transférer sans plan de traitement"
+msgstr "Risques à mitiger/transférer sans plan de traitement"

@@ -7,6 +7,172 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce p
 
 ## [Non publié]
 
+## [1.1.0] - 2026-09-03
+
+### Added
+
+- **Registre des incidents de sécurité de l'information** (issue #29, ISO/IEC 27001:2022 Annexe A
+  A.5.24-27) : les contrôles A.5.24-27 (planification/réponse/apprentissage des incidents)
+  n'existaient jusqu'ici que comme lignes à cocher dans la SoA - GLPI dispose nativement de
+  Ticket/Problem, mais rien ne les qualifiait comme "incident de sécurité de l'information" au sens
+  ISO ni ne les reliait au registre de risques de ce plugin. Nouveau registre indépendant
+  (`PluginGrcmanagerSecurityIncident`, table `glpi_plugin_grcmanager_securityincidents`) : intitulé,
+  date de l'incident, catégorie (violation de données/logiciel malveillant/accès non autorisé/
+  indisponibilité/autre), sévérité (mineure/majeure/critique, même échelle que
+  `PluginGrcmanagerNonconformity`), axes confidentialité/intégrité/disponibilité affectés (cases à
+  cocher, liste séparée par des virgules en base, même convention que `PluginGrcmanagerAudit.
+  risk_categories`), statut (ouvert/en investigation/contenu/clôturé), cause racine et enseignements
+  tirés. Référence légère optionnelle vers un Ticket ou Problem GLPI déjà existant
+  (`linked_itemtype`/`linked_items_id`, lien construit via `CommonDBTM::getLinkURL()` natif, jamais
+  une duplication du contenu du ticket), et lien optionnel zéro-ou-un vers une entrée du registre de
+  risques (`plugin_grcmanager_risks_id`, même convention que le lien obligation <-> risque de
+  l'issue #30) pour boucler la clause A.5.27 ("tirer des enseignements des incidents"). La cause
+  racine et les enseignements tirés ne sont obligatoires qu'à la clôture de l'incident, jamais pour
+  l'ouvrir ou le mettre en investigation (même convention "obligatoire seulement à la clôture" que
+  l'action corrective de `PluginGrcmanagerNonconformity`, issue #27). Nouvel écran sous Outils
+  (liste filtrable, formulaire), 2 nouvelles cartes de tableau de bord (incidents par statut, par
+  sévérité) ajoutées au tableau de bord ISMS seedé à l'installation. Logique pure (normalisation
+  catégorie/sévérité/statut, liste C/I/D, liens optionnels, validation de clôture) extraite dans
+  `GlpiPlugin\Grcmanager\Services\Incident\SecurityIncidentRules`, testée unitairement. Réutilise le
+  droit plat existant `plugin_grcmanager`, aucune preuve d'un besoin de droit dédié par
+  fonctionnalité dans ce plugin.
+- **Bibliothèque de politiques de sécurité versionnées** (issue #28, ISO/IEC 27001:2022
+  A.5.1/A.5.1.1/A.5.1.2) : le contrôle A.5.1 de la SoA n'existait jusqu'ici que comme ligne à
+  cocher, sans aucun outil derrière. Nouveau registre natif (`PluginGrcmanagerPolicy`, table
+  `glpi_plugin_grcmanager_policies`) pour gérer les politiques de sécurité (charte informatique,
+  politique de mots de passe, PCA...) avec un vrai cycle de vie : statut brouillon/approuvée/
+  archivée, version libre (ex. « 1.2 »), date d'approbation (obligatoire pour passer au statut
+  approuvée, validation serveur réelle), prochaine date de revue et propriétaire. Le ou les
+  documents réels (PDF, Word...) sont attachés via le mécanisme natif GLPI Document/Document_Item
+  (onglet « Documents » standard, `PluginGrcmanagerPolicy::defineTabs()` +
+  `$CFG_GLPI['document_types']`), jamais un système de stockage propre à ce plugin. Rappels de
+  revue automatiques sur `next_review_date` (tâche Cron quotidienne
+  `PluginGrcmanagerPolicy::cronReviewreminder()`, notification GLPI native), même mécanisme que les
+  rappels de revue déjà en place sur le registre de risques (`ReviewReminderService`), avec sa
+  propre fenêtre de 30 jours extraite en logique pure testable (`PolicyReviewReminderWindow`).
+  Nouvel écran sous Outils, liste filtrable par statut avec badge coloré, 2 nouvelles cartes de
+  tableau de bord (« Politiques en attente de revue », « Politiques de sécurité par statut »),
+  ajoutées au tableau de bord ISMS seedé à l'installation. Aucun lien direct posé entre la ligne
+  A.5.1 de la SoA et ce registre (voir TECH_DEBT.md pour le raisonnement).
+
+- **Registre des obligations légales, réglementaires et contractuelles** (issue #30, ISO 27001
+  clause 4.2 « parties intéressées et leurs exigences », Annexe A A.5.31-36) : les contrôles
+  A.5.31-36 n'existaient jusqu'ici que comme lignes à cocher dans la Déclaration d'Applicabilité
+  (`PluginGrcmanagerControl`) - nouveau registre indépendant (`PluginGrcmanagerComplianceObligation`,
+  table `glpi_plugin_grcmanager_complianceobligations`) pour centraliser ce qui, en pratique, finit
+  souvent en tableur Excel isolé : intitulé, type (légale/réglementaire/contractuelle), référence/
+  source (ex. « RGPD », « Contrat client Acme SA »), statut de conformité (conforme/partiellement
+  conforme/non conforme/non évaluée), propriétaire, date de revue et description/notes. Lien
+  optionnel zéro-ou-un vers une entrée du registre de risques quand le non-respect de l'obligation
+  constitue un risque identifié (`plugin_grcmanager_risks_id`, colonne directe - pas une table de
+  liaison many-to-many, cardinalité plus simple que le lien risque <-> actifs CMDB de l'issue #25).
+  Nouvel écran sous Outils (liste filtrable, formulaire), 4 nouvelles cartes de tableau de bord
+  (obligations non conformes, en attente de revue, par type, par statut de conformité) ajoutées au
+  tableau de bord ISMS seedé du Sprint 7, et même mécanisme de rappel de revue (Cron quotidien +
+  notification GLPI native) que le registre de risques - `ReviewReminderService` généralisé pour
+  accepter un itemtype sans colonne `status` (l'obligation n'a pas d'état "clôturé", seulement un
+  statut de conformité, qui ne dispense jamais de la revue périodique). Logique pure (normalisation
+  type/statut, lien zéro-ou-un, fenêtre de rappel de revue) extraite dans
+  `GlpiPlugin\Grcmanager\Services\Compliance\ComplianceObligationRules`, testée unitairement.
+- **Objectifs ISMS et suivi de KPI dans le temps** (issue #32, ISO 27001 clause 6.2) : le tableau
+  de bord ISMS (15 cartes) montrait l'état actuel du système de management, une photo instantanée,
+  mais rien ne permettait de fixer des objectifs de sécurité mesurables (ex. « réduire de 20% les
+  non-conformités récurrentes d'ici fin d'année ») ni de suivre leur progression dans le temps —
+  une trajectoire. Nouvelle classe `PluginGrcmanagerObjective` (table
+  `glpi_plugin_grcmanager_objectives`) : titre, description, propriétaire (vrai `User` GLPI),
+  échéance, statut (non démarré/sur la bonne voie/à risque/atteint/manqué), et une cible en DEUX
+  champs indépendants tous deux optionnels — `target_value` (numérique) pour un objectif chiffré et
+  `target_description` (texte libre) pour un objectif purement qualitatif ("obtenir la
+  certification ISO 27001") — plutôt que de forcer chaque objectif dans une case numérique
+  artificielle. Nouvelle classe `PluginGrcmanagerObjectiveMeasurement` (table
+  `glpi_plugin_grcmanager_objectivemeasurements`) : historique manuel de mesures dans le temps
+  ("à cette date, nous en sommes à X"), volontairement PAS auto-calculé depuis d'autres données du
+  plugin pour cette première version (même philosophie "version minimale et testée" que le reste de
+  ce plugin, voir `TECH_DEBT.md`) ; une mesure sur un objectif chiffré exige une valeur numérique,
+  une mesure sur un objectif purement qualitatif accepte une valeur vide mais exige alors un
+  commentaire (`GlpiPlugin\Grcmanager\Services\Objective\ObjectiveMeasurementValidator`, testé
+  unitairement). Nouvel écran sous Outils (liste + formulaire), avec sur la fiche de chaque
+  objectif un mini-formulaire d'ajout de mesure et l'historique chronologique complet en simple
+  tableau (pas de graphique : une trajectoire honnête sans nouvelle dépendance de rendu). Lien léger
+  many-to-many vers les revues de direction (`PluginGrcmanagerManagementReview`, nouveau champ
+  "Objectifs ISMS abordés", même convention de lien direct `$DB` que le lien contrôle <-> risque) :
+  la clause 9.3 ISO 27001 liste explicitement "l'étendue de l'atteinte des objectifs de sécurité de
+  l'information" parmi les données d'entrée attendues d'une revue de direction. Nouvelle carte de
+  tableau de bord "Objectifs ISMS par statut" (`DashboardCardService::objectivesByStatus()`),
+  reprise dans le tableau de bord seedé à l'installation (`DefaultDashboardService`, 16e carte).
+  Réutilise le droit plat existant `plugin_grcmanager`, aucune preuve d'un besoin de droit dédié par
+  fonctionnalité dans ce plugin.
+- **Plan d'action de traitement des risques** (issue #31, ISO 27001 clause 8.3/6.1.3) : un risque
+  "à mitiger"/"à transférer" n'avait jusqu'ici que sa décision (`treatment`) et une justification en
+  texte libre, rien ne suivait les actions concrètes menant réellement à sa clôture, contrairement
+  au CAPA structuré des non-conformités. Nouvelle table enfant one-to-many
+  `PluginGrcmanagerRiskTreatmentAction` (`glpi_plugin_grcmanager_risktreatmentactions`, un risque
+  peut avoir zéro, une ou plusieurs actions, chacune avec sa propre description, son responsable
+  (vrai `User` GLPI), son échéance et son statut planifiée/en cours/réalisée) plutôt qu'un simple
+  ensemble de champs plats façon CAPA d'une non-conformité : contrairement à une non-conformité (une
+  action corrective ET une action préventive, fixes), un plan de traitement de risque compte
+  naturellement plusieurs actions indépendantes ("corriger le système" ET "ajouter une supervision"
+  ET "former les équipes"), chacune suivie jusqu'à sa propre clôture - voir le docblock de
+  `PluginGrcmanagerRiskTreatmentAction` pour le raisonnement complet et l'alternative "champs plats"
+  écartée. Uniquement pertinent quand `treatment` vaut "mitiger" ou "transférer"
+  (`TreatmentPlanRules::isTreatmentPlanRelevant()`, testée unitairement) : "accepter" n'a par
+  définition aucun plan de traitement, "éviter" élimine la source du risque sans action à suivre
+  dans la durée. Mini-formulaire d'ajout et liste des actions (mise à jour de statut, suppression)
+  affichés directement sur la fiche du risque concerné (`PluginGrcmanagerRisk::showTreatmentPlan()`,
+  hors du `<form>` principal comme `PluginGrcmanagerObjective::showMeasurementHistory()`, voir la
+  Pull Request pour le détail de cette contrainte HTML). Un risque à mitiger/transférer ne peut plus
+  être clôturé sans au moins une action de traitement enregistrée (validation serveur réelle,
+  message d'erreur, même mécanisme que l'action corrective obligatoire à la clôture d'une
+  non-conformité). "En retard" reste une condition dérivée (échéance dépassée et statut différent de
+  "réalisée"), jamais un statut choisi dans un menu déroulant, même convention que le CAPA en retard,
+  les revues de risque, le renouvellement de formation et la revue de politique. Tâche Cron
+  quotidienne dédiée (`cronOverduetreatmentaction()`, notification GLPI native vers le responsable
+  de l'action) et 2 nouvelles cartes de tableau de bord ("Actions de traitement de risque en
+  retard", "Risques à mitiger/transférer sans plan de traitement"), ajoutées au tableau de bord ISMS
+  seedé à l'installation.
+- **Classification Confidentialité/Intégrité/Disponibilité (C/I/D) des actifs** (issue #26,
+  ISO/IEC 27001:2022 A.5.9/A.5.12/A.8.2) : nouveau registre natif, indépendant du lien registre de
+  risques <-> actifs de l'issue #25 (`PluginGrcmanagerAssetClassification`, table
+  `glpi_plugin_grcmanager_assetclassifications`, clé composite unique itemtype/items_id) — une
+  classification est une propriété de l'actif lui-même (ex. « base RH = confidentialité élevée »),
+  pas d'un risque particulier qui le mentionne. Réutilise exactement la même liste d'itemtypes
+  classifiables que l'issue #25 (`LinkableItemtypes`/`PluginGrcmanagerRisk::getLinkableItemtypes()`),
+  jamais une seconde liste divergente. Nouvel onglet "Classification C/I/D" en lecture + édition sur
+  la fiche de chaque actif liable (même mécanisme `Plugin::registerClass()`/`addtabon` que l'onglet
+  "Risques" de l'issue #25), formulaire à 3 menus déroulants Faible/Moyen/Élevé par axe, chaque axe
+  pouvant être renseigné indépendamment (classification partielle valide, pas de tout-ou-rien). Le
+  formulaire du registre de risques (`PluginGrcmanagerRisk::showForm()`) affiche désormais, en
+  lecture seule, la classification existante de chaque actif déjà lié directement dans le libellé du
+  multi-select, ainsi qu'une suggestion non-bloquante à côté du champ Impact quand au moins un actif
+  lié porte une classification élevée (n'altère jamais la valeur choisie par l'utilisateur). Décision
+  volontaire de ne PAS dépendre du plugin communautaire "Fields" recommandé dans l'issue d'origine :
+  une implémentation native est testable et ne suppose pas la présence d'un plugin tiers sur une
+  instance donnée (le plugin "Fields" reste mentionné en note d'interopérabilité future dans la PR).
+
+- **Distinction non-conformité / observation-remarque dans les audits** (issue #27, vocabulaire ISO
+  19011) : nouveau champ `finding_type` sur `PluginGrcmanagerNonconformity`, indépendant de
+  `severity`. Une observation/remarque suit le même workflow CAPA qu'une non-conformité mais sans
+  action corrective/préventive obligatoire pour être clôturée/vérifiée (elle peut toujours en
+  recevoir une volontairement). Liste filtrable par type de constat avec badge coloré, formulaire
+  mis à jour, migration idempotente (`Migration::addField()`) avec valeur par défaut
+  `nonconformity` pour ne reclasser aucun constat d'audit existant. La carte de tableau de bord
+  « Non-conformités ouvertes » ne compte désormais plus que les vraies non-conformités. Résout la
+  dette documentée dans TECH_DEBT.md Sprint 4.
+- **Lien registre de risques <-> actifs GLPI/CMDB** (issue #25) : un risque peut désormais être
+  lié à zéro, un ou plusieurs actifs réels de la CMDB (Computer, Monitor, NetworkEquipment,
+  Peripheral, Phone, Printer, Software, ainsi que tout actif personnalisé actif) via une nouvelle
+  table de liaison polymorphe `glpi_plugin_grcmanager_risks_items` (itemtype/items_id, sur le même
+  modèle que les tables de liaison polymorphes du cœur GLPI, ex. `glpi_documents_items`) —
+  volontairement PAS une colonne `itemtype`/`items_id` directe sur `glpi_plugin_grcmanager_risks`
+  elle-même, qui aurait imposé à tort une cardinalité 1-vers-1. Un multi-select par itemtype liable
+  dans le formulaire du risque (`PluginGrcmanagerRisk::showForm()`), et un nouvel onglet "Risques"
+  en lecture seule sur la fiche de chaque actif liable (`getTabNameForItem()`/
+  `displayTabContentForItem()`, `Plugin::registerClass()`/`addtabon` dans `setup.php`) pour
+  répondre au besoin inverse ("quels risques pèsent sur cet actif ?"). Gérée par de simples
+  méthodes statiques en accès direct `$DB` (`getLinkedAssets()`/`syncLinkedAssets()`/
+  `getRisksLinkedToItem()`), pas une vraie classe `CommonDBRelation`, même simplification déjà
+  assumée pour tous les autres liens de ce plugin depuis le Sprint 3 (voir TECH_DEBT.md).
+
 ## [1.0.1] - 2026-08-26
 
 ### Added

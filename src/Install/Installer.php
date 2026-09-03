@@ -58,6 +58,37 @@ final class Installer
     private const MANAGEMENT_REVIEWS_TABLE = 'glpi_plugin_grcmanager_managementreviews';
     private const MANAGEMENT_REVIEWS_USERS_TABLE = 'glpi_plugin_grcmanager_managementreviews_users';
 
+    // Issue #25 (lien registre de risques <-> actifs GLPI/CMDB), même dérivation de nom de table.
+    private const RISKS_ITEMS_TABLE = 'glpi_plugin_grcmanager_risks_items';
+
+    // Issue #26 (classification Confidentialité/Intégrité/Disponibilité des actifs), même
+    // dérivation de nom de table (suffixe de classe en minuscules, sans underscore ajouté à la
+    // frontière camelCase) que toutes les autres tables ci-dessus.
+    private const ASSET_CLASSIFICATIONS_TABLE = 'glpi_plugin_grcmanager_assetclassifications';
+
+    // Issue #28 (bibliothèque de politiques de sécurité versionnées, A.5.1), même dérivation de
+    // nom de table que toutes les autres tables ci-dessus.
+    private const POLICIES_TABLE = 'glpi_plugin_grcmanager_policies';
+
+    // Issue #30 (registre des obligations légales/réglementaires/contractuelles), même dérivation
+    // de nom de table que toutes les autres tables ci-dessus.
+    private const COMPLIANCE_OBLIGATIONS_TABLE = 'glpi_plugin_grcmanager_complianceobligations';
+
+    // Issue #32 (objectifs ISMS et suivi de KPI dans le temps, clause 6.2), même dérivation de nom
+    // de table que toutes les autres ci-dessus.
+    private const OBJECTIVES_TABLE = 'glpi_plugin_grcmanager_objectives';
+    private const OBJECTIVE_MEASUREMENTS_TABLE = 'glpi_plugin_grcmanager_objectivemeasurements';
+    private const MANAGEMENT_REVIEWS_OBJECTIVES_TABLE
+        = 'glpi_plugin_grcmanager_managementreviews_objectives';
+
+    // Issue #29 (registre des incidents de sécurité de l'information, A.5.24-27), même dérivation
+    // de nom de table que toutes les autres tables ci-dessus.
+    private const SECURITY_INCIDENTS_TABLE = 'glpi_plugin_grcmanager_securityincidents';
+
+    // Issue #31 (plan d'action de traitement des risques, clause 8.3/6.1.3), même dérivation de nom
+    // de table que toutes les autres ci-dessus.
+    private const RISK_TREATMENT_ACTIONS_TABLE = 'glpi_plugin_grcmanager_risktreatmentactions';
+
     public function install(Migration $migration): bool
     {
         global $DB;
@@ -226,6 +257,8 @@ final class Installer
                 `title` varchar(255) NOT NULL,
                 `description` text,
                 `plugin_grcmanager_audits_id` int {$keySign} NOT NULL DEFAULT 0,
+                `finding_type` varchar(16) NOT NULL DEFAULT 'nonconformity'
+                    COMMENT 'nonconformity, observation (issue #27, deux axes independants de severity)',
                 `severity` varchar(16) NOT NULL DEFAULT 'minor' COMMENT 'minor, major, critical',
                 `root_cause` text,
                 `corrective_action` text,
@@ -239,6 +272,7 @@ final class Installer
                 `date_mod` timestamp NULL DEFAULT NULL,
                 PRIMARY KEY (`id`),
                 KEY `plugin_grcmanager_audits_id` (`plugin_grcmanager_audits_id`),
+                KEY `finding_type` (`finding_type`),
                 KEY `severity` (`severity`),
                 KEY `status` (`status`),
                 KEY `users_id` (`users_id`),
@@ -246,6 +280,37 @@ final class Installer
             ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
 
             $DB->doQuery($query) or die($DB->error());
+        }
+
+        // Issue #27 (distinguer non-conformité et observation/remarque, vocabulaire ISO 19011) :
+        // deuxième axe independant de `severity` (voir TECH_DEBT.md Sprint 4, résolu, et le
+        // docblock de PluginGrcmanagerNonconformity). `finding_type` est deja dans le CREATE TABLE
+        // ci-dessus pour une installation neuve ; ce bloc gere le meme ajout pour une installation
+        // existante d'avant l'issue #27, premiere migration de champ de ce fichier (v1.0 n'avait
+        // encore jamais eu besoin d'en ajouter une sur une table deja creee), suivant exactement la
+        // meme convention idempotente fieldExists/addField/migrationOneTable que le plugin jumeau
+        // assetsign-glpi (src/GlpiPlugin/Assetsign/Config.php). Type 'string' (pas un fragment SQL
+        // brut comme 'varchar(16)') delibere : Migration::fieldFormat() ne sait appliquer un
+        // DEFAULT que pour ses types nommes reconnus (string/bool/integer/...), un fragment SQL
+        // brut passe tel quel sans jamais honorer l'option 'value' ci-dessous (verifie en conditions
+        // reelles contre GLPI 11). VARCHAR(255) plutot que VARCHAR(16) comme dans le CREATE TABLE
+        // ci-dessus : largeur suffisante, l'essentiel est que la valeur par defaut 'nonconformity'
+        // soit reellement appliquee (MySQL retro-remplit alors chaque ligne existante avec ce
+        // defaut lors de l'ADD COLUMN NOT NULL DEFAULT, jamais laissee a NULL) pour ne jamais
+        // reclasser silencieusement en simple observation un constat d'audit deja existant.
+        if (!$DB->fieldExists(self::NONCONFORMITIES_TABLE, 'finding_type')) {
+            $migration->addField(
+                self::NONCONFORMITIES_TABLE,
+                'finding_type',
+                'string',
+                [
+                    'value'   => 'nonconformity',
+                    'comment' => 'nonconformity, observation (issue #27, deux axes independants de severity)',
+                    'after'   => 'plugin_grcmanager_audits_id',
+                ]
+            );
+            $migration->addKey(self::NONCONFORMITIES_TABLE, 'finding_type', 'finding_type');
+            $migration->migrationOneTable(self::NONCONFORMITIES_TABLE);
         }
 
         // Sprint 5 (risques fournisseurs/tiers) : même structure que RISKS_TABLE ci-dessus (mêmes
@@ -374,6 +439,289 @@ final class Installer
             $DB->doQuery($query) or die($DB->error());
         }
 
+        // Issue #25 (lien registre de risques <-> actifs GLPI/CMDB) : table de liaison
+        // POLYMORPHE (itemtype/items_id), pas une deuxième colonne d'ID fixe comme
+        // CONTROLS_RISKS_TABLE/AUDITS_CONTROLS_TABLE ci-dessus (deux itemtypes fixes, propres à ce
+        // plugin) : la cible ici est n'importe quel itemtype GLPI géré (Computer, actif
+        // personnalisé...), exactement le même modèle que les tables de liaison polymorphes du
+        // cœur GLPI lui-même (ex. glpi_documents_items). Un risque peut avoir zéro ligne ici (reste
+        // un risque purement organisationnel, ex. "processus de recrutement", voir l'issue) — ce
+        // n'est pas une relation obligatoire, contrairement à `users_id` (propriétaire) sur
+        // RISKS_TABLE ci-dessus qui, elle, est bien une colonne directe (relation 1-vers-1
+        // implicite avec un `User`, toujours renseignée). Voir
+        // PluginGrcmanagerRisk::getLinkedAssets()/syncLinkedAssets()/getRisksLinkedToItem().
+        if (!$DB->tableExists(self::RISKS_ITEMS_TABLE)) {
+            $query = "CREATE TABLE `" . self::RISKS_ITEMS_TABLE . "` (
+                `id` int {$keySign} NOT NULL AUTO_INCREMENT,
+                `plugin_grcmanager_risks_id` int {$keySign} NOT NULL,
+                `itemtype` varchar(100) NOT NULL,
+                `items_id` int {$keySign} NOT NULL DEFAULT 0,
+                `date_creation` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `unicity_link` (`plugin_grcmanager_risks_id`, `itemtype`, `items_id`),
+                KEY `risks_id` (`plugin_grcmanager_risks_id`),
+                KEY `item` (`itemtype`, `items_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
+
+            $DB->doQuery($query) or die($DB->error());
+        }
+
+        // Issue #26 (classification C/I/D des actifs, ISO/IEC 27001:2022 A.5.9/A.5.12/A.8.2) :
+        // registre INDÉPENDANT du lien risque <-> actif de l'issue #25 ci-dessus (RISKS_ITEMS_TABLE)
+        // — une classification est une propriété de l'actif lui-même, pas d'un risque particulier
+        // qui le mentionne, voir PluginGrcmanagerAssetClassification. Clé composite unique
+        // itemtype/items_id (une seule ligne par actif réel, jamais deux classifications
+        // concurrentes pour le même actif), même modèle polymorphe que RISKS_ITEMS_TABLE mais SANS
+        // second membre de relation (`plugin_grcmanager_risks_id`) : ici l'actif EST l'entité
+        // classifiée, pas un lien entre deux entités. Les trois axes sont chacun un varchar
+        // optionnel avec défaut '' ("non classifié sur cet axe"), même convention que
+        // `PluginGrcmanagerRisk.treatment` ci-dessus ("empty = no decision yet") : une
+        // classification partielle (un seul axe renseigné) est un état valide, pas une exigence
+        // tout-ou-rien (voir ClassificationLevels::isClassified()).
+        if (!$DB->tableExists(self::ASSET_CLASSIFICATIONS_TABLE)) {
+            $query = "CREATE TABLE `" . self::ASSET_CLASSIFICATIONS_TABLE . "` (
+                `id` int {$keySign} NOT NULL AUTO_INCREMENT,
+                `itemtype` varchar(100) NOT NULL,
+                `items_id` int {$keySign} NOT NULL DEFAULT 0,
+                `confidentiality` varchar(16) NOT NULL DEFAULT ''
+                    COMMENT 'low, medium, high, empty = not classified on this axis',
+                `integrity` varchar(16) NOT NULL DEFAULT ''
+                    COMMENT 'low, medium, high, empty = not classified on this axis',
+                `availability` varchar(16) NOT NULL DEFAULT ''
+                    COMMENT 'low, medium, high, empty = not classified on this axis',
+                `date_creation` timestamp NULL DEFAULT NULL,
+                `date_mod` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `unicity_item` (`itemtype`, `items_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
+
+            $DB->doQuery($query) or die($DB->error());
+        }
+
+        // Issue #28 (bibliothèque de politiques de sécurité versionnées, A.5.1/A.5.1.1/A.5.1.2) :
+        // une ligne par politique (charte informatique, politique de mots de passe, PCA...), avec
+        // le cycle de vie brouillon -> approuvée -> archivée (voir
+        // GlpiPlugin\Grcmanager\Services\Policy\PolicyLifecycle) et le rappel de revue périodique
+        // sur `next_review_date` (voir PolicyReviewReminderService, calqué sur
+        // ReviewReminderService du registre de risques). Le document lui-même (PDF, Word...) n'est
+        // PAS stocké ici : attaché via le mécanisme natif GLPI Document/Document_Item (voir
+        // setup.php, $CFG_GLPI['document_types'], et PluginGrcmanagerPolicy::defineTabs()).
+        if (!$DB->tableExists(self::POLICIES_TABLE)) {
+            $query = "CREATE TABLE `" . self::POLICIES_TABLE . "` (
+                `id` int {$keySign} NOT NULL AUTO_INCREMENT,
+                `title` varchar(255) NOT NULL,
+                `version` varchar(16) NOT NULL DEFAULT '1.0',
+                `status` varchar(16) NOT NULL DEFAULT 'draft' COMMENT 'draft, approved, archived',
+                `approval_date` date DEFAULT NULL,
+                `next_review_date` date DEFAULT NULL,
+                `users_id` int {$keySign} NOT NULL DEFAULT 0 COMMENT 'Policy owner',
+                `description` text,
+                `date_creation` timestamp NULL DEFAULT NULL,
+                `date_mod` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                KEY `status` (`status`),
+                KEY `users_id` (`users_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
+
+            $DB->doQuery($query) or die($DB->error());
+        }
+
+        // Issue #30 (registre des obligations légales/réglementaires/contractuelles, clause 4.2
+        // ISO 27001 "parties intéressées et leurs exigences", Annexe A A.5.31-36) : lien optionnel
+        // zéro-ou-un vers un risque du registre en colonne DIRECTE (`plugin_grcmanager_risks_id`),
+        // pas une table de liaison many-to-many comme CONTROLS_RISKS_TABLE ci-dessus - voir le
+        // docblock de PluginGrcmanagerComplianceObligation pour le raisonnement complet (cardinalité
+        // plus simple que le lien risque <-> actifs CMDB de l'issue #25, même choix déjà fait pour
+        // `users_id`/propriétaire sur chaque autre registre de ce plugin).
+        if (!$DB->tableExists(self::COMPLIANCE_OBLIGATIONS_TABLE)) {
+            $query = "CREATE TABLE `" . self::COMPLIANCE_OBLIGATIONS_TABLE . "` (
+                `id` int {$keySign} NOT NULL AUTO_INCREMENT,
+                `title` varchar(255) NOT NULL,
+                `type` varchar(16) NOT NULL DEFAULT 'legal'
+                    COMMENT 'legal, regulatory, contractual',
+                `reference_source` varchar(255) NOT NULL DEFAULT ''
+                    COMMENT 'Ex. RGPD, Contrat client Acme SA, Loi n°...',
+                `compliance_status` varchar(24) NOT NULL DEFAULT 'not_assessed'
+                    COMMENT 'compliant, partially_compliant, non_compliant, not_assessed',
+                `users_id` int {$keySign} NOT NULL DEFAULT 0 COMMENT 'Owner',
+                `review_date` date DEFAULT NULL,
+                `plugin_grcmanager_risks_id` int {$keySign} NOT NULL DEFAULT 0
+                    COMMENT 'Lien optionnel zero-ou-un vers un risque, 0 = aucun',
+                `description` text,
+                `date_creation` timestamp NULL DEFAULT NULL,
+                `date_mod` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                KEY `type` (`type`),
+                KEY `compliance_status` (`compliance_status`),
+                KEY `users_id` (`users_id`),
+                KEY `review_date` (`review_date`),
+                KEY `plugin_grcmanager_risks_id` (`plugin_grcmanager_risks_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
+
+            $DB->doQuery($query) or die($DB->error());
+        }
+
+        // Issue #32 (objectifs ISMS et suivi de KPI dans le temps, clause 6.2) : `target_value` et
+        // `target_description` sont deux colonnes INDÉPENDANTES et toutes deux nullables plutôt
+        // qu'une seule colonne numérique obligatoire — certains objectifs ont une vraie cible
+        // chiffrée ("réduire de 20%"), d'autres sont purement qualitatifs ("obtenir la
+        // certification ISO 27001") et n'ont rien de sensé à mettre dans une colonne numérique
+        // obligatoire (voir PluginGrcmanagerObjective::hasNumericTarget() et
+        // GlpiPlugin\Grcmanager\Services\Objective\ObjectiveMeasurementValidator, qui utilisent
+        // cette même distinction pour savoir si une mesure doit obligatoirement porter une valeur
+        // chiffrée).
+        if (!$DB->tableExists(self::OBJECTIVES_TABLE)) {
+            $query = "CREATE TABLE `" . self::OBJECTIVES_TABLE . "` (
+                `id` int {$keySign} NOT NULL AUTO_INCREMENT,
+                `title` varchar(255) NOT NULL,
+                `description` text,
+                `target_value` decimal(10,2) DEFAULT NULL
+                    COMMENT 'Cible numerique, NULL si objectif purement qualitatif',
+                `target_description` text
+                    COMMENT 'Cible qualitative en texte libre, en complement ou a la place de target_value',
+                `target_date` date DEFAULT NULL,
+                `users_id` int {$keySign} NOT NULL DEFAULT 0 COMMENT 'Proprietaire de l''objectif',
+                `status` varchar(16) NOT NULL DEFAULT 'not_started'
+                    COMMENT 'not_started, on_track, at_risk, achieved, missed',
+                `date_creation` timestamp NULL DEFAULT NULL,
+                `date_mod` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                KEY `status` (`status`),
+                KEY `users_id` (`users_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
+
+            $DB->doQuery($query) or die($DB->error());
+        }
+
+        // Historique de mesures manuel (issue #32) : une ligne par point de mesure dans le temps
+        // ("à cette date, nous en sommes à X"), volontairement PAS auto-calculé depuis d'autres
+        // données du plugin (ex. décompte de non-conformités) pour cette première version, même
+        // philosophie "version minimale et testée" que le reste de ce plugin (voir TECH_DEBT.md
+        // Sprint 2). `plugin_grcmanager_objectives_id` n'est pas une vraie clé étrangère GLPI
+        // (pas de ON DELETE CASCADE natif ici), même simplification assumée que
+        // `PluginGrcmanagerNonconformity.plugin_grcmanager_audits_id` (TECH_DEBT.md Sprint 4).
+        // `value` nullable : une mesure sur un objectif purement qualitatif peut n'avoir aucune
+        // valeur chiffrée, voir ObjectiveMeasurementValidator ci-dessus.
+        if (!$DB->tableExists(self::OBJECTIVE_MEASUREMENTS_TABLE)) {
+            $query = "CREATE TABLE `" . self::OBJECTIVE_MEASUREMENTS_TABLE . "` (
+                `id` int {$keySign} NOT NULL AUTO_INCREMENT,
+                `plugin_grcmanager_objectives_id` int {$keySign} NOT NULL,
+                `measurement_date` date DEFAULT NULL,
+                `value` decimal(10,2) DEFAULT NULL
+                    COMMENT 'Valeur mesuree, NULL si objectif qualitatif sans indicateur chiffre',
+                `comment` text,
+                `date_creation` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                KEY `objectives_id` (`plugin_grcmanager_objectives_id`),
+                KEY `measurement_date` (`measurement_date`)
+            ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
+
+            $DB->doQuery($query) or die($DB->error());
+        }
+
+        // Many-to-many : objectif(s) ISMS abordés lors d'une revue de direction (issue #32, lien
+        // léger demandé par l'issue elle-même : "le comité de direction voit une trajectoire...
+        // lors des revues de direction, qui référencent déjà ces objectifs"), même convention
+        // "lien simple en accès direct $DB" que CONTROLS_RISKS_TABLE/MANAGEMENT_REVIEWS_USERS_TABLE
+        // ci-dessus (voir PluginGrcmanagerManagementReview::getLinkedObjectives()/
+        // syncLinkedObjectives()).
+        if (!$DB->tableExists(self::MANAGEMENT_REVIEWS_OBJECTIVES_TABLE)) {
+            $query = "CREATE TABLE `" . self::MANAGEMENT_REVIEWS_OBJECTIVES_TABLE . "` (
+                `id` int {$keySign} NOT NULL AUTO_INCREMENT,
+                `plugin_grcmanager_managementreviews_id` int {$keySign} NOT NULL,
+                `plugin_grcmanager_objectives_id` int {$keySign} NOT NULL,
+                `date_creation` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `unicity_link`
+                    (`plugin_grcmanager_managementreviews_id`, `plugin_grcmanager_objectives_id`),
+                KEY `reviews_id` (`plugin_grcmanager_managementreviews_id`),
+                KEY `objectives_id` (`plugin_grcmanager_objectives_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
+
+            $DB->doQuery($query) or die($DB->error());
+        }
+
+        // Issue #29 (registre des incidents de sécurité de l'information, ISO/IEC 27001:2022
+        // Annexe A A.5.24-27) : `linked_itemtype`/`linked_items_id` référencent un Ticket/Problem
+        // GLPI déjà existant EN COLONNES DIRECTES (pas une table de liaison polymorphe comme
+        // RISKS_ITEMS_TABLE ci-dessus) : un incident correspond au plus à un seul Ticket/Problem en
+        // pratique, cardinalité plus simple que le lien risque <-> actifs CMDB many-to-many de
+        // l'issue #25 - voir le docblock de PluginGrcmanagerSecurityIncident. `plugin_grcmanager_risks_id`
+        // suit exactement la même convention zéro-ou-un que COMPLIANCE_OBLIGATIONS_TABLE ci-dessus
+        // (issue #30). `cia_impact` est une liste de valeurs séparées par des virgules sur une
+        // seule colonne, même convention que `risk_categories` sur AUDITS_TABLE ci-dessus (Sprint
+        // 4) pour un ensemble fixe et petit de valeurs. `root_cause`/`lessons_learned` restent
+        // toutes deux nullables : ni obligatoires pour ouvrir un incident, seulement validées
+        // avant clôture côté PluginGrcmanagerSecurityIncident (clause A.5.27, même convention que
+        // `corrective_action` sur NONCONFORMITIES_TABLE ci-dessus).
+        if (!$DB->tableExists(self::SECURITY_INCIDENTS_TABLE)) {
+            $query = "CREATE TABLE `" . self::SECURITY_INCIDENTS_TABLE . "` (
+                `id` int {$keySign} NOT NULL AUTO_INCREMENT,
+                `title` varchar(255) NOT NULL,
+                `description` text,
+                `incident_date` datetime DEFAULT NULL,
+                `category` varchar(32) NOT NULL DEFAULT 'other'
+                    COMMENT 'data_breach, malware, unauthorized_access, availability, other',
+                `severity` varchar(16) NOT NULL DEFAULT 'minor' COMMENT 'minor, major, critical',
+                `cia_impact` varchar(64) NOT NULL DEFAULT ''
+                    COMMENT 'Axes confidentiality/integrity/availability separes par des virgules, vide = non evalue',
+                `status` varchar(16) NOT NULL DEFAULT 'open'
+                    COMMENT 'open, investigating, contained, closed',
+                `root_cause` text,
+                `lessons_learned` text,
+                `users_id` int {$keySign} NOT NULL DEFAULT 0 COMMENT 'Responsable',
+                `linked_itemtype` varchar(100) NOT NULL DEFAULT ''
+                    COMMENT 'Ticket, Problem, vide = aucune reference',
+                `linked_items_id` int {$keySign} NOT NULL DEFAULT 0,
+                `plugin_grcmanager_risks_id` int {$keySign} NOT NULL DEFAULT 0
+                    COMMENT 'Lien optionnel zero-ou-un vers un risque, 0 = aucun',
+                `date_creation` timestamp NULL DEFAULT NULL,
+                `date_mod` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                KEY `category` (`category`),
+                KEY `severity` (`severity`),
+                KEY `status` (`status`),
+                KEY `users_id` (`users_id`),
+                KEY `item` (`linked_itemtype`, `linked_items_id`),
+                KEY `plugin_grcmanager_risks_id` (`plugin_grcmanager_risks_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
+
+            $DB->doQuery($query) or die($DB->error());
+        }
+
+        // Issue #31 (plan d'action de traitement des risques, clause 8.3/6.1.3) : PLUSIEURS
+        // actions concrètes par risque (contrairement au CAPA d'une non-conformité, qui n'a
+        // qu'une action corrective ET une action préventive fixes, voir NONCONFORMITIES_TABLE
+        // ci-dessus) - véritable table enfant one-to-many, comme OBJECTIVE_MEASUREMENTS_TABLE
+        // ci-dessus, pas un simple lien polymorphe comme RISKS_ITEMS_TABLE (chaque action porte
+        // ses propres données : description, responsable, échéance, statut, date de réalisation).
+        // `plugin_grcmanager_risks_id` n'est pas une vraie clé étrangère GLPI (pas de ON DELETE
+        // CASCADE natif ici), même simplification assumée que
+        // `PluginGrcmanagerObjectiveMeasurement.plugin_grcmanager_objectives_id` ci-dessus, mais
+        // voir PluginGrcmanagerRisk::post_purgeItem() pour le nettoyage explicite ajouté malgré
+        // tout (coût marginal nul, ce hook existe déjà pour RISKS_ITEMS_TABLE).
+        if (!$DB->tableExists(self::RISK_TREATMENT_ACTIONS_TABLE)) {
+            $query = "CREATE TABLE `" . self::RISK_TREATMENT_ACTIONS_TABLE . "` (
+                `id` int {$keySign} NOT NULL AUTO_INCREMENT,
+                `plugin_grcmanager_risks_id` int {$keySign} NOT NULL,
+                `description` text,
+                `users_id` int {$keySign} NOT NULL DEFAULT 0 COMMENT 'Responsable de l''action',
+                `due_date` date DEFAULT NULL,
+                `status` varchar(16) NOT NULL DEFAULT 'planned'
+                    COMMENT 'planned, in_progress, done',
+                `completion_date` date DEFAULT NULL,
+                `date_creation` timestamp NULL DEFAULT NULL,
+                `date_mod` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                KEY `risks_id` (`plugin_grcmanager_risks_id`),
+                KEY `status` (`status`),
+                KEY `users_id` (`users_id`),
+                KEY `due_date` (`due_date`)
+            ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
+
+            $DB->doQuery($query) or die($DB->error());
+        }
+
         $this->seedControls();
 
         $this->seedReviewReminderNotification(
@@ -388,8 +736,17 @@ final class Installer
             'Revue de risque fournisseur à échéance',
             'risque fournisseur'
         );
+        $this->seedReviewReminderNotification(
+            'PluginGrcmanagerComplianceObligation',
+            'complianceobligation',
+            'Revue d\'obligation à échéance',
+            'obligation',
+            ['type' => 'Type', 'status' => 'Statut de conformité']
+        );
         $this->seedCapaOverdueNotification();
         $this->seedTrainingRenewalNotification();
+        $this->seedPolicyReviewReminderNotification();
+        $this->seedTreatmentActionOverdueNotification();
 
         // Sprint 2 (rappels de date de revue) : évalue chaque jour les risques dont la date de
         // revue est dépassée ou approche, et déclenche la notification GLPI seedée ci-dessus (voir
@@ -422,6 +779,21 @@ final class Installer
             ]
         );
 
+        // Issue #30 (obligations légales/réglementaires/contractuelles) : même mécanisme de
+        // rappel de revue que les deux registres de risques ci-dessus (ReviewReminderService
+        // généralisé par cette issue avec un $excludeCriteria vide, voir
+        // PluginGrcmanagerComplianceObligation::cronReviewreminder()).
+        CronTask::Register(
+            'PluginGrcmanagerComplianceObligation',
+            'reviewreminder',
+            DAY_TIMESTAMP,
+            [
+                'comment' => 'Notifie le propriétaire de chaque obligation dont la date de revue '
+                    . 'est dépassée ou approche',
+                'mode'    => CronTask::MODE_EXTERNAL,
+            ]
+        );
+
         // Sprint 4 (CAPA en retard) : évalue chaque jour les non-conformités dont l'échéance est
         // dépassée et qui ne sont ni clôturées ni vérifiées, et déclenche la notification GLPI
         // seedée ci-dessus (voir PluginGrcmanagerNonconformity::cronOverduecapa(),
@@ -448,6 +820,38 @@ final class Installer
             [
                 'comment' => 'Notifie chaque participant en retard de renouvellement pour une '
                     . 'formation',
+                'mode'    => CronTask::MODE_EXTERNAL,
+            ]
+        );
+
+        // Issue #28 (bibliothèque de politiques de sécurité versionnées, A.5.1) : évalue chaque
+        // jour les politiques dont la prochaine date de revue est dépassée ou approche, et
+        // déclenche la notification GLPI seedée ci-dessus (voir
+        // PluginGrcmanagerPolicy::cronReviewreminder(),
+        // src/Services/Policy/PolicyReviewReminderService.php).
+        CronTask::Register(
+            'PluginGrcmanagerPolicy',
+            'reviewreminder',
+            DAY_TIMESTAMP,
+            [
+                'comment' => 'Notifie le propriétaire de chaque politique de sécurité dont la '
+                    . 'prochaine date de revue est dépassée ou approche',
+                'mode'    => CronTask::MODE_EXTERNAL,
+            ]
+        );
+
+        // Issue #31 (plan d'action de traitement des risques, clause 8.3/6.1.3) : évalue chaque
+        // jour les actions de traitement dont l'échéance est dépassée et qui ne sont pas encore
+        // réalisées, et déclenche la notification GLPI seedée ci-dessus (voir
+        // PluginGrcmanagerRiskTreatmentAction::cronOverduetreatmentaction(),
+        // src/Services/Risk/OverdueTreatmentActionService.php).
+        CronTask::Register(
+            'PluginGrcmanagerRiskTreatmentAction',
+            'overduetreatmentaction',
+            DAY_TIMESTAMP,
+            [
+                'comment' => 'Notifie le responsable de chaque action de traitement de risque dont '
+                    . 'l\'échéance est dépassée',
                 'mode'    => CronTask::MODE_EXTERNAL,
             ]
         );
@@ -484,24 +888,37 @@ final class Installer
     /**
      * Seeds the Notification/NotificationTemplate/translation/target rows a review-date reminder
      * Cron task (PluginGrcmanagerRisk::cronReviewreminder(), and since Sprint 5
-     * PluginGrcmanagerSupplierRisk::cronReviewreminder()) needs to actually send something via
-     * NotificationEvent::raiseEvent('review_due', ...), see inc/notificationtargetrisk.class.php /
-     * inc/notificationtargetsupplierrisk.class.php for the NotificationTarget classes and their tag
-     * lists. Idempotent per itemtype: skipped entirely if a Notification for that itemtype/event
-     * already exists (an admin may have edited the template's wording since, never overwritten
-     * here). Generalized at Sprint 5 (was PluginGrcmanagerRisk-only before) so both review-reminder
-     * itemtypes are seeded from the exact same implementation, only their tag prefix/wording differ.
+     * PluginGrcmanagerSupplierRisk::cronReviewreminder(), and since issue #30
+     * PluginGrcmanagerComplianceObligation::cronReviewreminder()) needs to actually send something
+     * via NotificationEvent::raiseEvent('review_due', ...), see inc/notificationtargetrisk.class.php /
+     * inc/notificationtargetsupplierrisk.class.php / inc/notificationtargetcomplianceobligation.class.php
+     * for the NotificationTarget classes and their tag lists. Idempotent per itemtype: skipped
+     * entirely if a Notification for that itemtype/event already exists (an admin may have edited
+     * the template's wording since, never overwritten here). Generalized at Sprint 5 (was
+     * PluginGrcmanagerRisk-only before) so every review-reminder itemtype is seeded from the exact
+     * same implementation, only their tag prefix/wording differ.
      *
-     * @param string $itemtype  'PluginGrcmanagerRisk' or 'PluginGrcmanagerSupplierRisk'.
-     * @param string $tagPrefix Matches the NotificationTarget's own tag prefix ('risk'/'supplierrisk').
-     * @param string $name      Human-readable Notification/NotificationTemplate name suffix.
-     * @param string $noun      French noun used in the seeded comment ('risque'/'risque fournisseur').
+     * @param string $itemtype    'PluginGrcmanagerRisk', 'PluginGrcmanagerSupplierRisk' or
+     *                            'PluginGrcmanagerComplianceObligation'.
+     * @param string $tagPrefix   Matches the NotificationTarget's own tag prefix
+     *                            ('risk'/'supplierrisk'/'complianceobligation').
+     * @param string $name        Human-readable Notification/NotificationTemplate name suffix.
+     * @param string $noun        French noun used in the seeded comment
+     *                            ('risque'/'risque fournisseur'/'obligation').
+     * @param array<string, string> $detailLines Tag suffix => French label for the two body lines
+     *                            between the title and the review date. Defaults to
+     *                            category/risklevel (PluginGrcmanagerRisk/PluginGrcmanagerSupplierRisk's
+     *                            own tags, unchanged since Sprint 2/5) so existing callers see no
+     *                            behaviour change; issue #30 passes type/status instead, matching
+     *                            PluginGrcmanagerComplianceObligation's own fields (no
+     *                            category/risklevel on that itemtype).
      */
     private function seedReviewReminderNotification(
         string $itemtype,
         string $tagPrefix,
         string $name,
-        string $noun
+        string $noun,
+        array $detailLines = ['category' => 'Catégorie', 'risklevel' => 'Niveau de risque']
     ): void {
         global $DB;
 
@@ -524,18 +941,23 @@ final class Installer
                 . $noun . ' atteint ou dépasse sa date de revue.',
         ]);
 
+        $detailText = '';
+        $detailHtml = '';
+        foreach ($detailLines as $tagSuffix => $label) {
+            $detailText .= "{$label} : ##{$tagPrefix}.{$tagSuffix}##\n";
+            $detailHtml .= "{$label} : ##{$tagPrefix}.{$tagSuffix}##<br>";
+        }
+
         $DB->insert('glpi_notificationtemplatetranslations', [
             'notificationtemplates_id' => $templateId,
             'language'                 => '',
             'subject'                  => "##{$tagPrefix}.action## : ##{$tagPrefix}.title##",
             'content_text'             => "##{$tagPrefix}.action## : ##{$tagPrefix}.title##\n\n"
-                . "Catégorie : ##{$tagPrefix}.category##\n"
-                . "Niveau de risque : ##{$tagPrefix}.risklevel##\n"
+                . $detailText
                 . "Date de revue : ##{$tagPrefix}.reviewdate##\n\n"
                 . "Voir le " . $noun . " : ##{$tagPrefix}.url##",
             'content_html'             => "<p><strong>##{$tagPrefix}.action## : ##{$tagPrefix}.title##</strong></p>"
-                . '<p>Catégorie : ' . "##{$tagPrefix}.category##<br>"
-                . 'Niveau de risque : ' . "##{$tagPrefix}.risklevel##<br>"
+                . '<p>' . $detailHtml
                 . 'Date de revue : ' . "##{$tagPrefix}.reviewdate##</p>"
                 . "<p><a href=\"##{$tagPrefix}.url##\">Voir le " . $noun . '</a></p>',
         ]);
@@ -706,6 +1128,152 @@ final class Installer
     }
 
     /**
+     * Same structure as seedReviewReminderNotification() above, for the issue #28 policy
+     * review-reminder Cron task (PluginGrcmanagerPolicy::cronReviewreminder(), event
+     * 'policy_review_due', see inc/notificationtargetpolicy.class.php). Idempotent for the same
+     * reason. Kept as its own dedicated method rather than a third call to
+     * seedReviewReminderNotification(): that method's event is hardcoded to 'review_due' and its
+     * tags to `##<prefix>.risklevel##`/`##<prefix>.reviewdate##`-shaped risk wording, which doesn't
+     * fit this itemtype's own event name and tag set (title/version/status/reviewdate), same
+     * reasoning as PolicyReviewReminderService not simply reusing ReviewReminderService (see its
+     * own docblock).
+     */
+    private function seedPolicyReviewReminderNotification(): void
+    {
+        global $DB;
+
+        $itemtype = 'PluginGrcmanagerPolicy';
+        $event    = 'policy_review_due';
+
+        $alreadySeeded = $DB->request([
+            'FROM'  => 'glpi_notifications',
+            'WHERE' => ['itemtype' => $itemtype, 'event' => $event],
+        ])->count() > 0;
+
+        if ($alreadySeeded) {
+            return;
+        }
+
+        $template = new NotificationTemplate();
+        $templateId = $template->add([
+            'name'     => 'GRC Manager - Revue de politique de sécurité à échéance',
+            'itemtype' => $itemtype,
+            'comment'  => 'Notification envoyée par la tâche automatique GRC Manager lorsqu\'une '
+                . 'politique de sécurité atteint ou dépasse sa prochaine date de revue.',
+        ]);
+
+        $DB->insert('glpi_notificationtemplatetranslations', [
+            'notificationtemplates_id' => $templateId,
+            'language'                 => '',
+            'subject'                  => '##policy.action## : ##policy.title##',
+            'content_text'             => "##policy.action## : ##policy.title##\n\n"
+                . "Version : ##policy.version##\n"
+                . "Statut : ##policy.status##\n"
+                . "Prochaine revue : ##policy.reviewdate##\n\n"
+                . "Voir la politique : ##policy.url##",
+            'content_html'             => '<p><strong>##policy.action## : ##policy.title##</strong></p>'
+                . '<p>Version : ' . "##policy.version##<br>"
+                . 'Statut : ' . "##policy.status##<br>"
+                . 'Prochaine revue : ' . "##policy.reviewdate##</p>"
+                . '<p><a href="##policy.url##">Voir la politique</a></p>',
+        ]);
+
+        $notification = new Notification();
+        $notificationId = $notification->add([
+            'name'         => 'GRC Manager - Revue de politique de sécurité à échéance',
+            'entities_id'  => 0,
+            'is_recursive' => 1,
+            'itemtype'     => $itemtype,
+            'event'        => $event,
+            'is_active'    => 1,
+        ]);
+
+        $DB->insert('glpi_notifications_notificationtemplates', [
+            'notifications_id'         => $notificationId,
+            'mode'                     => 'mailing',
+            'notificationtemplates_id' => $templateId,
+        ]);
+
+        // Default recipient: the policy's own owner (`users_id`), same generic resolution as
+        // seedReviewReminderNotification() above.
+        $DB->insert('glpi_notificationtargets', [
+            'items_id'         => Notification::ITEM_USER,
+            'type'             => Notification::USER_TYPE,
+            'notifications_id' => $notificationId,
+        ]);
+    }
+
+    /**
+     * Same structure as seedCapaOverdueNotification() above, for the issue #31 overdue treatment
+     * action Cron task (PluginGrcmanagerRiskTreatmentAction::cronOverduetreatmentaction(), event
+     * 'treatment_action_overdue', see inc/notificationtargetrisktreatmentaction.class.php).
+     * Idempotent for the same reason.
+     */
+    private function seedTreatmentActionOverdueNotification(): void
+    {
+        global $DB;
+
+        $itemtype = 'PluginGrcmanagerRiskTreatmentAction';
+        $event    = 'treatment_action_overdue';
+
+        $alreadySeeded = $DB->request([
+            'FROM'  => 'glpi_notifications',
+            'WHERE' => ['itemtype' => $itemtype, 'event' => $event],
+        ])->count() > 0;
+
+        if ($alreadySeeded) {
+            return;
+        }
+
+        $template = new NotificationTemplate();
+        $templateId = $template->add([
+            'name'     => 'GRC Manager - Action de traitement de risque en retard',
+            'itemtype' => $itemtype,
+            'comment'  => 'Notification envoyée par la tâche automatique GRC Manager lorsqu\'une '
+                . 'action du plan de traitement d\'un risque dépasse son échéance sans être réalisée.',
+        ]);
+
+        $DB->insert('glpi_notificationtemplatetranslations', [
+            'notificationtemplates_id' => $templateId,
+            'language'                 => '',
+            'subject'                  => '##treatmentaction.action## : ##treatmentaction.risktitle##',
+            'content_text'             => "##treatmentaction.action## : ##treatmentaction.risktitle##\n\n"
+                . "Action : ##treatmentaction.description##\n"
+                . "Échéance : ##treatmentaction.duedate##\n\n"
+                . "Voir le risque : ##treatmentaction.url##",
+            'content_html'             => '<p><strong>##treatmentaction.action## : '
+                . '##treatmentaction.risktitle##</strong></p>'
+                . '<p>Action : ##treatmentaction.description##<br>'
+                . 'Échéance : ##treatmentaction.duedate##</p>'
+                . '<p><a href="##treatmentaction.url##">Voir le risque</a></p>',
+        ]);
+
+        $notification = new Notification();
+        $notificationId = $notification->add([
+            'name'         => 'GRC Manager - Action de traitement de risque en retard',
+            'entities_id'  => 0,
+            'is_recursive' => 1,
+            'itemtype'     => $itemtype,
+            'event'        => $event,
+            'is_active'    => 1,
+        ]);
+
+        $DB->insert('glpi_notifications_notificationtemplates', [
+            'notifications_id'         => $notificationId,
+            'mode'                     => 'mailing',
+            'notificationtemplates_id' => $templateId,
+        ]);
+
+        // Default recipient: the treatment action's own responsible owner (`users_id`), same
+        // generic resolution as seedCapaOverdueNotification() above.
+        $DB->insert('glpi_notificationtargets', [
+            'items_id'         => Notification::ITEM_USER,
+            'type'             => Notification::USER_TYPE,
+            'notifications_id' => $notificationId,
+        ]);
+    }
+
+    /**
      * Idempotent like seedSource() on the sibling plugin glpi-vulnerability-manager (same author,
      * same guard shape): each of the 93 controls is looked up by its unique `code` before
      * inserting, so re-running install() (upgrade path, `plugin:install --force`) never duplicates
@@ -779,8 +1347,11 @@ final class Installer
 
         $this->unseedNotification('PluginGrcmanagerRisk');
         $this->unseedNotification('PluginGrcmanagerSupplierRisk');
+        $this->unseedNotification('PluginGrcmanagerComplianceObligation');
         $this->unseedNotification('PluginGrcmanagerNonconformity');
         $this->unseedNotification('PluginGrcmanagerTraining');
+        $this->unseedNotification('PluginGrcmanagerPolicy');
+        $this->unseedNotification('PluginGrcmanagerRiskTreatmentAction');
 
         // Sprint 7 (tableaux de bord) : retire le tableau de bord natif seedé par
         // DefaultDashboardService::seed() ci-dessus, avant que ses tables ne disparaissent.
@@ -802,6 +1373,15 @@ final class Installer
         $migration->dropTable(self::TRAININGS_TABLE);
         $migration->dropTable(self::MANAGEMENT_REVIEWS_USERS_TABLE);
         $migration->dropTable(self::MANAGEMENT_REVIEWS_TABLE);
+        $migration->dropTable(self::RISKS_ITEMS_TABLE);
+        $migration->dropTable(self::ASSET_CLASSIFICATIONS_TABLE);
+        $migration->dropTable(self::POLICIES_TABLE);
+        $migration->dropTable(self::COMPLIANCE_OBLIGATIONS_TABLE);
+        $migration->dropTable(self::MANAGEMENT_REVIEWS_OBJECTIVES_TABLE);
+        $migration->dropTable(self::OBJECTIVE_MEASUREMENTS_TABLE);
+        $migration->dropTable(self::OBJECTIVES_TABLE);
+        $migration->dropTable(self::SECURITY_INCIDENTS_TABLE);
+        $migration->dropTable(self::RISK_TREATMENT_ACTIONS_TABLE);
 
         $migration->executeMigration();
 

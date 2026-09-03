@@ -15,18 +15,22 @@
  * -------------------------------------------------------------------------
  */
 
+use GlpiPlugin\Grcmanager\Services\Capa\CapaRequirementService;
 use GlpiPlugin\Grcmanager\Services\Capa\OverdueCapaService;
 
 /**
- * A non-conformity (finding) raised during an internal audit (PluginGrcmanagerAudit), carrying the
- * full corrective/preventive action (CAPA) workflow ISO 27001 clause 10.2 requires: root cause,
- * corrective action, preventive action, a responsible owner, a due date, and a closure verification
- * date once the action is confirmed effective.
+ * A finding (non-conformity or observation) raised during an internal audit
+ * (PluginGrcmanagerAudit), carrying the full corrective/preventive action (CAPA) workflow ISO
+ * 27001 clause 10.2 requires: root cause, corrective action, preventive action, a responsible
+ * owner, a due date, and a closure verification date once the action is confirmed effective.
  *
- * `severity` doubles as this class' "severity/category" axis (minor/major/critical): a real GRC
- * tool typically distinguishes a full non-conformity from a lesser "observation", but a single
- * ordinal scale was kept here for a first version rather than two overlapping enums, see
- * TECH_DEBT.md Sprint 4.
+ * `finding_type` and `severity` are two independent axes, matching ISO 19011 audit vocabulary
+ * (issue #27, résout TECH_DEBT.md Sprint 4) : `finding_type` distinguishes a genuine non-conformity
+ * (a real gap against a requirement, CAPA mandatory to close/verify, see
+ * CapaRequirementService::isCapaMandatory()) from a lesser observation/remark (CAPA optional,
+ * still trackable through the exact same workflow), while `severity` (minor/major/critical) still
+ * grades either one — a single overlapping ordinal scale was kept for these two axes in the first
+ * version, this is what issue #27 resolves.
  */
 class PluginGrcmanagerNonconformity extends CommonDBTM
 {
@@ -76,6 +80,23 @@ class PluginGrcmanagerNonconformity extends CommonDBTM
     }
 
     /**
+     * ISO 19011 vocabulary (issue #27, see class docblock): a genuine non-conformity vs. a lesser
+     * observation/remark, independent from the `severity` axis.
+     *
+     * @return array<string, string>
+     */
+    public static function getFindingTypes(): array
+    {
+        return [
+            // Reuses the existing entity type name translation rather than a second, colliding
+            // gettext entry for the exact same singular French string "Non-conformité" (already
+            // registered as a plural-form msgid via getTypeName()/_n()).
+            'nonconformity' => self::getTypeName(1),
+            'observation'   => __('Observation / remarque', 'grcmanager'),
+        ];
+    }
+
+    /**
      * @return array<string, string>
      */
     public static function getStatuses(): array
@@ -89,11 +110,13 @@ class PluginGrcmanagerNonconformity extends CommonDBTM
     }
 
     /**
-     * Enforces ISO 27001 clause 10.2 in practice: a non-conformity cannot be marked closed or
-     * verified without a documented corrective action, and reaching "verified" without an explicit
-     * closure verification date auto-stamps it with today rather than silently leaving it blank
-     * (same "auto-populate a real date rather than force an extra manual step" choice as
-     * PluginGrcmanagerAudit's own `actual_date`).
+     * Enforces ISO 27001 clause 10.2 in practice: a genuine non-conformity (`finding_type` =
+     * 'nonconformity', see CapaRequirementService) cannot be marked closed or verified without a
+     * documented corrective action ; a mere observation is exempt from this (issue #27), a
+     * corrective action stays optional for it even at closure/verification. Reaching "verified"
+     * without an explicit closure verification date auto-stamps it with today rather than silently
+     * leaving it blank (same "auto-populate a real date rather than force an extra manual step"
+     * choice as PluginGrcmanagerAudit's own `actual_date`).
      *
      * @param array<string, mixed> $input
      * @return array<string, mixed>|false
@@ -119,11 +142,16 @@ class PluginGrcmanagerNonconformity extends CommonDBTM
     private function validateAndNormalize(array $input)
     {
         $status            = (string) ($input['status'] ?? ($this->fields['status'] ?? 'open'));
+        $findingType       = (string) (
+            $input['finding_type'] ?? ($this->fields['finding_type'] ?? 'nonconformity')
+        );
         $correctiveAction  = trim((string) (
             $input['corrective_action'] ?? ($this->fields['corrective_action'] ?? '')
         ));
 
-        if (in_array($status, self::CLOSED_STATUSES, true) && $correctiveAction === '') {
+        $capaMandatory = CapaRequirementService::isCapaMandatory($findingType);
+
+        if ($capaMandatory && in_array($status, self::CLOSED_STATUSES, true) && $correctiveAction === '') {
             Session::addMessageAfterRedirect(
                 __(
                     'Une action corrective est obligatoire pour clôturer ou vérifier une non-conformité.',
@@ -162,6 +190,16 @@ class PluginGrcmanagerNonconformity extends CommonDBTM
             'name'     => __('Titre', 'grcmanager'),
             'datatype' => 'itemlink',
             'itemtype' => self::class,
+        ];
+
+        // id 13: fresh id (max pre-existing id in this list was 12), issue #27, never reuse an id
+        // already assigned above/below, saved searches and glpi_displaypreferences persist them.
+        $tab[] = [
+            'id'       => 13,
+            'table'    => $this->getTable(),
+            'field'    => 'finding_type',
+            'name'     => __('Type de constat', 'grcmanager'),
+            'datatype' => 'specific',
         ];
 
         $tab[] = [
@@ -266,6 +304,9 @@ class PluginGrcmanagerNonconformity extends CommonDBTM
         }
 
         switch ($field) {
+            case 'finding_type':
+                return self::findingTypeBadge($values[$field] ?? null);
+
             case 'severity':
                 return self::severityBadge($values[$field] ?? null);
 
@@ -297,6 +338,9 @@ class PluginGrcmanagerNonconformity extends CommonDBTM
         $options['value']   = $values[$field] ?? '';
 
         switch ($field) {
+            case 'finding_type':
+                return Dropdown::showFromArray($name, self::getFindingTypes(), $options);
+
             case 'severity':
                 return Dropdown::showFromArray($name, self::getSeverities(), $options);
 
@@ -305,6 +349,19 @@ class PluginGrcmanagerNonconformity extends CommonDBTM
         }
 
         return parent::getSpecificValueToSelect($field, $name, $values, $options);
+    }
+
+    private static function findingTypeBadge(?string $value): string
+    {
+        $map = [
+            'nonconformity' => ['bg-red-lt', 'ti-alert-hexagon', self::getTypeName(1)],
+            'observation'   => ['bg-azure-lt', 'ti-notes', __('Observation / remarque', 'grcmanager')],
+        ];
+
+        [$class, $icon, $label] = $map[$value] ?? ['bg-secondary-lt', 'ti-help', (string) $value];
+
+        return '<span class="badge ' . $class . '"><i class="ti ' . $icon . ' me-1"></i>'
+            . htmlescape($label) . '</span>';
     }
 
     private static function severityBadge(?string $value): string
@@ -386,6 +443,16 @@ class PluginGrcmanagerNonconformity extends CommonDBTM
         echo Html::input('title', ['value' => $this->fields['title'] ?? '', 'size' => 80]);
         echo '</td></tr>';
 
+        // Issue #27 : premier champ apres le titre, avant meme l'audit/severite, puisqu'il
+        // conditionne si l'action corrective plus bas dans ce formulaire est obligatoire ou non
+        // (voir CapaRequirementService et le hint affiche sous le champ "Action corrective").
+        echo '<tr class="tab_bg_1"><td>' . __('Type de constat', 'grcmanager') . '</td>';
+        echo '<td colspan="3">';
+        Dropdown::showFromArray('finding_type', self::getFindingTypes(), [
+            'value' => $this->fields['finding_type'] ?? 'nonconformity',
+        ]);
+        echo '</td></tr>';
+
         $auditTitles = [];
         foreach ($DB->request(['SELECT' => ['id', 'title'], 'FROM' => PluginGrcmanagerAudit::getTable()]) as $row) {
             $auditTitles[(int) $row['id']] = $row['title'];
@@ -439,14 +506,18 @@ class PluginGrcmanagerNonconformity extends CommonDBTM
             . htmlescape($this->fields['root_cause'] ?? '') . '</textarea>';
         echo '</td></tr>';
 
+        // Issue #27 : le hint reflete la meme regle que CapaRequirementService::isCapaMandatory()
+        // cote serveur, jamais un second endroit ou cette regle pourrait diverger.
+        $findingType = (string) ($this->fields['finding_type'] ?? 'nonconformity');
+        $correctiveActionHint = CapaRequirementService::isCapaMandatory($findingType)
+            ? __('Obligatoire pour clôturer ou vérifier cette non-conformité.', 'grcmanager')
+            : __('Optionnelle pour une observation : peut néanmoins être renseignée si besoin.', 'grcmanager');
+
         echo '<tr class="tab_bg_1"><td>' . __('Action corrective', 'grcmanager') . '</td>';
         echo '<td colspan="3">';
         echo '<textarea name="corrective_action" class="form-control" rows="3">'
             . htmlescape($this->fields['corrective_action'] ?? '') . '</textarea>';
-        echo '<small class="form-hint">' . __(
-            'Obligatoire pour clôturer ou vérifier cette non-conformité.',
-            'grcmanager'
-        ) . '</small>';
+        echo '<small class="form-hint">' . $correctiveActionHint . '</small>';
         echo '</td></tr>';
 
         echo '<tr class="tab_bg_1"><td>' . __('Action préventive', 'grcmanager') . '</td>';

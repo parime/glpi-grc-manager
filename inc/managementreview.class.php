@@ -30,12 +30,24 @@
  * decision is not always a corrective action tied to an audit finding (it might be a budget
  * approval, a policy change, a risk acceptance...), forcing every decision through the CAPA
  * workflow would misrepresent what clause 9.3 actually asks for. See TECH_DEBT.md Sprint 6.
+ *
+ * Issue #32 (objectifs ISMS et suivi de KPI dans le temps, clause 6.2) adds a light many-to-many
+ * link to `PluginGrcmanagerObjective` (glpi_plugin_grcmanager_managementreviews_objectives, same
+ * "direct $DB access, not a real CommonDBRelation" convention as the attendees link above):
+ * ISO 27001 clause 9.3 lists "the extent to which the information security objectives have been
+ * met" among the required management review inputs, and issue #32 itself calls out that a
+ * management review is exactly where the ISMS's trajectory toward its objectives gets discussed.
+ * Kept separate from `decisions` (free text) rather than folded into it: an objective reviewed
+ * here is a structured reference to a real PluginGrcmanagerObjective row (clickable, filterable),
+ * not prose.
  */
 class PluginGrcmanagerManagementReview extends CommonDBTM
 {
     public static $rightname = 'plugin_grcmanager';
 
     private const ATTENDEES_TABLE = 'glpi_plugin_grcmanager_managementreviews_users';
+
+    private const OBJECTIVES_TABLE = 'glpi_plugin_grcmanager_managementreviews_objectives';
 
     public static function getTable($classname = null)
     {
@@ -108,6 +120,10 @@ class PluginGrcmanagerManagementReview extends CommonDBTM
         if (array_key_exists('attendees', $this->input)) {
             self::syncAttendees((int) $this->fields['id'], (array) $this->input['attendees']);
         }
+
+        if (array_key_exists('linked_objectives', $this->input)) {
+            self::syncLinkedObjectives((int) $this->fields['id'], (array) $this->input['linked_objectives']);
+        }
     }
 
     public function post_updateItem($history = true)
@@ -116,6 +132,10 @@ class PluginGrcmanagerManagementReview extends CommonDBTM
 
         if (array_key_exists('attendees', $this->input)) {
             self::syncAttendees((int) $this->fields['id'], (array) $this->input['attendees']);
+        }
+
+        if (array_key_exists('linked_objectives', $this->input)) {
+            self::syncLinkedObjectives((int) $this->fields['id'], (array) $this->input['linked_objectives']);
         }
     }
 
@@ -175,6 +195,71 @@ class PluginGrcmanagerManagementReview extends CommonDBTM
                 'plugin_grcmanager_managementreviews_id' => $reviewId,
                 'users_id'                                => $userId,
                 'date_creation'                           => date('Y-m-d H:i:s'),
+            ]);
+        }
+    }
+
+    /**
+     * @return array<int, string> objective id => title, for every objective linked (as "discussed")
+     *         to this review.
+     */
+    public static function getLinkedObjectives(int $reviewId): array
+    {
+        global $DB;
+
+        $objectives = [];
+
+        $rows = $DB->request([
+            'SELECT'     => ['objectives.id', 'objectives.title'],
+            'FROM'       => self::OBJECTIVES_TABLE . ' AS links',
+            'INNER JOIN' => [
+                PluginGrcmanagerObjective::getTable() . ' AS objectives' => [
+                    'FKEY' => [
+                        'links'      => 'plugin_grcmanager_objectives_id',
+                        'objectives' => 'id',
+                    ],
+                ],
+            ],
+            'WHERE'      => ['links.plugin_grcmanager_managementreviews_id' => $reviewId],
+        ]);
+
+        foreach ($rows as $row) {
+            $objectives[(int) $row['id']] = $row['title'];
+        }
+
+        return $objectives;
+    }
+
+    /**
+     * @return array<int, int> the linked objective IDs only, for pre-selecting the form's
+     *                          multi-select.
+     */
+    public static function getLinkedObjectiveIds(int $reviewId): array
+    {
+        return array_keys(self::getLinkedObjectives($reviewId));
+    }
+
+    /**
+     * Replaces the full set of objectives linked to this review with exactly $objectiveIds (delete
+     * then re-insert), same simplification as syncAttendees() above.
+     *
+     * @param array<int, int> $objectiveIds
+     */
+    private static function syncLinkedObjectives(int $reviewId, array $objectiveIds): void
+    {
+        global $DB;
+
+        $DB->delete(self::OBJECTIVES_TABLE, ['plugin_grcmanager_managementreviews_id' => $reviewId]);
+
+        $objectiveIds = array_unique(
+            array_filter(array_map('intval', $objectiveIds), static fn ($id) => $id > 0)
+        );
+
+        foreach ($objectiveIds as $objectiveId) {
+            $DB->insert(self::OBJECTIVES_TABLE, [
+                'plugin_grcmanager_managementreviews_id' => $reviewId,
+                'plugin_grcmanager_objectives_id'        => $objectiveId,
+                'date_creation'                          => date('Y-m-d H:i:s'),
             ]);
         }
     }
@@ -294,6 +379,8 @@ class PluginGrcmanagerManagementReview extends CommonDBTM
 
     public function showForm($ID, array $options = []): bool
     {
+        global $DB;
+
         $this->initForm($ID, $options);
         $this->showFormHeader($options);
 
@@ -342,6 +429,30 @@ class PluginGrcmanagerManagementReview extends CommonDBTM
         echo '<td colspan="3">';
         echo '<textarea name="decisions" class="form-control" rows="4">'
             . htmlescape($this->fields['decisions'] ?? '') . '</textarea>';
+        echo '</td></tr>';
+
+        // Issue #32 (clause 6.2/9.3) : objectifs ISMS effectivement abordés lors de cette revue,
+        // même widget multi-select que PluginGrcmanagerControl::showForm() pour ses risques liés
+        // (Dropdown::showFromArray(..., ['multiple' => true]), pas Attribute-riche
+        // showSelectItemFromItemtypes(), même raisonnement TECH_DEBT.md issue #25).
+        $objectiveTitles = [];
+        foreach (
+            $DB->request(['SELECT' => ['id', 'title'], 'FROM' => PluginGrcmanagerObjective::getTable()]) as $row
+        ) {
+            $objectiveTitles[(int) $row['id']] = $row['title'];
+        }
+
+        echo '<tr class="tab_bg_1"><td>' . __('Objectifs ISMS abordés', 'grcmanager') . '</td>';
+        echo '<td colspan="3">';
+        Dropdown::showFromArray('linked_objectives', $objectiveTitles, [
+            'values'   => $this->isNewID($ID) ? [] : self::getLinkedObjectiveIds((int) $ID),
+            'multiple' => true,
+            'width'    => '100%',
+        ]);
+        echo '<small class="form-hint">' . __(
+            'Objectif(s) ISO 27001 clause 6.2 dont la progression a été examinée lors de cette revue.',
+            'grcmanager'
+        ) . '</small>';
         echo '</td></tr>';
 
         $this->showFormButtons($options);

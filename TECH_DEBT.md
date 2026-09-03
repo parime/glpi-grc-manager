@@ -74,12 +74,17 @@ Journal des limites connues et compromis assumés, tenu à jour à chaque sprint
   Assumé pour une première version plutôt que de risquer un join GLPI mal configuré non validé en
   direct ; à reconsidérer si le nombre d'audits croît au point de rendre le filtrage par ID
   impraticable.
-- **`severity` fait à la fois office de sévérité et de catégorie de non-conformité.** La demande
+- ~~**`severity` fait à la fois office de sévérité et de catégorie de non-conformité.** La demande
   initiale (« severity/category ») a été résolue par une seule échelle ordinale
   (mineure/majeure/critique) plutôt que deux énumérations distinctes (par exemple séparer
   « non-conformité » et « observation » au sens strict ISO 27001), pour rester simple et cohérent
   avec l'échelle probabilité x impact déjà utilisée par le registre de risques. À réévaluer si un
-  besoin réel de distinguer les deux axes apparaît.
+  besoin réel de distinguer les deux axes apparaît.~~ **Résolu (issue #27)** : nouveau champ
+  `finding_type` (non-conformité/observation, vocabulaire ISO 19011) ajouté en tant qu'axe
+  indépendant de `severity`, avec CAPA obligatoire uniquement pour une vraie non-conformité (voir
+  `PluginGrcmanagerNonconformity::getFindingTypes()`,
+  `GlpiPlugin\Grcmanager\Services\Capa\CapaRequirementService` et `src/Install/Installer.php` pour
+  la migration).
 - **Rappel de CAPA en retard sans déduplication**, même limite assumée que
   `ReviewReminderService::notify()` au Sprint 2 (voir ci-dessus) : une action encore en retard
   plusieurs jours après son échéance génère une notification à chaque exécution quotidienne de la
@@ -199,6 +204,378 @@ Journal des limites connues et compromis assumés, tenu à jour à chaque sprint
   ajoutées. Le texte d'introduction et l'Étape 1 ont été corrigés : le plugin ajoute bien « sept
   écrans » au menu Outils, plus la mention du registre de risques fournisseurs fantôme qui ne
   correspondait à aucun écran réel a été retirée.
+## Lien registre de risques <-> actifs GLPI/CMDB (issue #25)
+
+- **Lien risque <-> actif en accès direct `$DB`, pas en itemtype `CommonDBRelation`.** Même
+  simplification assumée pour tous les autres liens de ce plugin depuis le Sprint 3 (voir
+  ci-dessus) : `glpi_plugin_grcmanager_risks_items` est géré par de simples méthodes statiques sur
+  `PluginGrcmanagerRisk` (`getLinkedAssets()`/`syncLinkedAssets()`/`getRisksLinkedToItem()`), pas par
+  une vraie classe de liaison GLPI. Suffisant pour un nombre d'actifs liés par risque toujours
+  faible en pratique (l'issue elle-même ne décrit que des exemples à un ou quelques actifs) ; à
+  reconsidérer si un besoin réel de journalisation GLPI native (`Log`) sur ce lien apparaît, ou si
+  un futur besoin de recherche/filtrage riche sur les actifs liés se présente (voir aussi le point
+  "aucune colonne de recherche" ci-dessous).
+- **Un multi-select par itemtype liable, jamais un unique widget polymorphe
+  `Dropdown::showSelectItemFromItemtypes()`.** Ce widget natif GLPI existe précisément pour ce cas
+  d'usage (choisir un itemtype puis un item de ce type), mais son fonctionnement réel dépend d'un
+  second appel Ajax déclenché en JS au changement du premier `<select>` — irait à l'encontre du
+  choix déjà assumé pour `showForm()` depuis le Sprint 1 ("HTML/PHP manuel, pas de logique JS
+  avancée", voir ci-dessus). Un multi-select par itemtype (même widget `Dropdown::showFromArray(...,
+  ['multiple' => true])` que `PluginGrcmanagerControl::showForm()` pour son propre lien vers les
+  risques) reste cohérent avec ce choix, au prix de lister tous les actifs d'un type sans
+  pagination ni recherche - assumé pour ce qui est explicitement une v1 de la fonctionnalité,
+  chaque itemtype sans aucun enregistrement dans l'instance GLPI n'affichant simplement aucune
+  ligne. À réévaluer si le volume réel d'actifs par type dans une instance de production rend cette
+  liste impraticable (voir aussi la limitation similaire déjà assumée pour
+  `PluginGrcmanagerControl::showForm()`/tous les risques du registre).
+- **Onglet retour "Risques" posé sur une liste FIXE d'itemtypes (`LinkableItemtypes::
+  DEFAULT_ITEMTYPES`), pas sur le résultat dynamique de `PluginGrcmanagerRisk::
+  getLinkableItemtypes()`.** Un actif personnalisé actif reste bien liable depuis le formulaire du
+  risque (`getLinkableItemtypes()` l'inclut), mais ne reçoit pas l'onglet "Risques" sur sa propre
+  fiche : `Plugin::registerClass()`/`addtabon` s'exécute au chargement du plugin (listener
+  `InitializePlugins`), avant que GLPI ne charge les définitions d'actifs personnalisés en mémoire
+  (listener `CustomObjectsBoot`, plus tardif) - même limitation de séquencement déjà documentée par
+  le plugin jumeau assetsign-glpi pour sa propre `Config::getAllManageableItemtypes()`. Assumé pour
+  cette version plutôt que de risquer un enregistrement d'onglet dynamique non validé en direct.
+- **Aucune colonne "actifs liés" dans `PluginGrcmanagerRisk::rawSearchOptions()`.** Une relation à
+  plusieurs actifs polymorphes (many-to-many, cible variable selon la ligne) ne correspond à aucun
+  des `datatype` natifs du moteur de recherche GLPI (`dropdown`, `itemlink`...), tous conçus pour
+  une jointure vers UNE table cible fixe (voir par exemple `Document_Item`, dont le compte de
+  documents liés n'est lui-même pas non plus exposé comme colonne de recherche générique dans le
+  cœur GLPI). Une fiche de détail avec le lien fonctionnel (formulaire + onglet retour ci-dessus)
+  est le livrable de cette issue ; une colonne de recherche resterait un besoin à traiter sur mesure
+  (ex. sous-requête `COUNT(*)` par risque, sans filtre par actif précis) si un besoin réel de tri/
+  filtre sur ce critère apparaît en usage réel.
+
+## Classification C/I/D des actifs (issue #26)
+
+- **Table `glpi_plugin_grcmanager_assetclassifications` (pas `..._asset_classifications`).**
+  L'issue suggérait un nom avec underscore ; la dérivation réellement utilisée partout ailleurs
+  dans ce plugin (suffixe de classe en minuscules, sans underscore ajouté à la frontière camelCase,
+  voir `src/Install/Installer.php`) donne `assetclassifications`, cohérente avec `assetclassifications`,
+  `supplierrisks`, `managementreviews`... Choisi délibérément pour ne pas introduire une seule table
+  au nom incohérent avec toutes les autres du même plugin.
+- **Aucun nettoyage automatique quand l'actif classifié lui-même est supprimé.** Une classification
+  reste en base avec un couple itemtype/items_id orphelin si le `Computer` (ou autre actif) qu'elle
+  décrit est supprimé côté GLPI : même limitation déjà assumée pour
+  `glpi_plugin_grcmanager_risks_items` (issue #25, voir ci-dessus), qui ne se nettoie elle non plus
+  que lorsque c'est le RISQUE qui est purgé, jamais quand c'est l'actif lié qui disparaît. Un
+  registre indépendant du risque qui commettrait la même impasse pour son propre côté « actif » n'a
+  pas semblé justifier un mécanisme de nettoyage plus riche pour cette première version ; à
+  reconsidérer si un besoin réel de cohérence stricte apparaît (ex. hook générique sur la
+  suppression de tout itemtype liable, plutôt qu'un cas par cas par registre).
+- **Droit d'édition de l'onglet vérifié uniquement via `UPDATE` sur le droit plat
+  `plugin_grcmanager`**, jamais `CREATE` séparément pour le cas "cet actif n'a encore aucune
+  ligne de classification" : `displayTabContentForItem()` n'affiche le formulaire d'édition que
+  si l'utilisateur a `UPDATE`, alors que `front/assetclassification.form.php` vérifie bien `CREATE`
+  pour un premier enregistrement et `UPDATE` pour une modification. Un profil qui aurait `CREATE`
+  sans `UPDATE` (combinaison jamais utilisée en pratique dans ce plugin, qui accorde toujours le
+  droit plat en bloc, voir `ProfileRight::updateProfileRights()` dans `src/Install/Installer.php`)
+  ne verrait donc pas le formulaire alors qu'il pourrait légitimement classifier un actif vierge.
+  Assumé pour rester simple (une seule condition d'affichage) plutôt que de dupliquer la logique
+  add-vs-update du contrôleur dans l'onglet lui-même.
+- **Onglet posé sur la même liste FIXE d'itemtypes que l'issue #25**
+  (`LinkableItemtypes::DEFAULT_ITEMTYPES`), pas sur `PluginGrcmanagerRisk::getLinkableItemtypes()`
+  (qui ajoute aussi les actifs personnalisés actifs) : exactement la même limitation de
+  séquencement `InitializePlugins`/`CustomObjectsBoot` déjà documentée pour l'onglet "Risques" de
+  l'issue #25 ci-dessus, voir son propre point pour le détail complet. Un actif personnalisé actif
+  reste malgré tout classifiable *si* un risque le lie déjà (le multi-select de
+  `PluginGrcmanagerRisk::showForm()` l'inclut), mais ne reçoit pas son propre onglet "Classification
+  C/I/D" sur sa fiche.
+- **La suggestion douce sur le champ Impact (`hasHighClassificationAmongLinkedAssets()`) refait une
+  requête par actif lié**, pas une seule requête groupée : cohérent avec `getLinkedAssets()`
+  lui-même qui fait déjà une requête par actif pour résoudre son nom, et avec la limitation déjà
+  assumée pour ce même formulaire depuis l'issue #25 ("un nombre d'actifs liés par risque toujours
+  faible en pratique"). À revoir si ce nombre cesse d'être faible en usage réel.
+
+## Bibliothèque de politiques de sécurité versionnées (issue #28)
+
+- **Aucun lien optionnel posé entre le contrôle SoA A.5.1 et les politiques.** L'issue suggérait
+  d'envisager (sans l'imposer) un lien léger entre la ligne A.5.1 de la SoA
+  (`PluginGrcmanagerControl`) et ce nouveau registre, sur le modèle de
+  `getLinkedRisks()`/`syncLinkedRisks()`. Non retenu pour cette version : ce lien many-to-many
+  existant relie un contrôle à un nombre potentiellement élevé de risques répartis sur les 93
+  contrôles, alors qu'ici un seul contrôle fixe (A.5.1) serait concerné - une table de liaison
+  entière (et son multi-select dans `PluginGrcmanagerControl::showForm()`) pour un unique contrôle
+  a semblé disproportionnée par rapport au bénéfice réel, sachant que la bibliothèque de politiques
+  reste de toute façon accessible en un clic depuis le menu Outils. À reconsidérer si un besoin
+  réel de traçabilité contrôle <-> politique apparaît (ex. plusieurs contrôles Annexe A amenés à
+  référencer des politiques spécifiques, pas seulement A.5.1).
+- **Rappel de revue sans déduplication**, même limite assumée par tous les autres mécanismes de
+  rappel de ce plugin depuis le Sprint 2 (`ReviewReminderService`, voir ci-dessus) : une politique
+  restée en retard de revue plusieurs jours génère une notification à chaque exécution quotidienne
+  de la tâche Cron (`PluginGrcmanagerPolicy::cronReviewreminder()`), pas une seule fois.
+- **`PolicyReviewReminderService` n'est volontairement PAS un troisième appelant de
+  `GlpiPlugin\Grcmanager\Services\Risk\ReviewReminderService`** malgré la ressemblance structurelle
+  évidente (déjà généralisée au Sprint 5 pour couvrir `PluginGrcmanagerRisk` ET
+  `PluginGrcmanagerSupplierRisk`) : cette dernière a la condition `status <> 'closed'` et la colonne
+  `review_date` figées en dur dans sa requête, qui ne correspondent ni au statut
+  brouillon/approuvé/archivé de ce registre, ni à sa colonne `next_review_date`. Plutôt que de
+  généraliser encore ce service partagé avec un second paramètre (nom de colonne, valeur de statut
+  à exclure), une classe dédiée, structurellement proche mais indépendante, a semblé plus lisible
+  pour un seul troisième cas d'usage - à réévaluer si un quatrième registre a besoin du même
+  mécanisme de rappel de revue, où une généralisation deviendrait alors probablement rentable.
+  **Mise à jour** : l'issue #30, développée en parallèle, a justement généralisé
+  `ReviewReminderService` une seconde fois (paramètre `$excludeCriteria`, voir sa propre section
+  ci-dessous) pour son propre registre d'obligations - confirmant que le quatrième cas d'usage
+  évoqué ici existe désormais. `PolicyReviewReminderService` n'a pas été migré vers cette nouvelle
+  généralisation dans cette même PR pour ne pas re-tester une seconde fois un mécanisme déjà validé
+  en direct sur l'instance réelle ; une factorisation ultérieure des trois/quatre services de rappel
+  de revue de ce plugin en un seul reste une piste raisonnable pour un futur sprint de nettoyage.
+- **`PolicyReviewReminderService` filtre en SQL sur `status`/`next_review_date IS NOT NULL` puis
+  délègue la fenêtre "due" (30 jours) à `PolicyReviewReminderWindow::isDue()`, en PHP**, contrairement
+  à `ReviewReminderService` qui fait tout en une seule requête SQL. Différence assumée pour rendre
+  cette logique de fenêtre testable unitairement sans instance GLPI réelle (voir
+  `tests/Unit/Services/Policy/PolicyReviewReminderWindowTest.php`), ce que `ReviewReminderService`
+  documente lui-même explicitement comme hors de portée pour son propre équivalent inline (voir son
+  docblock et `phpstan.neon.dist`). Légèrement moins efficace pour un très grand nombre de
+  politiques (fetch plus large que nécessaire, filtre appliqué ligne par ligne), sans impact réel
+  pour le volume attendu (quelques dizaines de politiques par organisation, pas des milliers).
+- **Pas d'état "en cours de revue" séparé.** Seulement trois statuts (brouillon/approuvée/archivée) :
+  une politique en cours de révision par le RSSI reste, opérationnellement, sa dernière version
+  approuvée tant que la nouvelle n'est pas elle-même approuvée (`next_review_date` porte déjà seule
+  le signal "à traiter bientôt", indépendamment du statut). Cohérent avec la demande de l'issue
+  (« brouillon/approuvé »), pas étendu à un quatrième état non demandé.
+- **`showForm()` en HTML/PHP manuel, pas en Twig**, même choix assumé que tous les formulaires
+  précédents de ce plugin (voir Sprint 1 ci-dessus) : pas de bascule JS conditionnelle sur le champ
+  Date d'approbation bien qu'il devienne obligatoire dès que le statut "Approuvée" est choisi
+  (`PolicyLifecycle::isApprovalDateMissing()`), seulement une aide textuelle (`form-hint`) et un
+  message d'erreur réel si l'enregistrement est tenté sans date d'approbation, vérifié en direct.
+
+## Registre des obligations légales, réglementaires et contractuelles (issue #30)
+
+- **Lien optionnel vers un risque en colonne directe (`plugin_grcmanager_risks_id`), pas une table
+  de liaison many-to-many.** Contrairement au lien contrôle <-> risque du Sprint 3
+  (`glpi_plugin_grcmanager_controls_risks`, plusieurs risques par contrôle), l'issue #30 demande
+  explicitement une cardinalité zéro-ou-un ("une obligation correspond au plus à une entrée de
+  risque précise, si tant est qu'il y en ait une") : une colonne directe (même modèle que
+  `users_id`/propriétaire sur chaque autre registre de ce plugin) est plus simple qu'une table de
+  liaison dédiée pour cette cardinalité, et reste cohérente avec l'esprit "simples méthodes
+  statiques, pas une vraie classe CommonDBRelation" déjà assumé pour tous les autres liens de ce
+  plugin (voir Sprint 3 ci-dessus) - ici, pas même besoin d'une table du tout. Voir
+  `GlpiPlugin\Grcmanager\Services\Compliance\ComplianceObligationRules::normalizeLinkedRiskId()`/
+  `isLinkedToRisk()` pour la logique pure testée, et le docblock de
+  `PluginGrcmanagerComplianceObligation` pour le raisonnement complet.
+- **`ReviewReminderService` généralisé une seconde fois (après le Sprint 5) pour accepter un
+  `$excludeCriteria` optionnel.** Le service appliquait jusqu'ici inconditionnellement
+  `'status' => ['<>', 'closed']`, une colonne que `PluginGrcmanagerComplianceObligation` n'a pas
+  (elle a `compliance_status`, qui grade la conformité, pas si l'obligation est encore suivie).
+  Généralisé avec un paramètre de constructeur dont la valeur par défaut reproduit exactement
+  l'ancien comportement figé (aucun changement pour `PluginGrcmanagerRisk`/
+  `PluginGrcmanagerSupplierRisk`, qui ne passent jamais cet argument) ; l'obligation, elle, passe un
+  tableau vide - même une obligation `compliant` reste due à sa date de revue. Ce fichier n'a
+  toujours aucun test unitaire direct (dépendance runtime GLPI, voir `phpstan.neon.dist`) : la
+  logique de fenêtre de rappel (30 jours, exclusion des dates nulles) qu'il applique est dupliquée
+  intentionnellement et testée dans `ComplianceObligationRules::isReviewDue()`
+  (`REMINDER_WINDOW_DAYS` doit rester synchronisé entre les deux fichiers si jamais modifié).
+- **`seedReviewReminderNotification()` généralisé pour un contenu de notification à 2 lignes
+  configurable.** Codait en dur "Catégorie"/"Niveau de risque" (`PluginGrcmanagerRisk`/
+  `PluginGrcmanagerSupplierRisk`) ; l'obligation n'a ni catégorie ni niveau de risque
+  (`type`/`compliance_status` à la place), d'où un nouveau paramètre `$detailLines` avec la même
+  valeur par défaut que l'ancien comportement figé pour les deux registres de risques existants.
+- **Aucun onglet retour sur `PluginGrcmanagerRisk`** contrairement au lien risque <-> actifs CMDB de
+  l'issue #25 : une obligation n'est pas un itemtype "liable" au sens de `LinkableItemtypes`/
+  `getLinkableItemtypes()` (ce ne sont pas des actifs CMDB), et le nombre d'obligations pouvant
+  citer un même risque reste faible en pratique - consulter la fiche de l'obligation elle-même
+  (qui affiche le lien vers le risque, voir `riskLink()`) a été jugé suffisant pour cette première
+  version plutôt que d'ajouter un second onglet "Obligations" sur la fiche de chaque risque.
+- **Aucun nettoyage automatique si le risque lié est supprimé.** `plugin_grcmanager_risks_id` reste
+  en base avec un identifiant de risque orphelin si ce risque est purgé (ni erreur, ni lien affiché
+  puisque `riskLink()` retourne une chaîne vide dès que `getFromDB()` échoue) - même limitation déjà
+  assumée pour `glpi_plugin_grcmanager_risks_items` (issue #25) et
+  `glpi_plugin_grcmanager_assetclassifications` (issue #26), voir leurs points respectifs ci-dessus.
+
+## Objectifs ISMS et suivi de KPI dans le temps (issue #32)
+
+- **Mesures manuelles, jamais auto-calculées depuis d'autres données du plugin.** Une mesure
+  (`PluginGrcmanagerObjectiveMeasurement`) est toujours saisie à la main ("à cette date, nous en
+  sommes à X"), jamais dérivée automatiquement d'un décompte réel ailleurs dans le plugin (ex. le
+  nombre de non-conformités récurrentes pour un objectif qui viserait explicitement à les réduire).
+  Assumé délibérément pour cette première version, même philosophie "une version minimale et
+  testée vaut mieux qu'une version élaborée et non testée" que le reste de ce plugin (voir Sprint 2
+  ci-dessus) : un calcul automatique demanderait de définir, objectif par objectif, QUELLE requête
+  du plugin nourrit sa trajectoire, un mapping qui n'a pas de réponse générique évidente. Une
+  évolution possible (non retenue ici) serait un futur champ optionnel "source de calcul" sur
+  l'objectif, résolu par une nouvelle tâche Cron qui insérerait alors ses propres mesures.
+- **`plugin_grcmanager_objectives_id` sur `PluginGrcmanagerObjectiveMeasurement` n'est pas une clé
+  étrangère GLPI réelle**, même simplification déjà assumée pour
+  `PluginGrcmanagerNonconformity.plugin_grcmanager_audits_id` (Sprint 4, voir ci-dessus) : pas de
+  `ON DELETE CASCADE` natif si un objectif est supprimé, ses mesures resteraient orphelines en
+  base. Un objectif n'ayant pas de bouton de suppression retiré côté formulaire (contrairement aux
+  93 contrôles du Sprint 3), ce cas reste possible en pratique ; assumé pour cette première version
+  plutôt que de complexifier `PluginGrcmanagerObjective::prepareInputForDelete()`/un hook de purge
+  dédié, à reconsidérer si des mesures orphelines s'avèrent gênantes en usage réel.
+- **Historique de mesures en simple tableau chronologique, pas de graphique.** L'issue elle-même
+  suggère un "historique de mesures dans le temps" sans imposer de visualisation particulière ; un
+  tableau simple montre une trajectoire de façon honnête sans introduire de nouvelle dépendance de
+  rendu (bibliothèque de graphiques), cohérent avec le choix déjà assumé pour `showForm()` depuis
+  le Sprint 1 (HTML/PHP manuel, pas de logique JS avancée). À réévaluer si un besoin réel de
+  visualisation graphique apparaît en usage réel (le tableau de bord natif GLPI, lui, offre déjà
+  des rendus `pie`/`bar`/`donut` pour la répartition PAR STATUT, voir
+  `DashboardCardService::objectivesByStatus()`, mais pas pour une série temporelle par objectif).
+- **Suppression d'une mesure sans confirmation serveur, uniquement une confirmation JS
+  `confirm()`.** Même niveau de protection que les boutons purge/delete natifs de GLPI ailleurs
+  dans ce plugin (voir Sprint 3, "pas de bouton de suppression dans l'écran, mais pas de blocage
+  serveur non plus") : une requête POST forgée par un compte disposant du droit `plugin_grcmanager`
+  pourrait encore supprimer une mesure sans passer par la boîte de dialogue JS. Assumé pour ce
+  sprint, même niveau de risque que n'importe quel autre itemtype GLPI administrable de ce plugin.
+- **Lien revue de direction <-> objectifs en accès direct `$DB`, pas en itemtype
+  `CommonDBRelation`.** Même simplification assumée que tous les autres liens many-to-many de ce
+  plugin depuis le Sprint 3 (voir ci-dessus) :
+  `glpi_plugin_grcmanager_managementreviews_objectives` est géré par de simples méthodes statiques
+  sur `PluginGrcmanagerManagementReview` (`getLinkedObjectives()`/`syncLinkedObjectives()`),
+  suffisant pour un nombre d'objectifs discutés par revue toujours faible en pratique.
+- **`.mo` régénérés sans `msgfmt`/gettext** (outil absent de l'environnement de développement
+  utilisé pour cette issue) : compilés depuis les `.po` mis à jour avec un petit script Python
+  interne (format binaire GNU MO standard, vérifié par relecture avec `gettext.GNUTranslations` de
+  Python avant commit, y compris pour les entrées plurielles et les entrées déjà existantes). À
+  recompiler avec le `msgfmt` réel du système au prochain changement de traduction si l'outil est
+  disponible dans un environnement ultérieur, pour rester sur l'outillage standard de l'écosystème
+  gettext plutôt qu'un compilateur maison, conservé ici uniquement parce qu'aucune alternative
+  n'était disponible.
+
+## Registre des incidents de sécurité de l'information (issue #29)
+
+- **`users_id` (responsable) et `description` ajoutés bien que non listés explicitement par
+  l'issue.** L'issue #29 énumère `id, title, incident_date, category, severity, cia_impact, status,
+  root_cause/lessons_learned, date_creation, date_mod` sans mentionner de propriétaire ni de
+  description libre - ajoutés malgré tout par cohérence avec CHAQUE autre registre de ce plugin
+  (risque, non-conformité, obligation, politique, audit...) qui ont tous les deux : un registre
+  d'incidents sans responsable assignable ni description libre aurait été une régression
+  d'utilisabilité par rapport au reste du plugin, pas une simplification justifiée par l'issue.
+- **`cia_impact` en cases à cocher HTML, jamais `Dropdown::showFromArray(..., ['multiple' =>
+  true])`** (le widget select2 que `PluginGrcmanagerAudit::showForm()` utilise pour son propre
+  `risk_categories`, la même convention "liste de valeurs séparées par des virgules sur une seule
+  colonne" à laquelle `cia_impact` se conforme par ailleurs). Délibérément différent ici : un
+  multi-select select2 alimenté par un tableau PHP brut ne répond pas de façon fiable, vérifié en
+  conditions réelles sur ce même projet, à une sélection simulée par un simple événement JS bas
+  niveau côté test automatisé (le `<select>` natif sous-jacent ne se met pas à jour bien que
+  l'affichage semble correct) - pour seulement 3 valeurs fixes (confidentialité/intégrité/
+  disponibilité), un widget select2 n'apporte de toute façon aucun bénéfice réel (pas de recherche,
+  pas de longue liste), donc de simples cases à cocher HTML sont à la fois plus simples ET plus
+  fiables. Voir `SecurityIncidentRules::normalizeCiaImpact()` pour la logique de normalisation
+  (accepte indifféremment un tableau de cases cochées ou une chaîne déjà séparée par des virgules).
+- **Sévérité dupliquée depuis `PluginGrcmanagerNonconformity::getSeverities()`, pas partagée via un
+  trait.** L'issue #29 demande explicitement de réutiliser la même échelle minor/major/critical.
+  Plutôt que de faire dépendre `PluginGrcmanagerSecurityIncident` de
+  `PluginGrcmanagerNonconformity` (ou d'extraire un trait pour un simple ensemble de 3 libellés),
+  les mêmes clés/libellés sont redéfinis indépendamment ici : cohérent avec le fait qu'aucune autre
+  échelle de sévérité de ce plugin n'est factorisée non plus (seul un vrai CALCUL partagé entre deux
+  classes, `RiskAssessmentTrait`, l'est - une simple coïncidence de vocabulaire entre deux
+  registres indépendants n'a pas semblé justifier un couplage supplémentaire). Si cette échelle
+  devait un jour évoluer, les deux définitions devront être mises à jour ensemble.
+- **`linked_itemtype`/`linked_items_id` restreints à `Ticket`/`Problem` uniquement**
+  (`SecurityIncidentRules::ALLOWED_LINKED_ITEMTYPES`), pas une liste dynamique comme
+  `PluginGrcmanagerRisk::getLinkableItemtypes()` (issue #25, qui inclut aussi les actifs CMDB et les
+  définitions d'actifs personnalisés actives) : l'issue #29 est explicite ("cet incident de sécurité
+  correspond à ce Ticket/Problem GLPI"), un incident de sécurité n'a pas vocation à référencer un
+  ordinateur ou un logiciel directement de cette même façon (ce lien-là existe déjà, indirectement,
+  via le risque éventuellement lié à l'incident et ses propres actifs liés).
+- **Aucun onglet retour "Incidents de sécurité" sur `Ticket`/`Problem`.** Contrairement à l'onglet
+  "Risques" que l'issue #25 ajoute sur chaque actif liable, aucun onglet retour n'a été ajouté sur
+  la fiche `Ticket`/`Problem` elle-même pour lister les incidents de sécurité qui la référencent :
+  le nombre d'incidents par ticket reste au plus 1 dans le sens direct (colonne, pas une table de
+  liaison), et l'issue ne demande pas explicitement cette vue inversée. À réévaluer si un besoin réel
+  de visibilité depuis la fiche Ticket/Problem apparaît en usage réel.
+- **Aucun mécanisme de rappel/Cron pour ce registre**, contrairement à la plupart des autres
+  registres de ce plugin (`ReviewReminderService`, `OverdueCapaService`...) : l'issue #29 ne décrit
+  aucune date d'échéance récurrente à surveiller (`incident_date` est une date de survenue, pas une
+  date limite dépassable, même raisonnement déjà appliqué à `review_date`/`review_date` vs.
+  `PluginGrcmanagerManagementReview` au Sprint 6) - rien à notifier automatiquement pour cette
+  première version.
+- **`plugin_grcmanager_risks_id` et `linked_itemtype`/`linked_items_id` ne sont pas de vraies clés
+  étrangères GLPI** (pas de `ON DELETE CASCADE` natif) : même simplification déjà assumée pour tous
+  les liens optionnels similaires de ce plugin (`PluginGrcmanagerComplianceObligation.
+  plugin_grcmanager_risks_id`, issue #30 ; `PluginGrcmanagerNonconformity.
+  plugin_grcmanager_audits_id`, Sprint 4). Un risque ou un ticket/problem supprimé laisse
+  l'incident avec une référence orpheline (aucune erreur : `riskLink()`/`ticketLink()` retournent
+  simplement une chaîne vide ou un libellé "(supprimé)").
+- **Pas de test unitaire dédié pour la migration (`Installer.php`)**, comme pour tous les autres
+  registres de ce plugin (dépendance runtime GLPI `$DB`/`Migration`, voir `phpstan.neon.dist`) :
+  l'idempotence de la migration (table créée une seule fois, `plugin:install --force` répété sans
+  erreur ni doublon) a été vérifiée manuellement contre l'instance Docker partagée plutôt que par un
+  test automatisé, cohérent avec le fait qu'aucun `InstallerTest.php` n'existe nulle part ailleurs
+  dans ce projet non plus.
+
+## Plan d'action de traitement des risques (issue #31)
+
+- **`.mo` régénérés sans `msgfmt`/gettext**, même limite déjà documentée pour l'issue #32 ci-dessus
+  (outil absent de l'environnement de développement utilisé pour cette issue) : compilés depuis les
+  `.po` mis à jour avec un petit script Python interne, ré-écrit intégralement (pas un simple ajout
+  binaire) à partir d'un parseur PO minimal couvrant les entrées existantes ET les nouvelles,
+  vérifié par relecture avec `gettext.GNUTranslations` de Python avant commit (chaîne d'en-tête
+  `Plural-Forms`/`Content-Type` incluse, formes plurielles testées). À recompiler avec le `msgfmt`
+  réel du système au prochain changement de traduction si l'outil est disponible dans un
+  environnement ultérieur.
+
+- **Table enfant one-to-many (`PluginGrcmanagerRiskTreatmentAction`) plutôt que des champs plats
+  façon CAPA sur `PluginGrcmanagerRisk` lui-même.** L'issue laissait le choix ouvert entre les deux.
+  Un CAPA de non-conformité a exactement une action corrective ET une action préventive, deux
+  champs texte fixes suffisent. Un plan de traitement de risque compte en pratique souvent plusieurs
+  actions indépendantes (« corriger le système » ET « ajouter une supervision » ET « former les
+  équipes »), chacune avec son propre responsable/échéance/statut suivi jusqu'à sa propre clôture -
+  une seule paire de champs texte aurait forcé à tout entasser dans un seul bloc non structuré,
+  perdant le suivi individuel que l'issue demande explicitement. Ce plugin a déjà un précédent direct
+  pour ce choix : `PluginGrcmanagerObjectiveMeasurement` (issue #32), un enfant one-to-many sans menu
+  ni écran de recherche propre, ajouté/mis à jour/supprimé uniquement depuis le formulaire de son
+  parent - repris ici quasi à l'identique plutôt que le lien polymorphe simple `$DB` type
+  `glpi_plugin_grcmanager_risks_items` (issue #25), qui convient à un simple ensemble de références
+  sans donnée propre par ligne, pas à une entité qui porte elle-même statut/échéance/responsable.
+- **`overdue` n'est PAS un des statuts stockés (`planned`/`in_progress`/`done`), contrairement à ce
+  qu'une première lecture de l'issue pouvait suggérer.** Chaque autre notion de « retard » déjà
+  présente dans ce plugin (CAPA, revues de risque, renouvellement de formation, revue de politique)
+  est une condition DÉRIVÉE (échéance dépassée ET statut non terminal), jamais une valeur choisie
+  dans un menu déroulant - voir `GlpiPlugin\Grcmanager\Services\Capa\OverdueCapaService` et
+  TECH_DEBT.md Sprint 4. `TreatmentPlanRules::isOverdue()` suit exactement cette même convention
+  établie, pour que le badge affiché sur la fiche du risque, la carte de tableau de bord et la tâche
+  Cron de rappel ne puissent jamais diverger sur ce qui compte comme « en retard ».
+- **Un risque « à mitiger »/« à transférer » ne peut plus être clôturé sans au moins une action de
+  traitement enregistrée (validation serveur réelle qui bloque l'enregistrement).** L'issue demandait
+  seulement que le plan soit « pertinent/quasi-obligatoire » pour ces deux décisions, sans imposer
+  explicitement un blocage à la clôture. Le blocage a été ajouté malgré tout, en miroir exact de la
+  règle déjà en place sur `PluginGrcmanagerNonconformity` (action corrective obligatoire pour
+  clôturer/vérifier une vraie non-conformité, voir `CapaRequirementService` et TECH_DEBT.md Sprint
+  4) : sans cette vérification, la clause 8.3/6.1.3 (mise en œuvre EFFECTIVE du traitement) resterait
+  aussi peu vérifiée qu'avant cette issue, un risque pourrait être déclaré « clôturé » sans qu'aucune
+  action n'ait jamais été enregistrée. Seule l'EXISTENCE d'au moins une action est vérifiée, pas que
+  toutes les actions soient elles-mêmes au statut « réalisée » - cohérent avec la philosophie
+  « version minimale et testée » de ce plugin, à réévaluer si un besoin réel de blocage plus strict
+  apparaît en usage réel.
+- **Section « Plan de traitement du risque » affichée EN DEHORS du `<form>` principal du risque
+  (juste après `showFormButtons()`), pas littéralement « juste après Justification » comme les
+  sections des issues #25/#26 sur cette même fiche.** Contrainte HTML, pas un choix de confort : ce
+  mini-CRUD poste vers un contrôleur différent (`front/risktreatmentaction.form.php`) de celui du
+  risque lui-même, et un `<form>` HTML ne peut pas en contenir un second - exactement la même
+  contrainte déjà documentée et résolue de la même façon par
+  `PluginGrcmanagerObjective::showMeasurementHistory()` (issue #32, voir son propre docblock). Les
+  sections des issues #25 (actifs liés)/#26 (indice de classification) n'ont pas cette contrainte :
+  elles soumettent leurs valeurs dans le MÊME formulaire que le risque, via de simples
+  multi-select/texte, pas un contrôleur indépendant avec sa propre identité par ligne. Une petite
+  aide contextuelle est malgré tout affichée au plus près de la décision elle-même (juste sous le
+  champ Traitement) pour limiter l'écart avec le placement demandé.
+- **`PluginGrcmanagerRisk::post_purgeItem()` nettoie désormais aussi
+  `glpi_plugin_grcmanager_risktreatmentactions`, contrairement à `PluginGrcmanagerObjectiveMeasurement`
+  qui, elle, reste orpheline quand son objectif parent est supprimé (voir TECH_DEBT.md issue #32).**
+  Décision volontairement différente de son propre précédent le plus proche : ce hook existe déjà sur
+  `PluginGrcmanagerRisk` (issue #25, nettoyage de `glpi_plugin_grcmanager_risks_items`), le coût
+  marginal d'un second `$DB->delete()` est nul, et une action de traitement orpheline ne serait, elle,
+  plus jamais visible ni supprimable ensuite (aucun menu, aucun écran de recherche propre à cet
+  itemtype, contrairement à un objectif ISMS qui, lui, reste consultable même après suppression d'une
+  revue de direction qui le référençait).
+- **Limité à `PluginGrcmanagerRisk`, pas étendu à `PluginGrcmanagerSupplierRisk`** bien que les deux
+  partagent le même `treatment`/`status` via `RiskAssessmentTrait` : l'issue #31 ne mentionne que « le
+  registre de risques », pas le registre fournisseurs/tiers. Le lien créé ici
+  (`PluginGrcmanagerRiskTreatmentAction`) est spécifique à `PluginGrcmanagerRisk`
+  (`plugin_grcmanager_risks_id`), pas générique par itemtype ; à réévaluer si un besoin réel de plan
+  de traitement pour un risque fournisseur apparaît (une généralisation à la
+  `ReviewReminderService`/`$itemtype` paramétrable serait alors le point de départ naturel).
+- **Aucune colonne "actions de traitement" dans `PluginGrcmanagerRisk::rawSearchOptions()`.** Même
+  raisonnement déjà documenté pour l'absence de colonne "actifs liés" (issue #25 ci-dessus) : une
+  relation one-to-many n'a pas de `datatype` natif du moteur de recherche GLPI adapté à un simple
+  ajout de colonne : la fiche de détail (formulaire + plan de traitement inline) est le livrable de
+  cette issue, une colonne de recherche (ex. compteur d'actions en retard par risque) resterait à
+  construire sur mesure si un besoin réel de tri/filtre sur ce critère apparaît en usage réel.
+
 - **`docs/design/` ne contient qu'un seul document (`DEVELOPMENT_PLAN.md`), pas d'ADR dédiées.**
   Évalué lors de la même revue : il n'existe pas de série de fichiers "Architecture Decision
   Record" formels comme le ferait un projet plus mature. Jugé suffisant pour l'instant (pas

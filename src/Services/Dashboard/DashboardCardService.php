@@ -213,6 +213,11 @@ final class DashboardCardService
     /**
      * Sprint 4 (audits internes et CAPA, clause 10.2) : non-conformités encore ouvertes ou en
      * traitement, quel que soit l'audit d'origine.
+     *
+     * Filtree sur `finding_type = 'nonconformity'` depuis l'issue #27 : le libelle de cette carte
+     * annonce explicitement des "non-conformités", elle ne doit donc pas mélanger de simples
+     * observations/remarques dans son compte (le point même de l'issue #27 est que le RSSI et
+     * l'auditeur ne confondent plus les deux natures de constat dans un même chiffre).
      */
     public static function openNonconformitiesCount(array $params = []): array
     {
@@ -221,7 +226,10 @@ final class DashboardCardService
         $count = (int) $DB->request([
             'COUNT' => 'c',
             'FROM' => 'glpi_plugin_grcmanager_nonconformities',
-            'WHERE' => ['status' => ['open', 'in_progress']],
+            'WHERE' => [
+                'status'       => ['open', 'in_progress'],
+                'finding_type' => 'nonconformity',
+            ],
         ])->current()['c'];
 
         return [
@@ -454,6 +462,360 @@ final class DashboardCardService
         return [
             'data' => $data,
             'label' => $params['label'] ?? __('Revues de direction par statut', 'grcmanager'),
+            'icon' => 'ti ti-chart-pie',
+        ];
+    }
+
+    /**
+     * Issue #28 (bibliothèque de politiques de sécurité versionnées, A.5.1) : politiques dont la
+     * prochaine date de revue est dépassée ou approche, même définition "dû" que
+     * GlpiPlugin\Grcmanager\Services\Policy\PolicyReviewReminderWindow (fenêtre de 30 jours,
+     * `archived` exclu), pour que cette carte et la tâche Cron
+     * PluginGrcmanagerPolicy::cronReviewreminder() ne divergent jamais sur ce qui compte comme "en
+     * attente de revue".
+     */
+    public static function policiesPendingReviewCount(array $params = []): array
+    {
+        global $DB;
+
+        $count = (int) $DB->request([
+            'COUNT' => 'c',
+            'FROM'  => 'glpi_plugin_grcmanager_policies',
+            'WHERE' => [
+                'status' => ['<>', 'archived'],
+                new QueryExpression('next_review_date IS NOT NULL'),
+                new QueryExpression('next_review_date <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)'),
+            ],
+        ])->current()['c'];
+
+        return [
+            'number' => $count,
+            'label' => $params['label'] ?? __('Politiques en attente de revue', 'grcmanager'),
+            'icon' => 'ti ti-calendar-due',
+        ];
+    }
+
+    public static function policiesByStatus(array $params = []): array
+    {
+        global $DB;
+
+        $countsByStatus = array_fill_keys(['draft', 'approved', 'archived'], 0);
+
+        $rows = $DB->request([
+            'SELECT' => ['status', new QueryExpression('COUNT(*) AS c')],
+            'FROM' => 'glpi_plugin_grcmanager_policies',
+            'GROUPBY' => 'status',
+        ]);
+
+        foreach ($rows as $row) {
+            if (isset($countsByStatus[$row['status']])) {
+                $countsByStatus[$row['status']] = (int) $row['c'];
+            }
+        }
+
+        $data = [];
+        foreach ($countsByStatus as $status => $count) {
+            $data[] = ['label' => $status, 'number' => $count];
+        }
+
+        return [
+            'data' => $data,
+            'label' => $params['label'] ?? __('Politiques de sécurité par statut', 'grcmanager'),
+            'icon' => 'ti ti-chart-pie',
+        ];
+    }
+
+    /**
+     * Issue #30 (registre des obligations légales/réglementaires/contractuelles, clause 4.2) :
+     * nombre d'obligations actuellement évaluées `non_compliant`, le chiffre qui appelle le plus
+     * directement à l'action pour un RSSI/DPO.
+     */
+    public static function obligationsNonCompliantCount(array $params = []): array
+    {
+        global $DB;
+
+        $count = (int) $DB->request([
+            'COUNT' => 'c',
+            'FROM' => 'glpi_plugin_grcmanager_complianceobligations',
+            'WHERE' => ['compliance_status' => 'non_compliant'],
+        ])->current()['c'];
+
+        return [
+            'number' => $count,
+            'label' => $params['label'] ?? __('Obligations non conformes', 'grcmanager'),
+            'icon' => 'ti ti-gavel',
+        ];
+    }
+
+    /**
+     * Obligations dont la date de revue est dépassée ou approche, même définition (fenêtre de 30
+     * jours) que GlpiPlugin\Grcmanager\Services\Compliance\ComplianceObligationRules::isReviewDue()
+     * et la tâche Cron PluginGrcmanagerComplianceObligation::cronReviewreminder(), pour que la
+     * carte de tableau de bord et le rappel automatique ne divergent jamais sur ce qui compte comme
+     * "en attente de revue". Contrairement à risksPendingReviewCount() ci-dessus, aucune exclusion
+     * de statut : `compliance_status` ne dit rien sur si l'obligation est encore suivie, voir
+     * ReviewReminderService.
+     */
+    public static function obligationsPendingReviewCount(array $params = []): array
+    {
+        global $DB;
+
+        $count = (int) $DB->request([
+            'COUNT' => 'c',
+            'FROM' => 'glpi_plugin_grcmanager_complianceobligations',
+            'WHERE' => [
+                new QueryExpression('review_date IS NOT NULL'),
+                new QueryExpression('review_date <= CURDATE()'),
+            ],
+        ])->current()['c'];
+
+        return [
+            'number' => $count,
+            'label' => $params['label'] ?? __('Obligations en attente de revue', 'grcmanager'),
+            'icon' => 'ti ti-calendar-due',
+        ];
+    }
+
+    public static function obligationsByType(array $params = []): array
+    {
+        global $DB;
+
+        $countsByType = array_fill_keys(['legal', 'regulatory', 'contractual'], 0);
+
+        $rows = $DB->request([
+            'SELECT' => ['type', new QueryExpression('COUNT(*) AS c')],
+            'FROM' => 'glpi_plugin_grcmanager_complianceobligations',
+            'GROUPBY' => 'type',
+        ]);
+
+        foreach ($rows as $row) {
+            if (isset($countsByType[$row['type']])) {
+                $countsByType[$row['type']] = (int) $row['c'];
+            }
+        }
+
+        $data = [];
+        foreach ($countsByType as $type => $count) {
+            $data[] = ['label' => $type, 'number' => $count];
+        }
+
+        return [
+            'data' => $data,
+            'label' => $params['label'] ?? __('Obligations par type', 'grcmanager'),
+            'icon' => 'ti ti-chart-pie',
+        ];
+    }
+
+    public static function obligationsByComplianceStatus(array $params = []): array
+    {
+        global $DB;
+
+        $countsByStatus = array_fill_keys(
+            ['compliant', 'partially_compliant', 'non_compliant', 'not_assessed'],
+            0
+        );
+
+        $rows = $DB->request([
+            'SELECT' => ['compliance_status', new QueryExpression('COUNT(*) AS c')],
+            'FROM' => 'glpi_plugin_grcmanager_complianceobligations',
+            'GROUPBY' => 'compliance_status',
+        ]);
+
+        foreach ($rows as $row) {
+            if (isset($countsByStatus[$row['compliance_status']])) {
+                $countsByStatus[$row['compliance_status']] = (int) $row['c'];
+            }
+        }
+
+        $data = [];
+        foreach ($countsByStatus as $status => $count) {
+            $data[] = ['label' => $status, 'number' => $count];
+        }
+
+        return [
+            'data' => $data,
+            'label' => $params['label'] ?? __('Obligations par statut de conformité', 'grcmanager'),
+            'icon' => 'ti ti-chart-pie',
+        ];
+    }
+
+    /**
+     * Issue #29 (registre des incidents de sécurité de l'information, A.5.24-27) : répartition par
+     * statut (ouvert/en investigation/contenu/clôturé), même schéma que
+     * auditsByStatus()/managementReviewsByStatus() ci-dessus.
+     */
+    public static function securityIncidentsByStatus(array $params = []): array
+    {
+        global $DB;
+
+        $countsByStatus = array_fill_keys(
+            ['open', 'investigating', 'contained', 'closed'],
+            0
+        );
+
+        $rows = $DB->request([
+            'SELECT' => ['status', new QueryExpression('COUNT(*) AS c')],
+            'FROM' => 'glpi_plugin_grcmanager_securityincidents',
+            'GROUPBY' => 'status',
+        ]);
+
+        foreach ($rows as $row) {
+            if (isset($countsByStatus[$row['status']])) {
+                $countsByStatus[$row['status']] = (int) $row['c'];
+            }
+        }
+
+        $data = [];
+        foreach ($countsByStatus as $status => $count) {
+            $data[] = ['label' => $status, 'number' => $count];
+        }
+
+        return [
+            'data' => $data,
+            'label' => $params['label'] ?? __('Incidents de sécurité par statut', 'grcmanager'),
+            'icon' => 'ti ti-chart-pie',
+        ];
+    }
+
+    /**
+     * Issue #29 : répartition par sévérité (mineure/majeure/critique), même échelle que
+     * PluginGrcmanagerNonconformity::getSeverities() et même schéma de carte que
+     * risksByLevel()/supplierRisksByLevel() ci-dessus.
+     */
+    public static function securityIncidentsBySeverity(array $params = []): array
+    {
+        global $DB;
+
+        $countsBySeverity = array_fill_keys(['minor', 'major', 'critical'], 0);
+
+        $rows = $DB->request([
+            'SELECT' => ['severity', new QueryExpression('COUNT(*) AS c')],
+            'FROM' => 'glpi_plugin_grcmanager_securityincidents',
+            'GROUPBY' => 'severity',
+        ]);
+
+        foreach ($rows as $row) {
+            if (isset($countsBySeverity[$row['severity']])) {
+                $countsBySeverity[$row['severity']] = (int) $row['c'];
+            }
+        }
+
+        $data = [];
+        foreach ($countsBySeverity as $severity => $count) {
+            $data[] = ['label' => $severity, 'number' => $count];
+        }
+
+        return [
+            'data' => $data,
+            'label' => $params['label'] ?? __('Incidents de sécurité par sévérité', 'grcmanager'),
+            'icon' => 'ti ti-chart-pie',
+        ];
+    }
+
+    /**
+     * Issue #31 (plan d'action de traitement des risques, clause 8.3/6.1.3) : même définition "en
+     * retard" que GlpiPlugin\Grcmanager\Services\Risk\TreatmentPlanRules::isOverdue() et la tâche
+     * Cron PluginGrcmanagerRiskTreatmentAction::cronOverduetreatmentaction() (échéance dépassée,
+     * statut différent de "done"), pour que cette carte et le rappel automatique ne divergent
+     * jamais sur ce qui compte comme "en retard", même schéma que overdueCapaCount() ci-dessus.
+     */
+    public static function overdueTreatmentActionsCount(array $params = []): array
+    {
+        global $DB;
+
+        $count = (int) $DB->request([
+            'COUNT' => 'c',
+            'FROM' => 'glpi_plugin_grcmanager_risktreatmentactions',
+            'WHERE' => [
+                'status' => ['<>', 'done'],
+                new QueryExpression('due_date IS NOT NULL'),
+                new QueryExpression('due_date < CURDATE()'),
+            ],
+        ])->current()['c'];
+
+        return [
+            'number' => $count,
+            'label' => $params['label'] ?? __('Actions de traitement de risque en retard', 'grcmanager'),
+            'icon' => 'ti ti-calendar-due',
+        ];
+    }
+
+    /**
+     * Issue #31 : le "gap" que ce sprint cherche précisément à révéler - un risque encore ouvert
+     * dont la décision de traitement est "mitiger"/"transférer" (donc censée être mise en œuvre,
+     * voir TreatmentPlanRules::isTreatmentPlanRelevant()) mais qui n'a encore AUCUNE action de
+     * traitement enregistrée : une décision prise, sans plan derrière. Un risque déjà `closed` est
+     * exclu (voir PluginGrcmanagerRisk::validateTreatmentPlanAndComputeRiskLevel(), qui empêche
+     * désormais de clôturer un tel risque sans au moins une action, donc plus rien à signaler ici
+     * une fois clôturé), même définition "ouvert" que openRisksCount() ci-dessus.
+     */
+    public static function risksMissingTreatmentPlanCount(array $params = []): array
+    {
+        global $DB;
+
+        $count = (int) $DB->request([
+            'SELECT' => [new QueryExpression('COUNT(DISTINCT r.id) AS c')],
+            'FROM' => 'glpi_plugin_grcmanager_risks AS r',
+            'LEFT JOIN' => [
+                'glpi_plugin_grcmanager_risktreatmentactions AS a' => [
+                    'FKEY' => ['r' => 'id', 'a' => 'plugin_grcmanager_risks_id'],
+                ],
+            ],
+            'WHERE' => [
+                'r.treatment' => ['mitigate', 'transfer'],
+                'r.status'    => ['identified', 'in_treatment'],
+                new QueryExpression('a.id IS NULL'),
+            ],
+        ])->current()['c'];
+
+        return [
+            'number' => $count,
+            'label' => $params['label'] ?? __(
+                'Risques à mitiger/transférer sans plan de traitement',
+                'grcmanager'
+            ),
+            'icon' => 'ti ti-list-details',
+        ];
+    }
+
+    /**
+     * Issue #32 (objectifs ISMS et suivi de KPI dans le temps, clause 6.2) : répartition par
+     * statut (non démarré/sur la bonne voie/à risque/atteint/manqué), même schéma que
+     * managementReviewsByStatus()/auditsByStatus() ci-dessus. Le status enum
+     * (GlpiPlugin\Grcmanager\Services\Objective\ObjectiveStatuses) n'est pas réutilisé ici pour
+     * garder ce fichier hors du périmètre GLPI-indépendant de phpstan.neon.dist (voir sa propre
+     * note), les valeurs sont dupliquées littéralement comme le fait déjà auditsByStatus() pour
+     * son propre enum de statuts.
+     */
+    public static function objectivesByStatus(array $params = []): array
+    {
+        global $DB;
+
+        $countsByStatus = array_fill_keys(
+            ['not_started', 'on_track', 'at_risk', 'achieved', 'missed'],
+            0
+        );
+
+        $rows = $DB->request([
+            'SELECT' => ['status', new QueryExpression('COUNT(*) AS c')],
+            'FROM' => 'glpi_plugin_grcmanager_objectives',
+            'GROUPBY' => 'status',
+        ]);
+
+        foreach ($rows as $row) {
+            if (isset($countsByStatus[$row['status']])) {
+                $countsByStatus[$row['status']] = (int) $row['c'];
+            }
+        }
+
+        $data = [];
+        foreach ($countsByStatus as $status => $count) {
+            $data[] = ['label' => $status, 'number' => $count];
+        }
+
+        return [
+            'data' => $data,
+            'label' => $params['label'] ?? __('Objectifs ISMS par statut', 'grcmanager'),
             'icon' => 'ti ti-chart-pie',
         ];
     }
