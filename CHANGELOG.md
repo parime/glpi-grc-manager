@@ -7,6 +7,24 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce p
 
 ## [Non publié]
 
+## [1.1.2] - 2026-09-03
+
+### Changed
+
+- **Menu de premier niveau dédié "GRC & Conformité"** : les 11 écrans du plugin (Risques, Risques
+  fournisseurs, Contrôles Annexe A, Obligations légales/réglementaires/contractuelles, Audits
+  internes, Non-conformités, Incidents de sécurité, Formations, Revues de direction, Politiques de
+  sécurité, Objectifs ISMS) étaient jusqu'ici tous enregistrés à plat dans le menu natif GLPI
+  "Outils", devenu encombré. Ils apparaissent maintenant sous leur propre entrée de menu de premier
+  niveau "GRC & Conformité" (icône bouclier), au même niveau que Parc/Assistance/Gestion/Outils/
+  Administration/Configuration. Nouvelle classe ancre `PluginGrcmanagerMenu`
+  (`inc/menu.class.php`), sans table ni donnée propre, dont le seul rôle est de porter le titre et
+  l'icône de ce nouveau sector (voir son docblock pour le mécanisme GLPI core exact) ; son propre
+  lien de menu pointe vers le tableau de bord ISMS déjà existant. Ce changement concerne uniquement
+  la navigation : la fiche Profil (Administration > Profils) n'est pas affectée, ce plugin
+  n'exposant qu'un droit unique et opaque (`plugin_grcmanager`), jamais rendu dans la matrice de
+  droits de GLPI.
+
 ## [1.1.1] - 2026-09-03
 
 ### Fixed
