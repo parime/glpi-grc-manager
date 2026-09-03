@@ -49,6 +49,6 @@ if (isset($_POST['add'])) {
     // Session::checkRight() call needed here.
     PluginGrcmanagerPolicy::displayFullPageForItem(
         $_GET['id'] ?? 0,
-        ['central' => ['tools', PluginGrcmanagerPolicy::class], 'helpdesk' => []]
+        ['central' => ['grcmanager', PluginGrcmanagerPolicy::class], 'helpdesk' => []]
     );
 }

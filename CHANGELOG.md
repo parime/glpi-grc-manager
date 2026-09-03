@@ -7,6 +7,30 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce p
 
 ## [Non publié]
 
+## [1.1.3] - 2026-09-03
+
+### Fixed
+
+- **Fil d'Ariane des 11 écrans du plugin toujours "Outils" après le nouveau menu "GRC &
+  Conformité" (v1.1.2)** : chaque contrôleur `front/*.php`/`front/*.form.php` appelait
+  `Html::header(..., 'tools', ...)` avec le sector natif codé en dur, jamais mis à jour lors du
+  déplacement de ces classes vers le nouveau sector `'grcmanager'` dans `setup.php`. GLPI core
+  (`Html::header()`, `page_header.html.twig`) construit le fil d'Ariane et met en évidence la
+  section active de la barre latérale directement à partir de ce paramètre `$sector`, indépendamment
+  du sector réellement enregistré dans `MENU_TOADD` : la navigation elle-même fonctionnait (bonne
+  URL, bon contenu), mais la barre latérale revenait visuellement sur "Outils" à chaque clic sur un
+  sous-menu, donnant l'impression trompeuse d'être renvoyé au mauvais endroit. Les 21 appels
+  concernés (tous sauf `front/config.php`, hors périmètre du nouveau menu) pointent désormais vers
+  `'grcmanager'`.
+- **Le premier élément du sous-menu "GRC & Conformité" (l'ancre `PluginGrcmanagerMenu`) renvoyait à
+  l'accueil au lieu du tableau de bord ISMS.** Son lien utilisait
+  `/front/central.php?dashboard=...` sans le paramètre `embed` : `Glpi\Controller\CentralController`
+  (GLPI core) n'honore `dashboard` que combiné à `embed` (rendu anonyme sans menu/en-tête) - sans
+  lui, le paramètre est silencieusement ignoré et la page affiche le dernier tableau de bord
+  "Central" utilisé. Corrigé en pointant vers le registre des risques
+  (`PluginGrcmanagerRisk::getSearchURL()`), un vrai écran du plugin plutôt qu'un lien qui n'aboutit
+  jamais où il annonce mener.
+
 ## [1.1.2] - 2026-09-03
 
 ### Changed

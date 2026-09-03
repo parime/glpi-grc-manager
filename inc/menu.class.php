@@ -15,8 +15,6 @@
  * -------------------------------------------------------------------------
  */
 
-use GlpiPlugin\Grcmanager\Services\Dashboard\DefaultDashboardService;
-
 /**
  * Simple ancre sans table ni CommonDBTM : ne sert qu'à porter le titre et l'icône du menu de
  * premier niveau dédié "GRC & Conformité" (voir setup.php). GLPI core (Html::generateMenuSession())
@@ -38,15 +36,19 @@ class PluginGrcmanagerMenu extends CommonGLPI
     }
 
     /**
-     * Pointe vers le tableau de bord ISMS déjà existant plutôt que vers un écran de recherche :
-     * cette classe ne porte aucune donnée propre, il n'y a donc rien d'autre de pertinent à
-     * afficher pour son propre lien de menu.
+     * Pointe vers le registre des risques (premier écran attendu par un RSSI, voir setup.php),
+     * pas vers le tableau de bord ISMS : `Glpi\Controller\CentralController` n'honore le paramètre
+     * `dashboard` que combiné à `embed` (rendu anonyme sans en-tête/menu, cf. son propre code
+     * source) - un lien `/front/central.php?dashboard=...` sans `embed` est silencieusement ignoré
+     * et affiche le dernier tableau de bord "Central" utilisé, pas celui-ci (confirmé en réel :
+     * atterrissait sur l'accueil au lieu du tableau de bord ISMS). Cette classe ne porte aucune
+     * donnée propre, un lien vers un vrai écran du plugin reste plus utile qu'un lien mort.
      */
     public static function getMenuContent()
     {
         return [
             'title' => self::getMenuName(),
-            'page'  => '/front/central.php?dashboard=' . DefaultDashboardService::KEY,
+            'page'  => PluginGrcmanagerRisk::getSearchURL(false),
             'icon'  => self::getIcon(),
         ];
     }
