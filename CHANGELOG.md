@@ -7,6 +7,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce p
 
 ## [Non publié]
 
+## [1.1.1] - 2026-09-03
+
 ### Fixed
 
 - **Plan de traitement d'un risque : erreur fatale en laissant l'échéance vide** (issue #31) :
