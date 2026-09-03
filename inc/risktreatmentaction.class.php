@@ -127,6 +127,15 @@ class PluginGrcmanagerRiskTreatmentAction extends CommonDBTM
             $input['status'] ?? ($this->fields['status'] ?? null)
         );
 
+        // Html::showDateField()'s native <input type="date"> submits '' (not absent) when left
+        // empty, and due_date is a nullable DATE column: an empty string reaches MySQL as-is and
+        // strict mode rejects it ("Incorrect date value: '' for column `due_date`"), so a due date
+        // is not actually optional in practice without this. completion_date has no such path: no
+        // form field ever submits it directly, it is only ever auto-stamped below.
+        if (array_key_exists('due_date', $input) && $input['due_date'] === '') {
+            $input['due_date'] = null;
+        }
+
         $completionDate = $input['completion_date'] ?? ($this->fields['completion_date'] ?? null);
         if ($input['status'] === TreatmentPlanRules::STATUS_DONE && empty($completionDate)) {
             $input['completion_date'] = date('Y-m-d');
