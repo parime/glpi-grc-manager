@@ -7,6 +7,19 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce p
 
 ## [Non publié]
 
+## [1.1.1] - 2026-09-03
+
+### Fixed
+
+- **Plan de traitement d'un risque : erreur fatale en laissant l'échéance vide** (issue #31) :
+  `PluginGrcmanagerRiskTreatmentAction::validateAndNormalize()` ne normalisait pas `due_date` avant
+  l'insertion. Le champ `<input type="date">` du mini-formulaire d'ajout d'action
+  (`PluginGrcmanagerRisk::showTreatmentPlan()`) soumet une chaîne vide `''` (et non une absence de
+  champ) quand aucune date n'est saisie ; `due_date` étant une colonne `DATE` nullable, cette chaîne
+  vide atteignait MySQL telle quelle et le mode strict la rejetait ("Incorrect date value: '' for
+  column `due_date`"), provoquant une page d'erreur fatale au lieu d'enregistrer l'action sans
+  échéance. `''` est maintenant convertie en `null` avant l'ajout/la mise à jour.
+
 ## [1.1.0] - 2026-09-03
 
 ### Added
