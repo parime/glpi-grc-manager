@@ -43,13 +43,14 @@ function plugin_init_grcmanager(): void
         return;
     }
 
-    // Single entry point under Assistance > Sécurité (matches the "used daily by the RSSI" intent
-    // of the plugin: the generic risk register is the first screen a compliance officer needs).
+    // Single entry point (matches the "used daily by the RSSI" intent of the plugin: the generic
+    // risk register is the first screen a compliance officer needs).
     // Format confirmed against the sibling plugins of this same author (glpi-vulnerability-manager,
     // assetsign-glpi): a flat array of classes per menu category, keyed by GLPI's internal
-    // category key ('tools'), not by its translated display label.
+    // category key, not by its translated display label. Originally keyed by the native 'tools'
+    // category ("Outils"), which is where every entry below lived up to and including v1.1.1.
     // Sprint 3 (SoA, clause 6.1.3) adds PluginGrcmanagerControl alongside the risk register, same
-    // 'tools' category. Sprint 4 (audits internes et CAPA, clause 9.2/10.2) adds
+    // category. Sprint 4 (audits internes et CAPA, clause 9.2/10.2) adds
     // PluginGrcmanagerAudit and PluginGrcmanagerNonconformity the same way. Sprint 5 (risques
     // fournisseurs/tiers) adds PluginGrcmanagerSupplierRisk right after the generic risk register
     // it mirrors. Sprint 6 (formations et revues de direction, clauses 7.2/7.3/9.3) adds
@@ -68,8 +69,19 @@ function plugin_init_grcmanager(): void
     // A.5.24-27) adds PluginGrcmanagerSecurityIncident right after the audit/non-conformity screens
     // it complements (an incident can reveal a non-conformity or feed the CAPA loop, even though
     // there is no hard link between the two itemtypes in this first version).
+    // Dedicated first-level menu "GRC & Conformité" (as opposed to a native GLPI category such as
+    // 'tools'): using ANY category key not recognised as a native GLPI sector makes
+    // Html::generateMenuSession() (GLPI core) create a brand-new top-level sidebar entry for it,
+    // sitting alongside Parc/Assistance/Gestion/Outils/Administration/Configuration - the growing
+    // list of 11 screens above had made "Outils" cluttered, and none of them are really generic
+    // GLPI tools. PluginGrcmanagerMenu (inc/menu.class.php) is a lightweight CommonGLPI anchor with
+    // no table of its own, placed FIRST in the array below purely so the sector's title/icon come
+    // from IT rather than from the first functional screen (PluginGrcmanagerRisk) - GLPI core fills
+    // an unknown category's title/icon from the first entry in its MENU_TOADD array whose
+    // getMenuContent()/getIcon() supply one, see PluginGrcmanagerMenu's own docblock.
     $PLUGIN_HOOKS[Hooks::MENU_TOADD]['grcmanager'] = [
-        'tools' => [
+        'grcmanager' => [
+            PluginGrcmanagerMenu::class,
             PluginGrcmanagerRisk::class,
             PluginGrcmanagerSupplierRisk::class,
             PluginGrcmanagerControl::class,
