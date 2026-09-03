@@ -7,6 +7,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce p
 
 ## [Non publié]
 
+## [1.1.0] - 2026-09-03
+
 ### Added
 
 - **Registre des incidents de sécurité de l'information** (issue #29, ISO/IEC 27001:2022 Annexe A
