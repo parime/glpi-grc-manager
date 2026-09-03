@@ -41,7 +41,7 @@ if (isset($_POST['add'])) {
     Html::header(
         PluginGrcmanagerObjective::getTypeName(1),
         $_SERVER['PHP_SELF'],
-        'tools',
+        'grcmanager',
         PluginGrcmanagerObjective::class
     );
 
