@@ -7,6 +7,20 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce p
 
 ## [Non publié]
 
+## [1.1.4] - 2026-09-04
+
+### Fixed
+
+- **Le sous-menu "GRC & Conformité" répétait deux fois le même libellé** (retour utilisateur direct
+  sur la v1.1.3) : `PluginGrcmanagerMenu`, l'ancre qui porte le titre/icône du sector (voir son
+  propre docblock), restait aussi visible comme premier élément cliquable du sous-menu qu'elle
+  ouvre - GLPI core (`Html::generateMenuSession()`) ajoute systématiquement chaque classe de
+  `MENU_TOADD` comme une ligne de sous-menu, sans distinction entre "porte le titre du sector" et
+  "écran réel". Corrigé en ajoutant un hook `Hooks::REDEFINE_MENUS` (`plugin_grcmanager_redefine_menus()`
+  dans `setup.php`) : GLPI core l'appelle juste après avoir construit le menu complet, ce qui permet
+  de retirer la ligne de l'ancre du sous-menu une fois que le titre/icône du sector sont déjà
+  fixés, sans toucher à l'ordre ni aux 11 écrans réels.
+
 ## [1.1.3] - 2026-09-03
 
 ### Fixed
