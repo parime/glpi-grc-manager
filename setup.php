@@ -151,6 +151,28 @@ function plugin_init_grcmanager(): void
     // Plugin::doHookFunction() chains multiple plugins hooking the same point, and would itself
     // be discarded when this plugin runs earlier in that chain. See hook.php.
     $PLUGIN_HOOKS[Hooks::DASHBOARD_CARDS]['grcmanager'] = 'plugin_grcmanager_dashboard_cards';
+
+    // Strips PluginGrcmanagerMenu's own row from the "GRC & Conformité" submenu (v1.1.4): it must
+    // stay in the MENU_TOADD array above, FIRST, so Html::generateMenuSession() (GLPI core) still
+    // picks up its title/icon for the whole sector - but once that title/icon are set, its own
+    // clickable row is a pure visual duplicate of the sector header just above it ("GRC &
+    // Conformité" appearing twice, once as the collapsible section and once as its own first
+    // link). Html::header() calls Plugin::doHookFunction(Hooks::REDEFINE_MENUS, $menu) right after
+    // Html::generateMenuSession() (see GLPI core), specifically to let a plugin post-process the
+    // fully-built $menu array - the row is safe to drop by then, title/icon already copied onto
+    // $menu['grcmanager'] itself.
+    $PLUGIN_HOOKS[Hooks::REDEFINE_MENUS]['grcmanager'] = 'plugin_grcmanager_redefine_menus';
+}
+
+/**
+ * @param array<string, mixed> $menu
+ * @return array<string, mixed>
+ */
+function plugin_grcmanager_redefine_menus(array $menu): array
+{
+    unset($menu['grcmanager']['content'][strtolower(PluginGrcmanagerMenu::class)]);
+
+    return $menu;
 }
 
 /**
