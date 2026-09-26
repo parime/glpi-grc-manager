@@ -7,6 +7,23 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce p
 
 ## [Unreleased]
 
+### Added
+
+- **`.github/dependabot.yml`** — ce dépôt était le seul des trois plugins jumeaux à n'avoir aucune
+  configuration Dependabot (ni mises à jour automatiques de version, ni alertes de sécurité sur les
+  dépendances) ; trouvé lors d'un audit de dépendances. Deux écosystèmes couverts (`composer`,
+  `github-actions`), même convention (labels, delai de refroidissement de 7 jours, revue/assignation
+  à `parime`) que `Configuration-glpi-auto`/`assetsign-glpi`.
+
+### Changed
+
+- **`phpstan/phpstan` mis à jour (2.2.9 → 2.2.16)**, seule dépendance réellement obsolète repérée par
+  cet audit (`composer outdated`) sur ce que verrouille `composer.lock`. `phpunit/phpunit` a aussi une
+  version majeure disponible (10.5.64 → 13.x) mais volontairement **non appliquée** : PHPUnit 13 exige
+  PHP ≥ 8.4.1, alors que ce plugin déclare officiellement PHP ≥ 8.2 — un changement de politique de
+  version minimale du tooling de dev, pas une simple mise à jour de routine, laissé à une décision
+  explicite plutôt qu'appliqué silencieusement.
+
 ### Fixed
 
 - **Lier un actif à un incident de sécurité fatalait** (`CommonITILObject::

@@ -1,0 +1,50 @@
+version: 2
+
+updates:
+  # Dépendances PHP (dompdf en production, PHPUnit/PHPStan/PHPCS en dev, cf. composer.json).
+  - package-ecosystem: "composer"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 10
+    allow:
+      - dependency-type: "all"
+    ignore:
+      - dependency-name: "php"
+        update-types: ["version-update:semver-major"]
+    reviewers:
+      - "parime"
+    assignees:
+      - "parime"
+    labels:
+      - "dependencies"
+      - "security"
+    commit-message:
+      prefix: "chore"
+      prefix-development: "chore"
+      include: "scope"
+    # 7 jours avant de proposer une version tout juste publiée (cf. Semgrep
+    # dependabot-missing-cooldown, meme convention que les deux plugins jumeaux
+    # Configuration-glpi-auto et assetsign-glpi) : laisse le temps a la communaute de
+    # detecter un paquet compromis/instable avant qu'on ne l'adopte.
+    cooldown:
+      default-days: 7
+
+  # Actions utilisées par .github/workflows/{ci,release,auto-tag}.yml (actions/checkout...).
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "parime"
+    assignees:
+      - "parime"
+    labels:
+      - "ci"
+      - "dependencies"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    cooldown:
+      default-days: 7
