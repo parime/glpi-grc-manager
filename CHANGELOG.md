@@ -43,6 +43,16 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce p
   function getMainRequest() on null" sur tout test créant un `User`. Même correctif déjà nécessaire
   sur le plugin jumeau Configuration-glpi-auto, appliqué ici aussi (`$GLOBALS['kernel'] = $kernel;`
   avant `$kernel->boot()`).
+- **L'onglet "Risques" (issue #25) et l'onglet "Classification C/I/D" (issue #26) n'apparaissaient
+  jamais sur un actif personnalisé créé par un autre plugin** (`Vehicule`/`Serveur`/`Local`... via
+  Configuration-glpi-auto) alors que le lien registre-de-risques/actif restait fonctionnel depuis
+  le formulaire du risque lui-même (issue #88). `setup.php` construisait la liste `addtabon` de ces
+  deux onglets à partir de `LinkableItemtypes::DEFAULT_ITEMTYPES` (liste fixe des seuls itemtypes
+  natifs de GLPI), au lieu du résultat dynamique de `PluginGrcmanagerRisk::getLinkableItemtypes()`
+  (qui, lui, interroge directement la table SQL `glpi_assets_assetdefinitions`, disponible dès la
+  connexion DB). Les deux appels à `Plugin::registerClass()` utilisent désormais
+  `PluginGrcmanagerRisk::getLinkableItemtypes()` — même contournement, déjà éprouvé en production,
+  que `Config::getAllManageableItemtypes()` du plugin jumeau assetsign-glpi.
 
 - **La fiche d'une Politique de sécurité affichait « N/A » comme titre de page**, au lieu du vrai
   titre de la politique — trouvé en peuplant une instance de test avec de vraies politiques.

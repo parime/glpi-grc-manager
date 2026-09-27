@@ -18,7 +18,6 @@
 use Glpi\Plugin\Hooks;
 use GlpiPlugin\Grcmanager\Compatibility\RequirementChecker;
 use GlpiPlugin\Grcmanager\Services\Incident\SecurityIncidentModuleConfig;
-use GlpiPlugin\Grcmanager\Services\Risk\LinkableItemtypes;
 
 // GLPI does NOT autoload plugin src/ classes on its own (confirmed against a real GLPI 11
 // instance by the sibling plugins of this same author, see docs/design/DEVELOPMENT_PLAN.md
@@ -166,26 +165,30 @@ function plugin_init_grcmanager(): void
     // seule sur la fiche de chaque actif potentiellement lié (voir
     // PluginGrcmanagerRisk::getTabNameForItem()/displayTabContentForItem()), même mécanisme
     // Plugin::registerClass()/addtabon que le plugin jumeau assetsign-glpi pour ses propres
-    // onglets (voir son setup.php). Liste FIXE (LinkableItemtypes::DEFAULT_ITEMTYPES), pas le
-    // résultat dynamique de PluginGrcmanagerRisk::getLinkableItemtypes() (qui ajoute aussi les
-    // actifs personnalisés actifs) : à l'exécution de ce hook (listener InitializePlugins), GLPI
-    // n'a pas encore chargé les définitions d'actifs personnalisés en mémoire, même limitation de
-    // séquencement déjà documentée par assetsign-glpi pour sa propre
-    // Config::getAllManageableItemtypes() (voir son docblock) — un actif personnalisé reste tout
-    // de même liable depuis le formulaire du risque, seul l'onglet retour sur sa propre fiche n'est
-    // pas posé (voir TECH_DEBT.md).
+    // onglets (voir son setup.php).
+    //
+    // Issue #88 : cette liste utilisait auparavant LinkableItemtypes::DEFAULT_ITEMTYPES (fixe),
+    // ce qui privait tout actif personnalisé créé par un autre plugin (Configuration-glpi-auto :
+    // Vehicule, Serveur, Local...) de cet onglet sur sa propre fiche, même si le lien
+    // registre-de-risques/actif restait fonctionnel depuis le formulaire du risque lui-même.
+    // PluginGrcmanagerRisk::getLinkableItemtypes() interroge déjà directement la table SQL
+    // glpi_assets_assetdefinitions (voir son docblock) plutôt que
+    // Glpi\Asset\AssetDefinitionManager::getInstance()->getDefinitions() (qui renverrait un
+    // tableau vide ici : ce hook s'exécute pendant le listener InitializePlugins, avant
+    // CustomObjectsBoot) — exactement le même contournement, déjà éprouvé en production, que
+    // Config::getAllManageableItemtypes() du plugin jumeau assetsign-glpi, qui l'appelle lui
+    // aussi directement depuis son propre plugin_init() pour construire ses listes d'addtabon.
     Plugin::registerClass(PluginGrcmanagerRisk::class, [
-        'addtabon' => LinkableItemtypes::DEFAULT_ITEMTYPES,
+        'addtabon' => PluginGrcmanagerRisk::getLinkableItemtypes(),
     ]);
 
     // Issue #26 (classification Confidentialité/Intégrité/Disponibilité des actifs) : même
-    // mécanisme et même liste FIXE d'itemtypes qu'immédiatement ci-dessus pour l'onglet "Risques"
-    // de l'issue #25 (même limitation de séquencement InitializePlugins/CustomObjectsBoot, voir son
-    // commentaire ci-dessus et TECH_DEBT.md), un second onglet indépendant sur la fiche de chaque
-    // actif liable pour consulter/éditer sa classification C/I/D (voir
+    // mécanisme qu'immédiatement ci-dessus pour l'onglet "Risques" de l'issue #25 (voir son
+    // commentaire, y compris pour le correctif de l'issue #88), un second onglet indépendant sur
+    // la fiche de chaque actif liable pour consulter/éditer sa classification C/I/D (voir
     // PluginGrcmanagerAssetClassification::getTabNameForItem()/displayTabContentForItem()).
     Plugin::registerClass(PluginGrcmanagerAssetClassification::class, [
-        'addtabon' => LinkableItemtypes::DEFAULT_ITEMTYPES,
+        'addtabon' => PluginGrcmanagerRisk::getLinkableItemtypes(),
     ]);
 
     // Dashboard KPI cards, kept accumulator-safe from the start (?array $cards = null, merged
