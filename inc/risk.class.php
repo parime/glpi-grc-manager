@@ -15,6 +15,7 @@
  * -------------------------------------------------------------------------
  */
 
+use GlpiPlugin\Grcmanager\Compatibility\Base\RiskBase;
 use GlpiPlugin\Grcmanager\Services\Classification\ClassificationLevels;
 use GlpiPlugin\Grcmanager\Services\Risk\LinkableItemtypes;
 use GlpiPlugin\Grcmanager\Services\Risk\ReviewReminderService;
@@ -37,9 +38,8 @@ use GlpiPlugin\Grcmanager\Traits\RiskAssessmentTrait;
  * PluginGrcmanagerRiskTreatmentAction, showTreatmentPlan() below) - `treatment` and `justification`
  * alone only ever recorded the DECISION, never whether it was actually carried out.
  */
-class PluginGrcmanagerRisk extends CommonDBTM
+class PluginGrcmanagerRisk extends RiskBase
 {
-    use \GlpiPlugin\Grcmanager\Compatibility\HasRightname;
     use RiskAssessmentTrait;
 
     public const RIGHTNAME = 'plugin_grcmanager';

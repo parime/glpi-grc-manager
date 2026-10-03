@@ -16,9 +16,13 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce p
     impose à une sous-classe de reprendre exactement le type du parent, donc aucune déclaration
     unique ne fonctionne sur les deux. Les 29 classes concernées (20 pour `$rightname`, plus le
     module Incidents de sécurité : relations d'acteurs, coûts, gabarits, collection de règles)
-    utilisent désormais des traits de `src/Compatibility/` dont la variante (`compat/glpi11` ou
-    `compat/glpi12`) est chargée selon la version installée ; chaque classe fournit ses valeurs via
-    des constantes (`RIGHTNAME`, `ITEMTYPE_1`…).
+    héritent désormais d'une classe intermédiaire (`src/Compatibility/Base/`) déclarée selon la
+    version installée (propriétés typées en 12, non typées en 11) ; chaque classe fournit ses
+    valeurs via des constantes (`RIGHTNAME`, `ITEMTYPE_1`…).
+    Une classe et non un trait : sur PHP 8.2 à 8.4, un trait ne peut pas
+    redéclarer une propriété héritée avec une autre valeur (erreur fatale, ou en PHP 8.2 valeur
+    partagée en silence avec la classe de GLPI). Nouveau job CI `php-compat` qui charge chaque
+    classe concernée sur le vrai cœur GLPI, sous PHP 8.2 à 8.5 × GLPI 11 et PHP 8.3 à 8.5 × GLPI 12.
   - `$DB->request('table')` (forme chaîne supprimée en GLPI 12) → forme tableau, dans
     `RiskMatrixConfig`, `SecurityIncidentModuleConfig` et `NvdConfig` — sans ce correctif,
     GLPI 12 désactivait silencieusement le plugin au démarrage.

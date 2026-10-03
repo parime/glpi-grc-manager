@@ -15,6 +15,7 @@
  * -------------------------------------------------------------------------
  */
 
+use GlpiPlugin\Grcmanager\Compatibility\Base\NonconformityBase;
 use GlpiPlugin\Grcmanager\Services\Capa\CapaRequirementService;
 use GlpiPlugin\Grcmanager\Services\Capa\OverdueCapaService;
 
@@ -32,10 +33,8 @@ use GlpiPlugin\Grcmanager\Services\Capa\OverdueCapaService;
  * grades either one — a single overlapping ordinal scale was kept for these two axes in the first
  * version, this is what issue #27 resolves.
  */
-class PluginGrcmanagerNonconformity extends CommonDBTM
+class PluginGrcmanagerNonconformity extends NonconformityBase
 {
-    use \GlpiPlugin\Grcmanager\Compatibility\HasRightname;
-
     public const RIGHTNAME = 'plugin_grcmanager';
 
     /**

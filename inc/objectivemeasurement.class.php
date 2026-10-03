@@ -15,6 +15,7 @@
  * -------------------------------------------------------------------------
  */
 
+use GlpiPlugin\Grcmanager\Compatibility\Base\ObjectiveMeasurementBase;
 use GlpiPlugin\Grcmanager\Services\Objective\ObjectiveMeasurementValidator;
 
 /**
@@ -33,10 +34,8 @@ use GlpiPlugin\Grcmanager\Services\Objective\ObjectiveMeasurementValidator;
  * own data (date, value, comment) and so needs its own real itemtype/table rather than a link
  * table with no extra columns.
  */
-class PluginGrcmanagerObjectiveMeasurement extends CommonDBTM
+class PluginGrcmanagerObjectiveMeasurement extends ObjectiveMeasurementBase
 {
-    use \GlpiPlugin\Grcmanager\Compatibility\HasRightname;
-
     public const RIGHTNAME = 'plugin_grcmanager';
 
     public static function getTable($classname = null)

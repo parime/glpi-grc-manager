@@ -15,14 +15,14 @@
  * -------------------------------------------------------------------------
  */
 
+use GlpiPlugin\Grcmanager\Compatibility\Base\SecurityIncidentSupplierBase;
+
 /**
  * Relation between PluginGrcmanagerSecurityIncident and Supplier — same minimal shape as
  * GLPI core's own `Change_Supplier`.
  */
-class PluginGrcmanagerSecurityIncident_Supplier extends CommonITILActor
+class PluginGrcmanagerSecurityIncident_Supplier extends SecurityIncidentSupplierBase
 {
-    use \GlpiPlugin\Grcmanager\Compatibility\HasItilActorRelation;
-
     public const ITEMTYPE_1 = PluginGrcmanagerSecurityIncident::class;
     public const ITEMS_ID_1 = 'plugin_grcmanager_securityincidents_id';
     public const ITEMTYPE_2 = Supplier::class;

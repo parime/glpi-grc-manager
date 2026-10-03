@@ -15,14 +15,14 @@
  * -------------------------------------------------------------------------
  */
 
+use GlpiPlugin\Grcmanager\Compatibility\Base\RuleSecurityIncidentBase;
+
 /**
  * Paired with `RulePluginGrcmanagerSecurityIncidentCollection` — see that class's own
  * docblock for why this exists. Minimal shape, mirroring GLPI core's own `RuleChange`.
  */
-class RulePluginGrcmanagerSecurityIncident extends RuleCommonITILObject
+class RulePluginGrcmanagerSecurityIncident extends RuleSecurityIncidentBase
 {
-    use \GlpiPlugin\Grcmanager\Compatibility\HasRightname;
-
     public const RIGHTNAME = 'rule_grcmanager_securityincident';
 
     public function getTitle()

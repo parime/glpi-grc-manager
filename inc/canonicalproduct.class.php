@@ -15,6 +15,8 @@
  * -------------------------------------------------------------------------
  */
 
+use GlpiPlugin\Grcmanager\Compatibility\Base\CanonicalProductBase;
+
 /**
  * Anchor of the CVE-to-inventory correlation catalog (issue: corrélation CPE des CVE avec le
  * parc, cf. ROADMAP.md) : a (manufacturer, product) pair that both an admin-declared CPE
@@ -31,10 +33,8 @@
  * GlpiPlugin\Grcmanager\Services\Cve\InventoryCveMatcher rather than fuzzy-matched — a wrong
  * correlation would be worse than a missing one for a security decision.
  */
-class PluginGrcmanagerCanonicalProduct extends CommonDBTM
+class PluginGrcmanagerCanonicalProduct extends CanonicalProductBase
 {
-    use \GlpiPlugin\Grcmanager\Compatibility\HasRightname;
-
     public const RIGHTNAME = 'plugin_grcmanager';
 
     public static function getTable($classname = null)

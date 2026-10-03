@@ -16,6 +16,7 @@
  */
 
 use Glpi\ContentTemplates\Parameters\CommonITILObjectParameters;
+use GlpiPlugin\Grcmanager\Compatibility\Base\SecurityIncidentBase;
 use GlpiPlugin\Grcmanager\Services\Incident\SecurityIncidentModuleConfig;
 use GlpiPlugin\Grcmanager\Services\Incident\SecurityIncidentParameters;
 use GlpiPlugin\Grcmanager\Services\Incident\SecurityIncidentRules;
@@ -50,11 +51,8 @@ use GlpiPlugin\Grcmanager\Services\Incident\SecurityIncidentRules;
  *
  * Modeled directly on GLPI core's own `Change` class (the closest native analogue).
  */
-class PluginGrcmanagerSecurityIncident extends CommonITILObject
+class PluginGrcmanagerSecurityIncident extends SecurityIncidentBase
 {
-    use \GlpiPlugin\Grcmanager\Compatibility\HasItilObjectLinks;
-    use \GlpiPlugin\Grcmanager\Compatibility\HasRightname;
-
     public const USERLINKCLASS = PluginGrcmanagerSecurityIncident_User::class;
     public const GROUPLINKCLASS = PluginGrcmanagerSecurityIncident_Group::class;
     public const SUPPLIERLINKCLASS = PluginGrcmanagerSecurityIncident_Supplier::class;

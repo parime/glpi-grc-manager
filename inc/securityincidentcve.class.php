@@ -15,6 +15,7 @@
  * -------------------------------------------------------------------------
  */
 
+use GlpiPlugin\Grcmanager\Compatibility\Base\SecurityIncidentCveBase;
 use GlpiPlugin\Grcmanager\Services\Cve\InventoryCveMatcher;
 use GlpiPlugin\Grcmanager\Services\Cve\NvdCveEnrichmentService;
 use GlpiPlugin\Grcmanager\Services\Cve\NvdConfig;
@@ -35,10 +36,8 @@ use GlpiPlugin\Grcmanager\Services\Cve\NvdConfig;
  * path (single identifier, or the multi-line textarea in front/securityincidentcve.form.php) gets
  * it for free rather than each caller remembering to trigger it itself.
  */
-class PluginGrcmanagerSecurityIncidentCve extends CommonDBTM
+class PluginGrcmanagerSecurityIncidentCve extends SecurityIncidentCveBase
 {
-    use \GlpiPlugin\Grcmanager\Compatibility\HasRightname;
-
     public const RIGHTNAME = 'plugin_grcmanager_securityincident';
 
     // Same literal as PluginGrcmanagerSecurityIncident::$rightname — a static property of
