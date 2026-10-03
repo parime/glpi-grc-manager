@@ -43,7 +43,9 @@
  */
 class PluginGrcmanagerManagementReview extends CommonDBTM
 {
-    public static $rightname = 'plugin_grcmanager';
+    use \GlpiPlugin\Grcmanager\Compatibility\HasRightname;
+
+    public const RIGHTNAME = 'plugin_grcmanager';
 
     private const ATTENDEES_TABLE = 'glpi_plugin_grcmanager_managementreviews_users';
 

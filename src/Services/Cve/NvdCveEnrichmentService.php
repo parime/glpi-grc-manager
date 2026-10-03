@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace GlpiPlugin\Grcmanager\Services\Cve;
 
+use GlpiPlugin\Grcmanager\Compatibility\Http;
+
 /**
  * Fetches real data (CVSS score/vector, severity, description, patch links) for one CVE reference
  * from the NVD single-CVE lookup endpoint, and persists it into
@@ -17,9 +19,9 @@ namespace GlpiPlugin\Grcmanager\Services\Cve;
  * `cve_id` (unique), same reasoning, just generalized from RiskMatrixConfig's single row to one
  * row per CVE.
  *
- * Uses `\Toolbox::getURLContent()` rather than a raw HTTP client — same choice, and same
- * reasoning, as the sibling GithubVersionChecker::getLatestGithubVersion(): reuses GLPI core's own
- * proxy/timeout/error handling instead of reinventing it.
+ * Uses GLPI core's HTTP client (via Compatibility\Http, GLPI 11 and 12) rather than a raw HTTP
+ * client — same choice, and same reasoning, as the sibling GithubVersionChecker::getLatestGithubVersion():
+ * reuses GLPI core's own proxy/timeout/error handling instead of reinventing it.
  *
  * Every outcome (`ok`/`not_found`/`error`) is persisted explicitly rather than left as a silent
  * blank — a failed or not-yet-attempted fetch must never be indistinguishable from "NVD confirms
@@ -89,7 +91,7 @@ final class NvdCveEnrichmentService
     public static function fetchForCve(string $cveId): void
     {
         $error = '';
-        $json  = \Toolbox::getURLContent(
+        $json  = Http::getContent(
             self::NVD_BASE_URL . '?' . http_build_query(['cveId' => $cveId]),
             $error
         );

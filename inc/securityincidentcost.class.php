@@ -26,9 +26,10 @@
  */
 class PluginGrcmanagerSecurityIncidentCost extends CommonITILCost
 {
-    public static $itemtype = PluginGrcmanagerSecurityIncident::class;
+    use \GlpiPlugin\Grcmanager\Compatibility\HasChildItemLink;
 
-    public static $items_id = 'plugin_grcmanager_securityincidents_id';
+    public const ITEMTYPE = PluginGrcmanagerSecurityIncident::class;
+    public const ITEMS_ID = 'plugin_grcmanager_securityincidents_id';
 
     public static function canCreate(): bool
     {

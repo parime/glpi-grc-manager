@@ -36,7 +36,9 @@ use GlpiPlugin\Grcmanager\Services\Policy\PolicyReviewReminderService;
  */
 class PluginGrcmanagerPolicy extends CommonDBTM
 {
-    public static $rightname = 'plugin_grcmanager';
+    use \GlpiPlugin\Grcmanager\Compatibility\HasRightname;
+
+    public const RIGHTNAME = 'plugin_grcmanager';
 
     /**
      * GLPI notification event name (see inc/notificationtargetpolicy.class.php and

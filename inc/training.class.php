@@ -36,7 +36,9 @@ use GlpiPlugin\Grcmanager\Services\Training\TrainingRenewalService;
  */
 class PluginGrcmanagerTraining extends CommonDBTM
 {
-    public static $rightname = 'plugin_grcmanager';
+    use \GlpiPlugin\Grcmanager\Compatibility\HasRightname;
+
+    public const RIGHTNAME = 'plugin_grcmanager';
 
     private const PARTICIPANTS_TABLE = 'glpi_plugin_grcmanager_trainings_users';
 

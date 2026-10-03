@@ -20,14 +20,15 @@
  */
 class PluginGrcmanagerSecurityIncidentTemplatePredefinedField extends ITILTemplatePredefinedField
 {
+    use \GlpiPlugin\Grcmanager\Compatibility\HasChildItemLink;
+
+    public const ITEMTYPE = PluginGrcmanagerSecurityIncidentTemplate::class;
+    public const ITEMS_ID = 'securityincidenttemplates_id';
+
     public static function getTable($classname = null)
     {
         return 'glpi_plugin_grcmanager_secincidenttemplates_predefinedfields';
     }
-
-    public static $itemtype = PluginGrcmanagerSecurityIncidentTemplate::class;
-
-    public static $items_id = 'securityincidenttemplates_id';
 
     public static $itiltype = PluginGrcmanagerSecurityIncident::class;
 

@@ -21,7 +21,9 @@
  */
 class RulePluginGrcmanagerSecurityIncident extends RuleCommonITILObject
 {
-    public static $rightname = 'rule_grcmanager_securityincident';
+    use \GlpiPlugin\Grcmanager\Compatibility\HasRightname;
+
+    public const RIGHTNAME = 'rule_grcmanager_securityincident';
 
     public function getTitle()
     {

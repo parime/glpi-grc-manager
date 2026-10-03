@@ -30,7 +30,9 @@
  */
 class PluginGrcmanagerAudit extends CommonDBTM
 {
-    public static $rightname = 'plugin_grcmanager';
+    use \GlpiPlugin\Grcmanager\Compatibility\HasRightname;
+
+    public const RIGHTNAME = 'plugin_grcmanager';
 
     private const LINK_TABLE = 'glpi_plugin_grcmanager_audits_controls';
 

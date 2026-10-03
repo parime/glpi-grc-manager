@@ -47,7 +47,9 @@ use GlpiPlugin\Grcmanager\Services\Risk\TreatmentPlanRules;
  */
 class PluginGrcmanagerRiskTreatmentAction extends CommonDBTM
 {
-    public static $rightname = 'plugin_grcmanager';
+    use \GlpiPlugin\Grcmanager\Compatibility\HasRightname;
+
+    public const RIGHTNAME = 'plugin_grcmanager';
 
     /**
      * GLPI notification event name (see inc/notificationtargetrisktreatmentaction.class.php and

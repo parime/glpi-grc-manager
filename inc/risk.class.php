@@ -39,9 +39,10 @@ use GlpiPlugin\Grcmanager\Traits\RiskAssessmentTrait;
  */
 class PluginGrcmanagerRisk extends CommonDBTM
 {
+    use \GlpiPlugin\Grcmanager\Compatibility\HasRightname;
     use RiskAssessmentTrait;
 
-    public static $rightname = 'plugin_grcmanager';
+    public const RIGHTNAME = 'plugin_grcmanager';
 
     /**
      * GLPI notification event name (see inc/notificationtargetrisk.class.php and
