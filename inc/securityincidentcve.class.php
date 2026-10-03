@@ -37,11 +37,12 @@ use GlpiPlugin\Grcmanager\Services\Cve\NvdConfig;
  */
 class PluginGrcmanagerSecurityIncidentCve extends CommonDBTM
 {
+    use \GlpiPlugin\Grcmanager\Compatibility\HasRightname;
+
+    public const RIGHTNAME = 'plugin_grcmanager_securityincident';
+
     // Same literal as PluginGrcmanagerSecurityIncident::$rightname — a static property of
     // another class cannot be used as a property default value (not a constant expression), so
-    // this is duplicated rather than referenced.
-    public static $rightname = 'plugin_grcmanager_securityincident';
-
     public static function getTypeName($nb = 0)
     {
         return _n('CVE reference', 'CVE references', $nb, 'grcmanager');

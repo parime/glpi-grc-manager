@@ -84,3 +84,8 @@ parameters:
         # CpeIdentity.php et CpeVersionMatch.php dans le même dossier restent dans le périmètre :
         # purs PHP, aucune dépendance GLPI.
         - src/Services/Cve/InventoryCveMatcher.php
+        # GLPI 11/12 compatibility layer: depends on GLPI's runtime GLPI_VERSION constant and on
+        # \Toolbox / Glpi\Toolbox\HttpClient (each only present in one GLPI version), same
+        # rationale as RiskMatrixConfig.php above. The trait loaders next to them stay in scope.
+        - src/Compatibility/GlpiVersion.php
+        - src/Compatibility/Http.php

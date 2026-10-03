@@ -30,9 +30,11 @@
  */
 class RulePluginGrcmanagerSecurityIncidentCollection extends RuleCommonITILObjectCollection
 {
-    public static $rightname = 'rule_grcmanager_securityincident';
+    use \GlpiPlugin\Grcmanager\Compatibility\HasRightname;
+    use \GlpiPlugin\Grcmanager\Compatibility\HasMenuOption;
 
-    public $menu_option = 'securityincident';
+    public const RIGHTNAME = 'rule_grcmanager_securityincident';
+    public const MENU_OPTION = 'securityincident';
 
     public function getTitle()
     {

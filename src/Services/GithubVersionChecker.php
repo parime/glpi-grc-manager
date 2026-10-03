@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace GlpiPlugin\Grcmanager\Services;
 
+use GlpiPlugin\Grcmanager\Compatibility\Http;
+
 /**
  * Dernière version publiée sur GitHub (release la plus récente, hors pre-release), pour affichage
  * à côté de la version installée sur l'écran Configuration - même mécanisme que les plugins
@@ -13,10 +15,9 @@ namespace GlpiPlugin\Grcmanager\Services;
  *
  * Mise en cache 24h (même durée/mécanisme que `RSSFeed::getRSSFeed()` du cœur GLPI, `$GLPI_CACHE`) :
  * l'API GitHub non authentifiée est limitée à 60 requêtes/heure par IP, largement insuffisant si
- * appelée à chaque affichage de la page. `Toolbox::getURLContent()` (pas un appel HTTP direct) :
- * réutilise la gestion de proxy/timeout/erreurs déjà établie par le cœur GLPI pour ce type d'appel,
- * même fonction que `Toolbox::checkNewVersionAvailable()`, qui fait exactement ceci pour GLPI
- * lui-même.
+ * appelée à chaque affichage de la page. Client HTTP du cœur GLPI (pas un appel HTTP direct), via
+ * `Compatibility\Http` (GLPI 11 et 12) : réutilise la gestion de proxy/timeout/erreurs déjà établie
+ * par le cœur GLPI pour ce type d'appel.
  */
 final class GithubVersionChecker
 {
@@ -36,7 +37,7 @@ final class GithubVersionChecker
 
         $error = '';
         $url = 'https://api.github.com/repos/parime/glpi-grc-manager/releases/latest';
-        $json = \Toolbox::getURLContent($url, $error);
+        $json = Http::getContent($url, $error);
         $version = null;
         if (!empty($json)) {
             $data = json_decode($json, true);

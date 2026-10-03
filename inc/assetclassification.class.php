@@ -36,7 +36,9 @@ use GlpiPlugin\Grcmanager\Services\Classification\ClassificationLevels;
  */
 class PluginGrcmanagerAssetClassification extends CommonDBTM
 {
-    public static $rightname = 'plugin_grcmanager';
+    use \GlpiPlugin\Grcmanager\Compatibility\HasRightname;
+
+    public const RIGHTNAME = 'plugin_grcmanager';
 
     public static function getTable($classname = null)
     {

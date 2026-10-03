@@ -21,11 +21,10 @@
  */
 class PluginGrcmanagerSecurityIncident_Group extends CommonITILActor
 {
-    public static $itemtype_1 = PluginGrcmanagerSecurityIncident::class;
+    use \GlpiPlugin\Grcmanager\Compatibility\HasItilActorRelation;
 
-    public static $items_id_1 = 'plugin_grcmanager_securityincidents_id';
-
-    public static $itemtype_2 = Group::class;
-
-    public static $items_id_2 = 'groups_id';
+    public const ITEMTYPE_1 = PluginGrcmanagerSecurityIncident::class;
+    public const ITEMS_ID_1 = 'plugin_grcmanager_securityincidents_id';
+    public const ITEMTYPE_2 = Group::class;
+    public const ITEMS_ID_2 = 'groups_id';
 }

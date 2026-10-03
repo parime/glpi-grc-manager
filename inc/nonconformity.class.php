@@ -34,7 +34,9 @@ use GlpiPlugin\Grcmanager\Services\Capa\OverdueCapaService;
  */
 class PluginGrcmanagerNonconformity extends CommonDBTM
 {
-    public static $rightname = 'plugin_grcmanager';
+    use \GlpiPlugin\Grcmanager\Compatibility\HasRightname;
+
+    public const RIGHTNAME = 'plugin_grcmanager';
 
     /**
      * GLPI notification event name (see inc/notificationtargetnonconformity.class.php and

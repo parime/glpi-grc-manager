@@ -9,6 +9,13 @@ use PHPUnit\Framework\TestCase;
 
 final class RequirementCheckerTest extends TestCase
 {
+    public static function setUpBeforeClass(): void
+    {
+        // PLUGIN_GRCMANAGER_MAX_GLPI — setup.php only declares constants/functions at load time
+        // (same reasoning as SetupMenuRedefinitionTest).
+        require_once __DIR__ . '/../../../setup.php';
+    }
+
     private RequirementChecker $checker;
 
     protected function setUp(): void
@@ -49,5 +56,11 @@ final class RequirementCheckerTest extends TestCase
     public function testGlpiVersionAtUpperBoundIsSupported(): void
     {
         self::assertTrue($this->checker->isGlpiVersionSupported('11.99.99', '11.0.0', '11.99.99'));
+    }
+
+    public function testGlpi12PreReleaseIsSupportedWithTheGlpi12Ceiling(): void
+    {
+        self::assertTrue($this->checker->isGlpiVersionSupported('12.0.0-rc2', '11.0.0', PLUGIN_GRCMANAGER_MAX_GLPI));
+        self::assertTrue($this->checker->isGlpiVersionSupported('11.0.9', '11.0.0', PLUGIN_GRCMANAGER_MAX_GLPI));
     }
 }

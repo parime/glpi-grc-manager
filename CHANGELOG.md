@@ -9,6 +9,27 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce p
 
 ### Added
 
+- **Compatibilité GLPI 12** (en plus de GLPI 11, depuis un seul et même paquet). Incompatibilités
+  réelles corrigées, identifiées en faisant tourner les suites de tests sur un vrai GLPI 12.0.0-rc2 :
+  - GLPI 12 type de nombreuses propriétés de ses classes de base (`CommonGLPI::$rightname`,
+    `CommonDBRelation::$itemtype_1`…, `CommonITILObject::$userlinkclass`…), GLPI 11 non — et PHP
+    impose à une sous-classe de reprendre exactement le type du parent, donc aucune déclaration
+    unique ne fonctionne sur les deux. Les 29 classes concernées (20 pour `$rightname`, plus le
+    module Incidents de sécurité : relations d'acteurs, coûts, gabarits, collection de règles)
+    utilisent désormais des traits de `src/Compatibility/` dont la variante (`compat/glpi11` ou
+    `compat/glpi12`) est chargée selon la version installée ; chaque classe fournit ses valeurs via
+    des constantes (`RIGHTNAME`, `ITEMTYPE_1`…).
+  - `$DB->request('table')` (forme chaîne supprimée en GLPI 12) → forme tableau, dans
+    `RiskMatrixConfig`, `SecurityIncidentModuleConfig` et `NvdConfig` — sans ce correctif,
+    GLPI 12 désactivait silencieusement le plugin au démarrage.
+  - `Toolbox::getURLContent()` supprimé en GLPI 12 → `Compatibility\Http` (vérification de version
+    GitHub, enrichissement CVE NVD).
+
+  Résultat : tests unitaires (228) et d'intégration (19) au vert sur GLPI 11.0.9 **et** GLPI
+  12.0.0-rc2, plus un test fonctionnel du module Incidents de sécurité (création avec acteurs,
+  élément lié, coût, tâche, formulaire, onglets, suppression) réussi sur les deux. Nouveau job CI
+  `Installation reelle sur GLPI 12` (cycle d'installation complet + suite d'intégration).
+
 - **`.github/dependabot.yml`** — ce dépôt était le seul des trois plugins jumeaux à n'avoir aucune
   configuration Dependabot (ni mises à jour automatiques de version, ni alertes de sécurité sur les
   dépendances) ; trouvé lors d'un audit de dépendances. Deux écosystèmes couverts (`composer`,

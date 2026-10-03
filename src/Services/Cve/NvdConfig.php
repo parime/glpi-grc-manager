@@ -30,7 +30,7 @@ final class NvdConfig
             'cvss_alert_threshold'  => NvdConfigDefaults::CVSS_ALERT_THRESHOLD,
         ];
 
-        foreach ($DB->request(self::TABLE) as $row) {
+        foreach ($DB->request(['FROM' => self::TABLE]) as $row) {
             $config['enable_nvd_enrichment'] = (bool) $row['enable_nvd_enrichment'];
             $config['cvss_alert_threshold']  = (float) $row['cvss_alert_threshold'];
             break;

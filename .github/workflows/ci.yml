@@ -300,3 +300,81 @@ jobs:
       - name: Logs GLPI (en cas d'echec)
         if: failure()
         run: docker logs glpi --tail 200
+
+  real-glpi12-install:
+    name: Installation reelle sur GLPI 12 (Docker)
+    # Meme cycle que le job ci-dessus, sur GLPI 12 (cf. src/Compatibility/), plus la suite
+    # d'integration : sans ce job, la compatibilite GLPI 12 pourrait regresser silencieusement.
+    # Job separe plutot qu'une matrice : une matrice renommerait le check existant.
+    needs: detect
+    if: needs.detect.outputs.has_composer == 'true'
+    runs-on: ubuntu-latest
+    env:
+      GLPI12_IMAGE: glpi/glpi:12.0.0-rc2
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Demarre MariaDB
+        run: |
+          docker network create grcmanager-ci
+          docker run -d --name mariadb --network grcmanager-ci \
+            -e MARIADB_ROOT_PASSWORD=glpi_password \
+            -e MARIADB_DATABASE=glpidb \
+            -e MARIADB_USER=glpi_user \
+            -e MARIADB_PASSWORD=glpi_password \
+            mariadb:11
+          for i in $(seq 1 30); do
+            docker exec mariadb mariadb-admin ping -h 127.0.0.1 -u root -pglpi_password --silent && break
+            sleep 2
+          done
+
+      - name: Demarre GLPI 12 et installe sa base
+        run: |
+          docker run -d --name glpi --network grcmanager-ci -e TIMEZONE=Europe/Paris "$GLPI12_IMAGE"
+          for i in $(seq 1 12); do
+            docker exec glpi php bin/console database:install --db-host=mariadb --db-name=glpidb \
+              --db-user=glpi_user --db-password=glpi_password --no-interaction && exit 0
+            echo "database:install pas encore pret (tentative $i/12), nouvel essai dans 5s..."
+            sleep 5
+          done
+          exit 1
+
+      - name: Copie le plugin et installe ses dependances de production
+        run: |
+          docker exec glpi mkdir -p /var/www/glpi/plugins/grcmanager
+          docker cp ./. glpi:/var/www/glpi/plugins/grcmanager
+          docker exec -u root glpi chown -R www-data:www-data /var/www/glpi/plugins/grcmanager
+          docker exec glpi sh -c '
+            export COMPOSER_HOME=/tmp/composer-home
+            mkdir -p "$COMPOSER_HOME"
+            cd /tmp
+            php -r "copy(\"https://getcomposer.org/installer\", \"composer-setup.php\");"
+            php composer-setup.php --install-dir=/tmp --filename=composer.phar
+            cd /var/www/glpi/plugins/grcmanager
+            php /tmp/composer.phar install --no-interaction --prefer-dist --no-dev
+          '
+
+      - name: Installe, active puis desinstalle le plugin (cycle complet), puis le reinstalle
+        run: |
+          docker exec glpi php bin/console plugin:install grcmanager --username=glpi --no-interaction
+          docker exec glpi php bin/console plugin:activate grcmanager --no-interaction
+          docker exec glpi php bin/console plugin:deactivate grcmanager --no-interaction
+          docker exec glpi php bin/console plugin:uninstall grcmanager --no-interaction
+          docker exec glpi php bin/console plugin:install grcmanager --username=glpi --no-interaction
+          docker exec glpi php bin/console plugin:activate grcmanager --no-interaction
+
+      - name: Suite d'integration sur GLPI 12
+        # Dependances de dev APRES toutes les commandes console : elles embarquent leur propre
+        # symfony/console, incompatible avec celui de GLPI 12 (collision d'autoload constatee en
+        # local, la console GLPI planterait).
+        run: |
+          docker exec glpi sh -c '
+            export COMPOSER_HOME=/tmp/composer-home
+            cd /var/www/glpi/plugins/grcmanager
+            php /tmp/composer.phar install --no-interaction --prefer-dist
+            php vendor/bin/phpunit -c phpunit-integration.xml.dist
+          '
+
+      - name: Logs GLPI (en cas d'echec)
+        if: failure()
+        run: docker logs glpi --tail 200

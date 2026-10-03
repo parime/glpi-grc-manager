@@ -44,7 +44,7 @@ final class SecurityIncidentModuleConfig
 
         $flags = self::DEFAULTS;
 
-        foreach ($DB->request(self::TABLE) as $row) {
+        foreach ($DB->request(['FROM' => self::TABLE]) as $row) {
             foreach (array_keys(self::DEFAULTS) as $key) {
                 $flags[$key] = !empty($row[$key]);
             }

@@ -94,8 +94,8 @@ les audits/CAPA, avec une capture d'écran réelle par étape (disponible en fra
 
 ## Compatibilité cible
 
-- GLPI 11.x
-- PHP selon la matrice de compatibilité GLPI 11 (PHP 8.2 minimum)
+- GLPI 11.x et GLPI 12.x (un seul paquet pour les deux versions)
+- PHP selon la matrice de compatibilité de la version de GLPI utilisée (PHP 8.2 minimum)
 
 ## Licence
 

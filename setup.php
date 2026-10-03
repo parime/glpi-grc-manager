@@ -27,7 +27,8 @@ require_once __DIR__ . '/vendor/autoload.php';
 
 define('PLUGIN_GRCMANAGER_VERSION', '2.1.0');
 define('PLUGIN_GRCMANAGER_MIN_GLPI', '11.0.0');
-define('PLUGIN_GRCMANAGER_MAX_GLPI', '11.99.99');
+// GLPI 11 and 12 from a single code base (see src/Compatibility/).
+define('PLUGIN_GRCMANAGER_MAX_GLPI', '12.99.99');
 // Relevé de 8.1.0 à 8.2.0 en v2.0.0 : exigence héritée du module Incidents de sécurité absorbé
 // depuis glpi-security-incidents (ROADMAP.md "Version 2.0"), qui exigeait déjà PHP 8.2 minimum.
 define('PLUGIN_GRCMANAGER_MIN_PHP', '8.2.0');

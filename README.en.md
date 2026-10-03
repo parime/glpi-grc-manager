@@ -91,8 +91,8 @@ with a real screenshot for every step (available in French and English).
 
 ## Target compatibility
 
-- GLPI 11.x
-- PHP per the GLPI 11 compatibility matrix (PHP 8.2 minimum)
+- GLPI 11.x and GLPI 12.x (a single package for both versions)
+- PHP per the compatibility matrix of the GLPI version in use (PHP 8.2 minimum)
 
 ## License
 
