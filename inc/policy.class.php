@@ -15,6 +15,7 @@
  * -------------------------------------------------------------------------
  */
 
+use GlpiPlugin\Grcmanager\Compatibility\Base\PolicyBase;
 use GlpiPlugin\Grcmanager\Services\Policy\PolicyLifecycle;
 use GlpiPlugin\Grcmanager\Services\Policy\PolicyReviewReminderService;
 
@@ -34,10 +35,8 @@ use GlpiPlugin\Grcmanager\Services\Policy\PolicyReviewReminderService;
  * 11 core (src/Computer.php's own defineTabs(), src/Document_Item.php, src/Document.php). Adding
  * a new file-storage mechanism of this plugin's own was explicitly out of scope for this issue.
  */
-class PluginGrcmanagerPolicy extends CommonDBTM
+class PluginGrcmanagerPolicy extends PolicyBase
 {
-    use \GlpiPlugin\Grcmanager\Compatibility\HasRightname;
-
     public const RIGHTNAME = 'plugin_grcmanager';
 
     /**

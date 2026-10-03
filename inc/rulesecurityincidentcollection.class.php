@@ -15,6 +15,8 @@
  * -------------------------------------------------------------------------
  */
 
+use GlpiPlugin\Grcmanager\Compatibility\Base\RuleSecurityIncidentCollectionBase;
+
 /**
  * Required, not optional — same class of surprise as `PluginGrcmanagerSecurityIncidentCost`/
  * `PluginGrcmanagerSecurityIncidentTemplate` (see their own docblocks):
@@ -28,11 +30,8 @@
  * (`Plugin::registerClass()` in setup.php makes this itemtype discoverable there) if that
  * capability turns out to be wanted, without any further code change.
  */
-class RulePluginGrcmanagerSecurityIncidentCollection extends RuleCommonITILObjectCollection
+class RulePluginGrcmanagerSecurityIncidentCollection extends RuleSecurityIncidentCollectionBase
 {
-    use \GlpiPlugin\Grcmanager\Compatibility\HasRightname;
-    use \GlpiPlugin\Grcmanager\Compatibility\HasMenuOption;
-
     public const RIGHTNAME = 'rule_grcmanager_securityincident';
     public const MENU_OPTION = 'securityincident';
 

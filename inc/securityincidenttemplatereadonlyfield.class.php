@@ -15,14 +15,14 @@
  * -------------------------------------------------------------------------
  */
 
+use GlpiPlugin\Grcmanager\Compatibility\Base\SecurityIncidentTemplateReadonlyFieldBase;
+
 /**
  * Required by `ITILTemplate` (naming-convention resolved) — same minimal shape as GLPI core's own
  * `ChangeTemplateReadonlyField`.
  */
-class PluginGrcmanagerSecurityIncidentTemplateReadonlyField extends ITILTemplateReadonlyField
+class PluginGrcmanagerSecurityIncidentTemplateReadonlyField extends SecurityIncidentTemplateReadonlyFieldBase
 {
-    use \GlpiPlugin\Grcmanager\Compatibility\HasChildItemLink;
-
     public const ITEMTYPE = PluginGrcmanagerSecurityIncidentTemplate::class;
     public const ITEMS_ID = 'securityincidenttemplates_id';
 

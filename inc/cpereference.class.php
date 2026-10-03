@@ -15,6 +15,8 @@
  * -------------------------------------------------------------------------
  */
 
+use GlpiPlugin\Grcmanager\Compatibility\Base\CpeReferenceBase;
+
 /**
  * One CPE identifier manually declared as belonging to a PluginGrcmanagerCanonicalProduct —
  * several per product, managed inline on that product's own form (see
@@ -24,10 +26,8 @@
  * Uses PluginGrcmanagerCanonicalProduct's own right rather than a dedicated one: a CPE reference
  * has no meaningful access boundary of its own, separate from the product it documents.
  */
-class PluginGrcmanagerCpeReference extends CommonDBTM
+class PluginGrcmanagerCpeReference extends CpeReferenceBase
 {
-    use \GlpiPlugin\Grcmanager\Compatibility\HasRightname;
-
     public const RIGHTNAME = 'plugin_grcmanager';
 
     public static function getTable($classname = null)

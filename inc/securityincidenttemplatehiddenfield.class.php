@@ -15,14 +15,14 @@
  * -------------------------------------------------------------------------
  */
 
+use GlpiPlugin\Grcmanager\Compatibility\Base\SecurityIncidentTemplateHiddenFieldBase;
+
 /**
  * Required by `ITILTemplate` (naming-convention resolved, `$itiltype . 'TemplateHiddenField'`) —
  * same minimal shape as GLPI core's own `ChangeTemplateHiddenField`.
  */
-class PluginGrcmanagerSecurityIncidentTemplateHiddenField extends ITILTemplateHiddenField
+class PluginGrcmanagerSecurityIncidentTemplateHiddenField extends SecurityIncidentTemplateHiddenFieldBase
 {
-    use \GlpiPlugin\Grcmanager\Compatibility\HasChildItemLink;
-
     public const ITEMTYPE = PluginGrcmanagerSecurityIncidentTemplate::class;
     public const ITEMS_ID = 'securityincidenttemplates_id';
 

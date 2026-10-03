@@ -15,6 +15,7 @@
  * -------------------------------------------------------------------------
  */
 
+use GlpiPlugin\Grcmanager\Compatibility\Base\ControlBase;
 use GlpiPlugin\Grcmanager\Services\Control\ControlCrosswalkDefaults;
 
 /**
@@ -31,10 +32,8 @@ use GlpiPlugin\Grcmanager\Services\Control\ControlCrosswalkDefaults;
  * control's implementation (many-to-many via glpi_plugin_grcmanager_controls_risks, see
  * getLinkedRiskIds()/syncLinkedRisks() below).
  */
-class PluginGrcmanagerControl extends CommonDBTM
+class PluginGrcmanagerControl extends ControlBase
 {
-    use \GlpiPlugin\Grcmanager\Compatibility\HasRightname;
-
     public const RIGHTNAME = 'plugin_grcmanager';
 
     private const LINK_TABLE = 'glpi_plugin_grcmanager_controls_risks';

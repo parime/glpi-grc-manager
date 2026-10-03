@@ -15,6 +15,7 @@
  * -------------------------------------------------------------------------
  */
 
+use GlpiPlugin\Grcmanager\Compatibility\Base\ComplianceObligationBase;
 use GlpiPlugin\Grcmanager\Services\Compliance\ComplianceObligationRules;
 use GlpiPlugin\Grcmanager\Services\Risk\ReviewReminderService;
 
@@ -45,10 +46,8 @@ use GlpiPlugin\Grcmanager\Services\Risk\ReviewReminderService;
  * Voir GlpiPlugin\Grcmanager\Services\Compliance\ComplianceObligationRules pour la logique pure
  * (normalisation type/statut, zéro-ou-un lien, fenêtre de rappel de revue), testée en isolation.
  */
-class PluginGrcmanagerComplianceObligation extends CommonDBTM
+class PluginGrcmanagerComplianceObligation extends ComplianceObligationBase
 {
-    use \GlpiPlugin\Grcmanager\Compatibility\HasRightname;
-
     public const RIGHTNAME = 'plugin_grcmanager';
 
     /**

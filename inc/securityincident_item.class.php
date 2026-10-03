@@ -15,15 +15,14 @@
  * -------------------------------------------------------------------------
  */
 
+use GlpiPlugin\Grcmanager\Compatibility\Base\SecurityIncidentItemBase;
+
 /**
  * Polymorphic link (any GLPI asset itemtype) between a PluginGrcmanagerSecurityIncident and
  * the assets it affects — same minimal shape as GLPI core's own `Change_Item`.
  */
-class PluginGrcmanagerSecurityIncident_Item extends CommonItilObject_Item
+class PluginGrcmanagerSecurityIncident_Item extends SecurityIncidentItemBase
 {
-    use \GlpiPlugin\Grcmanager\Compatibility\HasItilActorRelation;
-    use \GlpiPlugin\Grcmanager\Compatibility\HasCheckItem2Rights;
-
     public const ITEMTYPE_1 = PluginGrcmanagerSecurityIncident::class;
     public const ITEMS_ID_1 = 'plugin_grcmanager_securityincidents_id';
     public const ITEMTYPE_2 = 'itemtype';

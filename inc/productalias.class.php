@@ -15,6 +15,8 @@
  * -------------------------------------------------------------------------
  */
 
+use GlpiPlugin\Grcmanager\Compatibility\Base\ProductAliasBase;
+
 /**
  * One GLPI software name (the exact string as it appears in `glpi_softwares.name` on this
  * instance's inventory) manually declared as an alias of a PluginGrcmanagerCanonicalProduct —
@@ -29,10 +31,8 @@
  * Uses PluginGrcmanagerCanonicalProduct's own right rather than a dedicated one: a product alias
  * has no meaningful access boundary of its own, separate from the product it documents.
  */
-class PluginGrcmanagerProductAlias extends CommonDBTM
+class PluginGrcmanagerProductAlias extends ProductAliasBase
 {
-    use \GlpiPlugin\Grcmanager\Compatibility\HasRightname;
-
     public const RIGHTNAME = 'plugin_grcmanager';
 
     public static function getTable($classname = null)

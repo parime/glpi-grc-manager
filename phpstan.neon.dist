@@ -86,6 +86,8 @@ parameters:
         - src/Services/Cve/InventoryCveMatcher.php
         # GLPI 11/12 compatibility layer: depends on GLPI's runtime GLPI_VERSION constant and on
         # \Toolbox / Glpi\Toolbox\HttpClient (each only present in one GLPI version), same
-        # rationale as RiskMatrixConfig.php above. The trait loaders next to them stay in scope.
+        # rationale as RiskMatrixConfig.php above. Base/ holds the parents of the inc/ classes,
+        # which extend GLPI core classes (CommonDBTM, CommonITILObject...).
         - src/Compatibility/GlpiVersion.php
         - src/Compatibility/Http.php
+        - src/Compatibility/Base

@@ -15,6 +15,7 @@
  * -------------------------------------------------------------------------
  */
 
+use GlpiPlugin\Grcmanager\Compatibility\Base\SupplierRiskBase;
 use GlpiPlugin\Grcmanager\Services\Risk\ReviewReminderService;
 use GlpiPlugin\Grcmanager\Traits\RiskAssessmentTrait;
 
@@ -27,9 +28,8 @@ use GlpiPlugin\Grcmanager\Traits\RiskAssessmentTrait;
  * generic risk register (PluginGrcmanagerRisk): both share RiskAssessmentTrait so that scoring can
  * never drift between the two registers, see its docblock.
  */
-class PluginGrcmanagerSupplierRisk extends CommonDBTM
+class PluginGrcmanagerSupplierRisk extends SupplierRiskBase
 {
-    use \GlpiPlugin\Grcmanager\Compatibility\HasRightname;
     use RiskAssessmentTrait;
 
     public const RIGHTNAME = 'plugin_grcmanager';

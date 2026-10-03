@@ -15,14 +15,14 @@
  * -------------------------------------------------------------------------
  */
 
+use GlpiPlugin\Grcmanager\Compatibility\Base\SecurityIncidentTemplateMandatoryFieldBase;
+
 /**
  * Required by `ITILTemplate` (naming-convention resolved) — same minimal shape as GLPI core's own
  * `ChangeTemplateMandatoryField`.
  */
-class PluginGrcmanagerSecurityIncidentTemplateMandatoryField extends ITILTemplateMandatoryField
+class PluginGrcmanagerSecurityIncidentTemplateMandatoryField extends SecurityIncidentTemplateMandatoryFieldBase
 {
-    use \GlpiPlugin\Grcmanager\Compatibility\HasChildItemLink;
-
     public const ITEMTYPE = PluginGrcmanagerSecurityIncidentTemplate::class;
     public const ITEMS_ID = 'securityincidenttemplates_id';
 
