@@ -2132,7 +2132,8 @@ final class Installer
                 'notificationtemplates_id' => $templateId,
                 'language'                 => $language,
                 'subject'                  => $t['subject'],
-                'content_text'             => $t['ask'] . "\n\n##soa.comment##\n\n" . $t['link'] . $t['sep'] . '##soa.url##',
+                'content_text'             => $t['ask'] . "\n\n##soa.comment##\n\n"
+                    . $t['link'] . $t['sep'] . '##soa.url##',
                 'content_html'             => '<p>' . $t['ask'] . '</p><p>##soa.comment##</p>'
                     . '<p><a href="##soa.url##">' . $t['link'] . '</a></p>',
             ]);
