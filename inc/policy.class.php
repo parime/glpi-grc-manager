@@ -15,6 +15,7 @@
  * -------------------------------------------------------------------------
  */
 
+use GlpiPlugin\Grcmanager\Compatibility\Base\PolicyBase;
 use GlpiPlugin\Grcmanager\Services\Policy\PolicyLifecycle;
 use GlpiPlugin\Grcmanager\Services\Policy\PolicyReviewReminderService;
 
@@ -34,9 +35,9 @@ use GlpiPlugin\Grcmanager\Services\Policy\PolicyReviewReminderService;
  * 11 core (src/Computer.php's own defineTabs(), src/Document_Item.php, src/Document.php). Adding
  * a new file-storage mechanism of this plugin's own was explicitly out of scope for this issue.
  */
-class PluginGrcmanagerPolicy extends CommonDBTM
+class PluginGrcmanagerPolicy extends PolicyBase
 {
-    public static $rightname = 'plugin_grcmanager';
+    public const RIGHTNAME = 'plugin_grcmanager';
 
     /**
      * GLPI notification event name (see inc/notificationtargetpolicy.class.php and
@@ -54,6 +55,21 @@ class PluginGrcmanagerPolicy extends CommonDBTM
     public static function getTypeName($nb = 0)
     {
         return _n('Politique de sécurité', 'Politiques de sécurité', $nb, 'grcmanager');
+    }
+
+    /**
+     * This class' primary display column is `title`, not GLPI's default `name` (which this table
+     * doesn't even have). Front-page-bar bug found live: `front/policy.form.php` is this plugin's
+     * only front controller that calls `displayFullPageForItem()` (needed so the native
+     * "Documents" tab actually renders, see that file's own comment) — that path builds the page
+     * header/breadcrumb from `getNameField()`, so without this override it silently read a
+     * nonexistent `name` field and printed the literal string "N/A" instead of the policy's real
+     * title. Every sibling class here (Risk, Audit...) uses a plain `Html::header()` call instead,
+     * which never looks up a name field at all, so none of them needed this override.
+     */
+    public static function getNameField()
+    {
+        return 'title';
     }
 
     public static function getIcon()

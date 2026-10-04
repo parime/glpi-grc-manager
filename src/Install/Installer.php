@@ -11,6 +11,7 @@ use GlpiPlugin\Grcmanager\Services\Dashboard\DefaultDashboardService;
 use GlpiPlugin\Grcmanager\Services\DefaultSearchColumns;
 use GlpiPlugin\Grcmanager\Services\Incident\LegacySecurityIncidentMigrator;
 use GlpiPlugin\Grcmanager\Services\Incident\SecurityIncidentModuleConfig;
+use GlpiPlugin\Grcmanager\Services\Cve\NvdConfigDefaults;
 use GlpiPlugin\Grcmanager\Services\Risk\RiskMatrixDefaults;
 use Migration;
 use Notification;
@@ -43,6 +44,23 @@ final class Installer
 
     // Sprint 2 (matrice de risque administrable), same derivation rule.
     private const RISK_MATRIX_CONFIG_TABLE = 'glpi_plugin_grcmanager_riskmatrixconfig';
+
+    // Enrichissement CVE via NVD : réglages administrables (interrupteur, seuil d'alerte CVSS),
+    // même schéma mono-ligne (id=1) que RISK_MATRIX_CONFIG_TABLE ci-dessus.
+    private const NVD_CONFIG_TABLE = 'glpi_plugin_grcmanager_nvdconfig';
+
+    // Cache d'enrichissement NVD, une ligne par CVE (pas par référence d'incident : plusieurs
+    // incidents peuvent citer la même CVE, les données NVD ne dépendent que de l'identifiant),
+    // voir GlpiPlugin\Grcmanager\Services\Cve\NvdCveEnrichmentService.
+    private const CVE_ENRICHMENTS_TABLE = 'glpi_plugin_grcmanager_cveenrichments';
+
+    // Corrélation CPE des CVE avec le parc GLPI : catalogue de correspondance produit (cf.
+    // ROADMAP.md, PluginGrcmanagerCanonicalProduct et ses deux tables satellites ci-dessous).
+    private const CANONICAL_PRODUCTS_TABLE = 'glpi_plugin_grcmanager_canonicalproducts';
+
+    private const CPE_REFERENCES_TABLE = 'glpi_plugin_grcmanager_cpereferences';
+
+    private const PRODUCT_ALIASES_TABLE = 'glpi_plugin_grcmanager_productaliases';
 
     // Sprint 3 (Déclaration d'Applicabilité / SoA, clause 6.1.3), same derivation rule.
     private const CONTROLS_TABLE = 'glpi_plugin_grcmanager_controls';
@@ -204,6 +222,132 @@ final class Installer
                 'matrix'   => json_encode(RiskMatrixDefaults::MATRIX),
                 'date_mod' => date('Y-m-d H:i:s'),
             ]);
+        }
+
+        // Enrichissement CVE via NVD (cf. ROADMAP.md) : mêmes deux réglages que
+        // NvdConfigDefaults, seedés ici pour qu'une instance existante ne voie aucun changement de
+        // comportement tant qu'un administrateur n'active pas l'enrichissement (voir
+        // GlpiPlugin\Grcmanager\Services\Cve\NvdConfig, front/config.php).
+        if (!$DB->tableExists(self::NVD_CONFIG_TABLE)) {
+            $query = "CREATE TABLE `" . self::NVD_CONFIG_TABLE . "` (
+                `id` int {$keySign} NOT NULL AUTO_INCREMENT,
+                `enable_nvd_enrichment` tinyint NOT NULL DEFAULT 0,
+                `cvss_alert_threshold` decimal(3,1) NOT NULL DEFAULT 7.0,
+                `date_mod` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
+
+            $DB->doQuery($query) or die($DB->error());
+
+            $DB->insert(self::NVD_CONFIG_TABLE, [
+                'enable_nvd_enrichment' => (int) NvdConfigDefaults::ENABLE_NVD_ENRICHMENT,
+                'cvss_alert_threshold'  => NvdConfigDefaults::CVSS_ALERT_THRESHOLD,
+                'date_mod'              => date('Y-m-d H:i:s'),
+            ]);
+        }
+
+        // Cache d'enrichissement NVD lui-même (une ligne par CVE, jamais par référence
+        // d'incident) : `fetch_status` distingue explicitement "pas encore tenté"
+        // (pending), "récupéré avec succès" (ok), "NVD ne connaît pas cet identifiant"
+        // (not_found) et "l'appel a échoué" (error) - jamais un blanc silencieux qui
+        // masquerait laquelle de ces situations s'est produite (voir
+        // NvdCveEnrichmentService, même principe que EnvironmentalData chez le plugin
+        // jumeau assetsign-glpi : ne jamais inventer une donnée absente).
+        if (!$DB->tableExists(self::CVE_ENRICHMENTS_TABLE)) {
+            $query = "CREATE TABLE `" . self::CVE_ENRICHMENTS_TABLE . "` (
+                `id` int {$keySign} NOT NULL AUTO_INCREMENT,
+                `cve_id` varchar(20) NOT NULL,
+                `cvss_score` decimal(3,1) DEFAULT NULL,
+                `cvss_vector` varchar(255) DEFAULT NULL,
+                `severity` varchar(20) DEFAULT NULL,
+                `description` text,
+                `patch_links` text COMMENT 'JSON - liste de {url, tag}',
+                `affected_cpes` mediumtext COMMENT 'JSON - liste de CPE affectes (cf. NvdCveParser)',
+                `published_at` timestamp NULL DEFAULT NULL,
+                `fetched_at` timestamp NULL DEFAULT NULL,
+                `fetch_status` varchar(20) NOT NULL DEFAULT 'pending',
+                `date_creation` timestamp NULL DEFAULT NULL,
+                `date_mod` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `unicity_cve` (`cve_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
+
+            $DB->doQuery($query) or die($DB->error());
+        } elseif (!$DB->fieldExists(self::CVE_ENRICHMENTS_TABLE, 'affected_cpes')) {
+            // Corrélation CPE avec le parc (cf. ROADMAP.md) : ajoutée après la première version de
+            // cette table (enrichissement NVD seul) - une instance déjà installée doit recevoir la
+            // colonne sans perdre les données déjà enrichies.
+            $migration->addField(
+                self::CVE_ENRICHMENTS_TABLE,
+                'affected_cpes',
+                'mediumtext',
+                ['after' => 'patch_links', 'comment' => 'JSON - liste de CPE affectes (cf. NvdCveParser)']
+            );
+            $migration->migrationOneTable(self::CVE_ENRICHMENTS_TABLE);
+        } else {
+            // Élargit une colonne déjà créée en `text` par une version antérieure de cette
+            // migration (limite 64 Ko) vers `mediumtext` (16 Mo) : une CVE très largement diffusée
+            // (ex. Log4Shell, CVE-2021-44228) référence des centaines de CPE affectés chez de
+            // nombreux éditeurs downstream dans sa réponse NVD réelle, dépassant `text` de manière
+            // confirmée en conditions réelles (erreur SQL 1406 "Data too long"). `changeField` est
+            // sans risque à rappeler même si la colonne est déjà au bon type (ALTER TABLE... vers
+            // le même type, opération idempotente côté MySQL).
+            $migration->changeField(
+                self::CVE_ENRICHMENTS_TABLE,
+                'affected_cpes',
+                'affected_cpes',
+                'mediumtext',
+                ['comment' => 'JSON - liste de CPE affectes (cf. NvdCveParser)']
+            );
+            $migration->migrationOneTable(self::CVE_ENRICHMENTS_TABLE);
+        }
+
+        // Corrélation CPE des CVE avec le parc GLPI (cf. ROADMAP.md) : catalogue de correspondance
+        // produit, voir PluginGrcmanagerCanonicalProduct/CpeReference/ProductAlias et
+        // GlpiPlugin\Grcmanager\Services\Cve\InventoryCveMatcher. Le produit canonique est le seul
+        // des trois avec une entree de menu ; les deux tables satellites sont gerees en ligne sur
+        // son propre formulaire, meme convention que OBJECTIVE_MEASUREMENTS_TABLE ci-dessus (pas
+        // d'entree de menu pour une simple table enfant).
+        if (!$DB->tableExists(self::CANONICAL_PRODUCTS_TABLE)) {
+            $query = "CREATE TABLE `" . self::CANONICAL_PRODUCTS_TABLE . "` (
+                `id` int {$keySign} NOT NULL AUTO_INCREMENT,
+                `manufacturer` varchar(255) NOT NULL,
+                `product` varchar(255) NOT NULL,
+                `date_creation` timestamp NULL DEFAULT NULL,
+                `date_mod` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `unicity_product` (`manufacturer`, `product`)
+            ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
+
+            $DB->doQuery($query) or die($DB->error());
+        }
+
+        if (!$DB->tableExists(self::CPE_REFERENCES_TABLE)) {
+            $query = "CREATE TABLE `" . self::CPE_REFERENCES_TABLE . "` (
+                `id` int {$keySign} NOT NULL AUTO_INCREMENT,
+                `cpe` varchar(255) NOT NULL,
+                `plugin_grcmanager_canonicalproducts_id` int {$keySign} NOT NULL,
+                `date_creation` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `unicity_cpe` (`cpe`),
+                KEY `canonicalproducts_id` (`plugin_grcmanager_canonicalproducts_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
+
+            $DB->doQuery($query) or die($DB->error());
+        }
+
+        if (!$DB->tableExists(self::PRODUCT_ALIASES_TABLE)) {
+            $query = "CREATE TABLE `" . self::PRODUCT_ALIASES_TABLE . "` (
+                `id` int {$keySign} NOT NULL AUTO_INCREMENT,
+                `alias` varchar(255) NOT NULL,
+                `plugin_grcmanager_canonicalproducts_id` int {$keySign} NOT NULL,
+                `date_creation` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `unicity_alias` (`alias`),
+                KEY `canonicalproducts_id` (`plugin_grcmanager_canonicalproducts_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
+
+            $DB->doQuery($query) or die($DB->error());
         }
 
         // Sprint 3 (SoA, clause 6.1.3) : les 93 mesures Annexe A ISO/IEC 27001:2022, une ligne par
@@ -1121,6 +1265,23 @@ final class Installer
             ]
         );
 
+        // Enrichissement CVE via NVD : rattrape les CVE jamais enrichies avec succès (pending/
+        // error/not_found - y compris une CVE ajoutée avant que l'admin n'active la
+        // fonctionnalité) et rafraîchit celles dont la dernière récupération date de plus de 7
+        // jours (une CVE encore "en cours d'analyse" chez NVD peut recevoir son score plus tard,
+        // voir NvdCveEnrichmentService::refreshDue()). No-op silencieux si l'enrichissement est
+        // désactivé (voir PluginGrcmanagerSecurityIncidentCve::cronRefreshNvdData()).
+        CronTask::Register(
+            'PluginGrcmanagerSecurityIncidentCve',
+            'refreshnvddata',
+            DAY_TIMESTAMP,
+            [
+                'comment' => 'Récupère/rafraîchit le score CVSS, la sévérité et les liens de '
+                    . 'correctif de chaque CVE suivie, depuis le NVD',
+                'mode'    => CronTask::MODE_EXTERNAL,
+            ]
+        );
+
         // Sprint 5 (risques fournisseurs/tiers) : même mécanisme de rappel de revue que le
         // registre générique ci-dessus (voir GlpiPlugin\Grcmanager\Services\Risk\ReviewReminderService,
         // partagée par les deux tâches Cron), mais une tâche dédiée : le modèle de tâche Cron de
@@ -1882,6 +2043,11 @@ final class Installer
         $migration->dropTable(self::RISKS_TABLE);
         $migration->dropTable(self::SUPPLIER_RISKS_TABLE);
         $migration->dropTable(self::RISK_MATRIX_CONFIG_TABLE);
+        $migration->dropTable(self::NVD_CONFIG_TABLE);
+        $migration->dropTable(self::CVE_ENRICHMENTS_TABLE);
+        $migration->dropTable(self::CPE_REFERENCES_TABLE);
+        $migration->dropTable(self::PRODUCT_ALIASES_TABLE);
+        $migration->dropTable(self::CANONICAL_PRODUCTS_TABLE);
         $migration->dropTable(self::CONTROLS_RISKS_TABLE);
         $migration->dropTable(self::CONTROLS_TABLE);
         $migration->dropTable(self::AUDITS_CONTROLS_TABLE);

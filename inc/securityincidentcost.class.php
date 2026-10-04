@@ -15,6 +15,8 @@
  * -------------------------------------------------------------------------
  */
 
+use GlpiPlugin\Grcmanager\Compatibility\Base\SecurityIncidentCostBase;
+
 /**
  * Required, not optional — same class of surprise as `PluginGrcmanagerSecurityIncidentTemplate`
  * (see its own docblock): `NotificationTargetCommonITILObject::getDataForObject()` unconditionally
@@ -24,11 +26,10 @@
  * `Class "PluginGrcmanagerSecurityIncidentCost" not found`. Same minimal shape as GLPI
  * core's own `ChangeCost`.
  */
-class PluginGrcmanagerSecurityIncidentCost extends CommonITILCost
+class PluginGrcmanagerSecurityIncidentCost extends SecurityIncidentCostBase
 {
-    public static $itemtype = PluginGrcmanagerSecurityIncident::class;
-
-    public static $items_id = 'plugin_grcmanager_securityincidents_id';
+    public const ITEMTYPE = PluginGrcmanagerSecurityIncident::class;
+    public const ITEMS_ID = 'plugin_grcmanager_securityincidents_id';
 
     public static function canCreate(): bool
     {

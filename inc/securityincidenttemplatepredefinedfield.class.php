@@ -15,19 +15,20 @@
  * -------------------------------------------------------------------------
  */
 
+use GlpiPlugin\Grcmanager\Compatibility\Base\SecurityIncidentTemplatePredefinedFieldBase;
+
 /**
  * Same minimal shape as GLPI core's own `ChangeTemplatePredefinedField`.
  */
-class PluginGrcmanagerSecurityIncidentTemplatePredefinedField extends ITILTemplatePredefinedField
+class PluginGrcmanagerSecurityIncidentTemplatePredefinedField extends SecurityIncidentTemplatePredefinedFieldBase
 {
+    public const ITEMTYPE = PluginGrcmanagerSecurityIncidentTemplate::class;
+    public const ITEMS_ID = 'securityincidenttemplates_id';
+
     public static function getTable($classname = null)
     {
         return 'glpi_plugin_grcmanager_secincidenttemplates_predefinedfields';
     }
-
-    public static $itemtype = PluginGrcmanagerSecurityIncidentTemplate::class;
-
-    public static $items_id = 'securityincidenttemplates_id';
 
     public static $itiltype = PluginGrcmanagerSecurityIncident::class;
 

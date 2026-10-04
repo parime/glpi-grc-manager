@@ -31,12 +31,28 @@ Html::header(
 
 // Self-explanatory intro for a non-technical reader landing on a bare "Contrôles Annexe A" list:
 // names the ISO clause and the SoA acronym once, up front, rather than nowhere at all.
-echo '<div class="alert alert-info d-flex align-items-center mb-2">';
-echo '<i class="ti ti-info-circle me-2"></i>';
+echo '<div class="alert alert-info d-flex align-items-center justify-content-between mb-2">';
+echo '<div><i class="ti ti-info-circle me-2"></i>';
 echo __(
     'Déclaration d\'applicabilité (SoA) - clause 6.1.3 ISO/IEC 27001:2022, Annexe A (93 mesures).',
     'grcmanager'
 );
+echo '</div>';
+// ROADMAP.md "Version 1.5" (rapports exportables pour audit externe) : export PDF mis en forme
+// (résumé + détail), en complément de l'export CSV/XLSX déjà natif de Search::showList() ci-dessous
+// (menu "Exporter" au-dessus de la liste, aucun code plugin nécessaire pour celui-ci).
+global $CFG_GLPI;
+echo '<div class="d-flex gap-2">';
+echo '<a href="' . htmlescape($CFG_GLPI['root_doc'] . '/plugins/grcmanager/front/control.report.php') . '" '
+    . 'class="btn btn-outline-secondary btn-sm" target="_blank">';
+echo '<i class="ti ti-file-type-pdf me-1"></i>' . __('Export PDF', 'grcmanager') . '</a>';
+// ROADMAP.md "Version 1.5" (import/export de la SoA au format standard) : CSV dédié
+// (code/applicabilité/statut/justification), pensé pour être réimporté tel quel après
+// modification dans un tableur — distinct de l'export brut de Search::showList() ci-dessous.
+echo '<a href="' . htmlescape($CFG_GLPI['root_doc'] . '/plugins/grcmanager/front/control.csv.php') . '" '
+    . 'class="btn btn-outline-secondary btn-sm">';
+echo '<i class="ti ti-file-spreadsheet me-1"></i>' . __('Import/export CSV', 'grcmanager') . '</a>';
+echo '</div>';
 echo '</div>';
 
 // Same URL-driven search fix as front/risk.php (Search::showList()'s $params must be pre-merged

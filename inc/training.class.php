@@ -16,6 +16,7 @@
  */
 
 use Glpi\DBAL\QueryExpression;
+use GlpiPlugin\Grcmanager\Compatibility\Base\TrainingBase;
 use GlpiPlugin\Grcmanager\Services\Training\TrainingRenewalService;
 
 /**
@@ -34,9 +35,9 @@ use GlpiPlugin\Grcmanager\Services\Training\TrainingRenewalService;
  * by the dashboard card (DashboardCardService::trainingOverdueRenewalCount()) and the daily Cron
  * reminder below (cronRenewaldue()), so the two can never drift apart on what counts as overdue.
  */
-class PluginGrcmanagerTraining extends CommonDBTM
+class PluginGrcmanagerTraining extends TrainingBase
 {
-    public static $rightname = 'plugin_grcmanager';
+    public const RIGHTNAME = 'plugin_grcmanager';
 
     private const PARTICIPANTS_TABLE = 'glpi_plugin_grcmanager_trainings_users';
 

@@ -15,17 +15,16 @@
  * -------------------------------------------------------------------------
  */
 
+use GlpiPlugin\Grcmanager\Compatibility\Base\SecurityIncidentGroupBase;
+
 /**
  * Relation between PluginGrcmanagerSecurityIncident and Group — same minimal shape as GLPI
  * core's own `Change_Group`.
  */
-class PluginGrcmanagerSecurityIncident_Group extends CommonITILActor
+class PluginGrcmanagerSecurityIncident_Group extends SecurityIncidentGroupBase
 {
-    public static $itemtype_1 = PluginGrcmanagerSecurityIncident::class;
-
-    public static $items_id_1 = 'plugin_grcmanager_securityincidents_id';
-
-    public static $itemtype_2 = Group::class;
-
-    public static $items_id_2 = 'groups_id';
+    public const ITEMTYPE_1 = PluginGrcmanagerSecurityIncident::class;
+    public const ITEMS_ID_1 = 'plugin_grcmanager_securityincidents_id';
+    public const ITEMTYPE_2 = Group::class;
+    public const ITEMS_ID_2 = 'groups_id';
 }

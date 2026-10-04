@@ -47,8 +47,19 @@ Objectif : une plateforme GRC/ISO 27001 générique fonctionnelle de bout en bou
 
 ## Version 1.5
 
-- Rapports exportables (PDF, CSV) pour audit externe
-- Import/export de la SoA au format standard
+- **Rapports exportables (PDF, CSV) pour audit externe** — **livré** : bouton « Export PDF » sur
+  les 3 écrans de registre concernés (Contrôles/SoA, Risques, Audits) générant un document PDF
+  mis en forme (résumé chiffré puis détail) — Déclaration d'Applicabilité complète (93 contrôles),
+  registre de risques, ou programme d'audit interne et CAPA. Le CSV n'a nécessité aucun
+  développement : chaque liste dispose déjà nativement du menu d'export CSV/XLSX/ODS de GLPI
+  (`Search::showList()`), vérifié toujours fonctionnel.
+- **Import/export de la SoA au format standard** — **livré** : écran dédié
+  (`front/control.csv.php`, lien "Import/export CSV" sur la liste des contrôles) — export CSV
+  propre (code, thème, intitulé, applicabilité, état de mise en œuvre, justification) pensé pour
+  être réimporté tel quel après modification dans un tableur, et import réel qui applique
+  chaque ligne indépendamment (une ligne rejetée n'empêche pas les autres) sans jamais créer ni
+  supprimer de contrôle — un code inconnu du catalogue fixe (93 contrôles) est un rejet explicite,
+  jamais une création silencieuse.
 - Workflow d'approbation multi-niveaux pour l'acceptation de risque
 - API REST publique documentée (OpenAPI)
 
@@ -74,11 +85,39 @@ Objectif : une plateforme GRC/ISO 27001 générique fonctionnelle de bout en bou
   formation évaluée (quiz, test pratique...) peut être marquée réussie ou échouée, sans affecter
   les formations suivies sans évaluation formelle.
 
-## Version 2.2 (à venir)
+## Version 2.2 (livrée)
 
-- Cartographie des risques (heatmap probabilité x impact interactive)
-- Bibliothèque de contrôles étendue (ISO 27002, NIST CSF, CIS Controls) en complément de
-  l'Annexe A ISO 27001
+- ~~Cartographie des risques (heatmap probabilité x impact interactive)~~ — **livré** : nouvel
+  écran (`front/riskheatmap.php`, accessible depuis un bouton sur la liste des risques) affichant
+  une grille probabilité x impact, chaque cellule colorée selon le niveau de risque configuré
+  (`front/config.php`, la même matrice administrable que le Sprint 2) et affichant le nombre de
+  risques qui y tombent. Chaque cellule est cliquable et ouvre la liste des risques filtrée sur
+  cette combinaison exacte.
+- **Enrichissement CVE via NVD** — **livré** : chaque CVE suivie sur un incident de sécurité peut
+  être enrichie automatiquement (score CVSS, sévérité, description, liens de correctif/avis
+  éditeur) depuis la base publique NVD (National Vulnerability Database), avec mise en avant
+  visuelle des CVE au-delà d'un seuil de score configurable. Désactivé par défaut
+  (`front/config.php`), rafraîchi automatiquement chaque jour et manuellement à la demande. Aucune
+  donnée inventée : un score ou un correctif absent s'affiche comme explicitement en attente/non
+  trouvé, jamais comme une valeur par défaut.
+- **Bibliothèque de contrôles étendue** — **livré** : nouvel écran « Référentiels » avec deux
+  bibliothèques de référence consultables en complément de l'Annexe A — NIST CSF 2.0 (6 fonctions,
+  22 catégories, 106 sous-catégories) et CIS Controls v8 (18 contrôles, 153 sauvegardes), texte
+  intégral officiel. Chaque contrôle Annexe A ayant une correspondance publiée par le NIST
+  l'affiche directement sur son propre formulaire (ex. A.8.9 ↔ NIST CSF PR.PS-01). Pas de
+  bibliothèque ISO 27002 séparée : depuis 2022, l'Annexe A ISO 27001 EST la liste normative des
+  contrôles ISO 27002, déjà couverte par l'écran Contrôles existant. Pas de correspondance CIS
+  Controls vers l'Annexe A pour l'instant : le document officiel de correspondance de CIS
+  nécessite la création d'un compte, non récupérable automatiquement — voir le docblock de
+  `ControlCrosswalkDefaults`.
+- **Corrélation des CVE avec le parc GLPI** — **livré** : nouvel écran « Produits (corrélation
+  CVE) » où un admin déclare des produits canoniques (éditeur + produit), chacun rattaché à un ou
+  plusieurs identifiants CPE (tels que rapportés par le NVD) et à un ou plusieurs alias de nom de
+  logiciel (correspondance exacte avec `glpi_softwares.name`, jamais approximative). L'onglet CVE
+  d'un incident affiche désormais, pour toute CVE enrichie dont le NVD référence des CPE affectés,
+  les actifs du parc potentiellement concernés (calculé à la demande, jamais persisté), avec
+  évaluation de version à 3 états (concerné / non vérifiable / exclu par version). Aucune donnée
+  inventée : un logiciel installé sans alias déclaré est ignoré plutôt que deviné.
 
 ## Suivi
 

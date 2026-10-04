@@ -15,6 +15,8 @@
  * -------------------------------------------------------------------------
  */
 
+use GlpiPlugin\Grcmanager\Compatibility\Base\AuditBase;
+
 /**
  * Internal audit program (ISO 27001 clause 9.2): one row per planned/performed internal audit.
  * Scoped either to specific Annex A controls (many-to-many via
@@ -28,9 +30,9 @@
  * to this audit (inc/nonconformity.class.php), the "finding -> corrective/preventive action ->
  * closure" workflow ISO 27001 clause 10 requires.
  */
-class PluginGrcmanagerAudit extends CommonDBTM
+class PluginGrcmanagerAudit extends AuditBase
 {
-    public static $rightname = 'plugin_grcmanager';
+    public const RIGHTNAME = 'plugin_grcmanager';
 
     private const LINK_TABLE = 'glpi_plugin_grcmanager_audits_controls';
 

@@ -15,17 +15,16 @@
  * -------------------------------------------------------------------------
  */
 
+use GlpiPlugin\Grcmanager\Compatibility\Base\SecurityIncidentUserBase;
+
 /**
  * Relation between PluginGrcmanagerSecurityIncident and User (requester/observer/assign) —
  * same minimal shape as GLPI core's own `Change_User`.
  */
-class PluginGrcmanagerSecurityIncident_User extends CommonITILActor
+class PluginGrcmanagerSecurityIncident_User extends SecurityIncidentUserBase
 {
-    public static $itemtype_1 = PluginGrcmanagerSecurityIncident::class;
-
-    public static $items_id_1 = 'plugin_grcmanager_securityincidents_id';
-
-    public static $itemtype_2 = User::class;
-
-    public static $items_id_2 = 'users_id';
+    public const ITEMTYPE_1 = PluginGrcmanagerSecurityIncident::class;
+    public const ITEMS_ID_1 = 'plugin_grcmanager_securityincidents_id';
+    public const ITEMTYPE_2 = User::class;
+    public const ITEMS_ID_2 = 'users_id';
 }

@@ -15,6 +15,7 @@
  * -------------------------------------------------------------------------
  */
 
+use GlpiPlugin\Grcmanager\Compatibility\Base\AssetClassificationBase;
 use GlpiPlugin\Grcmanager\Services\Classification\ClassificationLevels;
 
 /**
@@ -34,9 +35,9 @@ use GlpiPlugin\Grcmanager\Services\Classification\ClassificationLevels;
  * Plugin::registerClass()/addtabon mechanism already used for the Sprint-#25 "Risques" reverse tab,
  * applied here for a second, independent tab.
  */
-class PluginGrcmanagerAssetClassification extends CommonDBTM
+class PluginGrcmanagerAssetClassification extends AssetClassificationBase
 {
-    public static $rightname = 'plugin_grcmanager';
+    public const RIGHTNAME = 'plugin_grcmanager';
 
     public static function getTable($classname = null)
     {

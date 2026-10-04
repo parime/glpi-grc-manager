@@ -15,6 +15,7 @@
  * -------------------------------------------------------------------------
  */
 
+use GlpiPlugin\Grcmanager\Compatibility\Base\ObjectiveBase;
 use GlpiPlugin\Grcmanager\Services\Objective\ObjectiveStatuses;
 
 /**
@@ -46,9 +47,9 @@ use GlpiPlugin\Grcmanager\Services\Objective\ObjectiveStatuses;
  * to show "trajectory" without a new charting dependency, consistent with every other manual-HTML
  * form in this plugin (TECH_DEBT.md Sprint 1).
  */
-class PluginGrcmanagerObjective extends CommonDBTM
+class PluginGrcmanagerObjective extends ObjectiveBase
 {
-    public static $rightname = 'plugin_grcmanager';
+    public const RIGHTNAME = 'plugin_grcmanager';
 
     public static function getTable($classname = null)
     {

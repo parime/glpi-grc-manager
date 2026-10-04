@@ -228,15 +228,15 @@ Journal des limites connues et compromis assumés, tenu à jour à chaque sprint
   ligne. À réévaluer si le volume réel d'actifs par type dans une instance de production rend cette
   liste impraticable (voir aussi la limitation similaire déjà assumée pour
   `PluginGrcmanagerControl::showForm()`/tous les risques du registre).
-- **Onglet retour "Risques" posé sur une liste FIXE d'itemtypes (`LinkableItemtypes::
-  DEFAULT_ITEMTYPES`), pas sur le résultat dynamique de `PluginGrcmanagerRisk::
-  getLinkableItemtypes()`.** Un actif personnalisé actif reste bien liable depuis le formulaire du
-  risque (`getLinkableItemtypes()` l'inclut), mais ne reçoit pas l'onglet "Risques" sur sa propre
-  fiche : `Plugin::registerClass()`/`addtabon` s'exécute au chargement du plugin (listener
-  `InitializePlugins`), avant que GLPI ne charge les définitions d'actifs personnalisés en mémoire
-  (listener `CustomObjectsBoot`, plus tardif) - même limitation de séquencement déjà documentée par
-  le plugin jumeau assetsign-glpi pour sa propre `Config::getAllManageableItemtypes()`. Assumé pour
-  cette version plutôt que de risquer un enregistrement d'onglet dynamique non validé en direct.
+- ~~Onglet retour "Risques" posé sur une liste fixe d'itemtypes~~ **Corrigé (issue #88) :**
+  `setup.php` appelle désormais directement `PluginGrcmanagerRisk::getLinkableItemtypes()` (qui
+  interroge la table SQL `glpi_assets_assetdefinitions`) pour construire la liste `addtabon`, au
+  lieu de `LinkableItemtypes::DEFAULT_ITEMTYPES` (liste fixe). Même contournement, déjà éprouvé en
+  production, que `Config::getAllManageableItemtypes()` du plugin jumeau assetsign-glpi, qui
+  l'appelle lui aussi directement depuis son propre `plugin_init()` : la table SQL est disponible
+  bien plus tôt (connexion DB) que le cache mémoire `Glpi\Asset\AssetDefinitionManager`
+  (listener `CustomObjectsBoot`, plus tardif que `InitializePlugins`), donc rien n'empêchait en
+  réalité de l'interroger directement depuis `plugin_init_grcmanager()`.
 - **Aucune colonne "actifs liés" dans `PluginGrcmanagerRisk::rawSearchOptions()`.** Une relation à
   plusieurs actifs polymorphes (many-to-many, cible variable selon la ligne) ne correspond à aucun
   des `datatype` natifs du moteur de recherche GLPI (`dropdown`, `itemlink`...), tous conçus pour
@@ -274,14 +274,11 @@ Journal des limites connues et compromis assumés, tenu à jour à chaque sprint
   ne verrait donc pas le formulaire alors qu'il pourrait légitimement classifier un actif vierge.
   Assumé pour rester simple (une seule condition d'affichage) plutôt que de dupliquer la logique
   add-vs-update du contrôleur dans l'onglet lui-même.
-- **Onglet posé sur la même liste FIXE d'itemtypes que l'issue #25**
-  (`LinkableItemtypes::DEFAULT_ITEMTYPES`), pas sur `PluginGrcmanagerRisk::getLinkableItemtypes()`
-  (qui ajoute aussi les actifs personnalisés actifs) : exactement la même limitation de
-  séquencement `InitializePlugins`/`CustomObjectsBoot` déjà documentée pour l'onglet "Risques" de
-  l'issue #25 ci-dessus, voir son propre point pour le détail complet. Un actif personnalisé actif
-  reste malgré tout classifiable *si* un risque le lie déjà (le multi-select de
-  `PluginGrcmanagerRisk::showForm()` l'inclut), mais ne reçoit pas son propre onglet "Classification
-  C/I/D" sur sa fiche.
+- ~~Onglet posé sur la même liste fixe d'itemtypes que l'issue #25~~ **Corrigé (issue #88)** en
+  même temps que l'onglet "Risques" de l'issue #25 ci-dessus (même appel à
+  `PluginGrcmanagerRisk::getLinkableItemtypes()`, voir son propre point pour le détail complet) :
+  un actif personnalisé actif reçoit désormais lui aussi son propre onglet "Classification C/I/D"
+  sur sa fiche.
 - **La suggestion douce sur le champ Impact (`hasHighClassificationAmongLinkedAssets()`) refait une
   requête par actif lié**, pas une seule requête groupée : cohérent avec `getLinkedAssets()`
   lui-même qui fait déjà une requête par actif pour résoudre son nom, et avec la limitation déjà

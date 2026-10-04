@@ -1075,3 +1075,389 @@ msgstr "Overdue risk treatment actions"
 
 msgid "Risques à mitiger/transférer sans plan de traitement"
 msgstr "Risks to mitigate/transfer with no treatment plan"
+
+msgid "Cartographie des risques"
+msgstr "Risk heatmap"
+
+msgid "Cliquez sur une cellule pour voir la liste des risques correspondants."
+msgstr "Click a cell to see the matching list of risks."
+
+msgid "Retour à la liste des risques"
+msgstr "Back to the risk list"
+
+msgid "Security incident"
+msgid_plural "Security incidents"
+msgstr[0] "Security incident"
+msgstr[1] "Security incidents"
+
+msgid "Security incident item"
+msgid_plural "Security incident items"
+msgstr[0] "Security incident item"
+msgstr[1] "Security incident items"
+
+msgid "Security incident task"
+msgid_plural "Security incident tasks"
+msgstr[0] "Security incident task"
+msgstr[1] "Security incident tasks"
+
+msgid "Security incident template"
+msgid_plural "Security incident templates"
+msgstr[0] "Security incident template"
+msgstr[1] "Security incident templates"
+
+msgid "CVE reference"
+msgid_plural "CVE references"
+msgstr[0] "CVE reference"
+msgstr[1] "CVE references"
+
+msgid "CVE"
+msgid_plural "CVEs"
+msgstr[0] "CVE"
+msgstr[1] "CVEs"
+
+msgid "%d CVE reference added."
+msgid_plural "%d CVE references added."
+msgstr[0] "%d CVE reference added."
+msgstr[1] "%d CVE references added."
+
+msgid "New security incident"
+msgstr "New security incident"
+
+msgid "Update of a security incident"
+msgstr "Update of a security incident"
+
+msgid "Security incident solved"
+msgstr "Security incident solved"
+
+msgid "Security incident closed"
+msgstr "Security incident closed"
+
+msgid "Business rules for security incidents"
+msgstr "Business rules for security incidents"
+
+msgid "\"%s\" is not a valid CVE identifier (expected format: CVE-YYYY-NNNN)."
+msgstr "\"%s\" is not a valid CVE identifier (expected format: CVE-YYYY-NNNN)."
+
+msgid "Délai moyen de réponse aux incidents (heures)"
+msgstr "Average incident response time (hours)"
+
+msgid "Taux de réussite des formations évaluées"
+msgstr "Pass rate of assessed training sessions"
+
+msgid "GRC & Conformité"
+msgstr "GRC & Compliance"
+
+msgid "Action corrective"
+msgstr "Corrective action"
+
+msgid "Action préventive"
+msgstr "Preventive action"
+
+msgid "Sans évaluation"
+msgstr "Not assessed"
+
+msgid "Réussie"
+msgstr "Passed"
+
+msgid "Échouée"
+msgstr "Failed"
+
+msgid "Évaluation"
+msgstr "Assessment"
+
+msgid "Classification ISO 27001"
+msgstr "ISO 27001 Classification"
+
+msgid "Obligatoire, avec les enseignements tirés, pour clôturer cet incident."
+msgstr "Required, along with lessons learned, to close this incident."
+
+msgid "Identifiant(s) CVE"
+msgstr "CVE identifier(s)"
+
+msgid "Aucune référence CVE associée à cet incident pour l'instant."
+msgstr "No CVE reference associated with this incident yet."
+
+msgid "Identifiant CVE"
+msgstr "CVE identifier"
+
+msgid "Incidents de sécurité"
+msgstr "Security incidents"
+
+msgid "Module Incidents de sécurité (menu Assistance)"
+msgstr "Security incidents module (Assistance menu)"
+
+msgid "Suivi des CVE"
+msgstr "CVE tracking"
+
+msgid "Modèles d'incident"
+msgstr "Incident templates"
+
+msgid "Cartes de tableau de bord"
+msgstr "Dashboard cards"
+
+msgid "Contrôles appliqués / à appliquer"
+msgstr "Controls applied / to apply"
+
+msgid "Plan de retour arrière / confinement"
+msgstr "Rollback / containment plan"
+
+msgid "Analyse"
+msgstr "Analysis"
+
+msgid "Incidents de sécurité par entité"
+msgstr "Security incidents by entity"
+
+msgid "Incidents de sécurité par catégorie GLPI"
+msgstr "Security incidents by GLPI category"
+
+msgctxt "security incidents"
+msgid "Open"
+msgstr "Open"
+
+msgid "Récupération en cours…"
+msgstr "Fetching…"
+
+msgid "Non trouvée dans le NVD"
+msgstr "Not found in the NVD"
+
+msgid "Échec de la récupération, nouvel essai automatique prochainement"
+msgstr "Fetch failed, automatic retry coming soon"
+
+msgid "Rafraîchir depuis le NVD"
+msgstr "Refresh from the NVD"
+
+msgid "Correctifs / avis éditeur :"
+msgstr "Patches / vendor advisories:"
+
+msgid "Enrichissement CVE (NVD)"
+msgstr "CVE enrichment (NVD)"
+
+msgid "Activer l'enrichissement NVD"
+msgstr "Enable NVD enrichment"
+
+msgid "Seuil d'alerte (score CVSS)"
+msgstr "Alert threshold (CVSS score)"
+
+#, php-format
+msgid "%d actif(s) potentiellement concerné(s) de votre parc"
+msgstr "%d potentially affected asset(s) in your inventory"
+
+msgid "version non vérifiable"
+msgstr "version not verifiable"
+
+msgid "Produit (corrélation CVE)"
+msgid_plural "Produits (corrélation CVE)"
+msgstr[0] "Product (CVE correlation)"
+msgstr[1] "Products (CVE correlation)"
+
+msgid "Éditeur / fabricant"
+msgstr "Vendor / manufacturer"
+
+msgid "Produit"
+msgstr "Product"
+
+msgid "Identifiants CPE"
+msgstr "CPE identifiers"
+
+msgid "Aucun identifiant CPE pour l'instant."
+msgstr "No CPE identifier yet."
+
+msgid "Alias de logiciels (parc GLPI)"
+msgstr "Software aliases (GLPI inventory)"
+
+msgid "Aucun alias pour l'instant."
+msgstr "No alias yet."
+
+msgid "Alias de logiciel"
+msgid_plural "Alias de logiciels"
+msgstr[0] "Software alias"
+msgstr[1] "Software aliases"
+
+msgid "Identifiant CPE"
+msgid_plural "Identifiants CPE"
+msgstr[0] "CPE identifier"
+msgstr[1] "CPE identifiers"
+
+msgid "Nom court, ex. \"Apache\", \"Microsoft\" — sert uniquement d'étiquette, pas de comparaison."
+msgstr "Short name, e.g. \"Apache\", \"Microsoft\" — used only as a label, never for matching."
+
+msgid "Un identifiant CPE tel que rapporté par le NVD pour ce produit (ex. \"cpe:2.3:a:apache:log4j:*:*:*:*:*:*:*:*\"). Plusieurs identifiants peuvent pointer vers le même produit."
+msgstr "A CPE identifier as reported by the NVD for this product (e.g. \"cpe:2.3:a:apache:log4j:*:*:*:*:*:*:*:*\"). Several identifiers can point to the same product."
+
+msgid "Le nom exact tel qu'il apparaît dans votre inventaire GLPI (fiche Logiciel), pour que la corrélation puisse reconnaître ce produit sur vos actifs. Aucune correspondance approximative n'est faite automatiquement."
+msgstr "The exact name as it appears in your GLPI inventory (Software record), so the correlation can recognize this product on your assets. No approximate matching is ever done automatically."
+
+msgid "Bibliothèques de référence consultables, en complément de votre Déclaration d'Applicabilité (Annexe A ISO 27001)."
+msgstr "Consultable reference libraries, alongside your Statement of Applicability (ISO 27001 Annex A)."
+
+msgid "Annexe A ISO 27001 / ISO 27002"
+msgstr "ISO 27001 Annex A / ISO 27002"
+
+msgid "Filtrer…"
+msgstr "Filter…"
+
+msgid "NIST CSF 2.0 équivalent"
+msgstr "Equivalent NIST CSF 2.0"
+
+msgid "NIST Cybersecurity Framework (CSF) 2.0"
+msgstr "NIST Cybersecurity Framework (CSF) 2.0"
+
+msgid "CIS Controls v8"
+msgstr "CIS Controls v8"
+
+msgid "Référentiels"
+msgstr "Reference frameworks"
+
+msgid "Référentiels équivalents"
+msgstr "Equivalent reference frameworks"
+
+msgid "Correspondance publiée par le NIST — voir"
+msgstr "Mapping published by NIST — see"
+
+msgid "l'écran Référentiels"
+msgstr "the Reference frameworks screen"
+
+msgid "pour le détail."
+msgstr "for details."
+
+msgid "Résumé"
+msgstr "Summary"
+
+msgid "Audits internes"
+msgstr "Internal audits"
+
+msgid "Audits"
+msgstr "Audits"
+
+msgid "Non-conformités, observations et CAPA"
+msgstr "Nonconformities, observations and CAPA"
+
+msgid "Contrôles Annexe A"
+msgstr "Annex A controls"
+
+msgid "Contrôles revus"
+msgstr "Reviewed controls"
+
+msgid "Par applicabilité"
+msgstr "By applicability"
+
+msgid "Par état de mise en œuvre"
+msgstr "By implementation status"
+
+msgid "Détail des contrôles"
+msgstr "Control details"
+
+msgid "Risques au registre"
+msgstr "Risks in the register"
+
+msgid "Niveau"
+msgstr "Level"
+
+msgid "Détail des risques"
+msgstr "Risk details"
+
+msgid "Déclaration d'Applicabilité — Annexe A ISO/IEC 27001:2022"
+msgstr "Statement of Applicability — ISO/IEC 27001:2022 Annex A"
+
+#, php-format
+msgid "Généré le %s"
+msgstr "Generated on %s"
+
+msgid "Export PDF"
+msgstr "Export PDF"
+
+msgid "Registre des risques"
+msgstr "Risk register"
+
+msgid "Programme d'audit interne et CAPA"
+msgstr "Internal audit program and CAPA"
+
+msgid "Exportez l'état actuel de la Déclaration d'Applicabilité, modifiez-le dans un tableur, puis réimportez le fichier pour appliquer les changements en une fois."
+msgstr "Export the current state of the Statement of Applicability, edit it in a spreadsheet, then re-import the file to apply the changes at once."
+
+msgid "Télécharger le CSV actuel"
+msgstr "Download the current CSV"
+
+#, php-format
+msgid "%d contrôle(s) mis à jour."
+msgstr "%d control(s) updated."
+
+#, php-format
+msgid "%d ligne(s) rejetée(s) :"
+msgstr "%d row(s) rejected:"
+
+msgid "(ligne vide)"
+msgstr "(empty row)"
+
+msgid "Importer un CSV modifié"
+msgstr "Import a modified CSV"
+
+msgid "Seules les colonnes applicabilite, etat_mise_en_oeuvre et justification sont appliquées, identifiées par le code du contrôle. Aucune ligne n'est jamais créée ni supprimée."
+msgstr "Only the applicabilite, etat_mise_en_oeuvre and justification columns are applied, matched by the control's code. No row is ever created or deleted."
+
+msgid "Importer"
+msgstr "Import"
+
+msgid "Aucun fichier valide n'a été envoyé."
+msgstr "No valid file was uploaded."
+
+msgid "Code inconnu du catalogue Annexe A."
+msgstr "Code unknown in the Annex A catalogue."
+
+msgid "Valeur d'applicabilité non reconnue."
+msgstr "Unrecognized applicability value."
+
+msgid "Valeur d'état de mise en œuvre non reconnue."
+msgstr "Unrecognized implementation status value."
+
+msgid "Justification obligatoire : ce contrôle n'est pas pleinement applicable."
+msgstr "Justification required: this control is not fully applicable."
+
+msgid "Import/export CSV — Annexe A"
+msgstr "CSV import/export — Annex A"
+
+msgid "Import/export CSV"
+msgstr "CSV import/export"
+
+msgid "Un par ligne, ou séparés par des virgules — plusieurs à la fois sont pris en charge."
+msgstr "One per line, or comma-separated — several at once are supported."
+
+msgid "Active ou désactive chaque partie du module de gestion des incidents de sécurité (objet ITIL dédié, visible dans le menu Assistance)."
+msgstr "Enables or disables each part of the security incident management module (dedicated ITIL object, visible in the Assistance menu)."
+
+msgid "Récupère automatiquement le score CVSS, la sévérité, la description et les liens de correctif de chaque CVE suivie, depuis la base publique NVD (National Vulnerability Database). Aucune donnée n'est inventée : si le NVD n'a pas encore analysé une CVE, rien ne s'affiche tant que ce n'est pas le cas."
+msgstr "Automatically retrieves the CVSS score, severity, description and patch links for each tracked CVE, from the public NVD (National Vulnerability Database). No data is ever invented: if the NVD hasn't analyzed a CVE yet, nothing is shown until it has."
+
+msgid "Une CVE avec un score égal ou supérieur est mise en avant comme urgente."
+msgstr "A CVE with an equal or higher score is highlighted as urgent."
+
+msgid "Aucune ligne exploitable trouvée dans ce fichier — vérifiez qu'il s'agit bien d'un CSV exporté depuis cet écran (colonnes séparées par des points-virgules)."
+msgstr "No usable row was found in this file — check that it is really a CSV exported from this screen (semicolon-separated columns)."
+
+msgid "Fichier attendu : celui téléchargé ci-dessus, éventuellement modifié (colonnes séparées par des points-virgules). Seules les colonnes applicabilite, etat_mise_en_oeuvre et justification sont appliquées, identifiées par le code du contrôle. Aucune ligne n'est jamais créée ni supprimée."
+msgstr "Expected file: the one downloaded above, possibly edited (semicolon-separated columns). Only the applicabilite, etat_mise_en_oeuvre and justification columns are applied, matched by the control's code. No row is ever created or deleted."
+
+msgid "L'éditeur/fabricant et le produit sont obligatoires."
+msgstr "Vendor/manufacturer and product are both required."
+
+#, php-format
+msgid "Un produit \"%s / %s\" existe déjà."
+msgstr "A product \"%s / %s\" already exists."
+
+msgid "Veuillez saisir un alias."
+msgstr "Please enter an alias."
+
+#, php-format
+msgid "Cet alias est déjà rattaché au produit \"%s / %s\"."
+msgstr "This alias is already attached to product \"%s / %s\"."
+
+msgid "Veuillez saisir un identifiant CPE."
+msgstr "Please enter a CPE identifier."
+
+#, php-format
+msgid "Cet identifiant CPE est déjà rattaché au produit \"%s / %s\"."
+msgstr "This CPE identifier is already attached to product \"%s / %s\"."
+
+#, php-format
+msgid "%s est déjà référencée sur cet incident."
+msgstr "%s is already referenced on this incident."

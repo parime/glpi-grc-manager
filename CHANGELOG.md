@@ -5,6 +5,90 @@ Toutes les évolutions notables de ce projet sont documentées dans ce fichier.
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et ce projet adhère au
 [Semantic Versioning](https://semver.org/lang/fr/) (`MAJEUR.MINEUR.CORRECTIF`).
 
+## [2.2.0] - 2026-10-04
+
+### Added
+
+- **Compatibilité GLPI 12** (en plus de GLPI 11, depuis un seul et même paquet). Incompatibilités
+  réelles corrigées, identifiées en faisant tourner les suites de tests sur un vrai GLPI 12.0.0-rc2 :
+  - GLPI 12 type de nombreuses propriétés de ses classes de base (`CommonGLPI::$rightname`,
+    `CommonDBRelation::$itemtype_1`…, `CommonITILObject::$userlinkclass`…), GLPI 11 non — et PHP
+    impose à une sous-classe de reprendre exactement le type du parent, donc aucune déclaration
+    unique ne fonctionne sur les deux. Les 29 classes concernées (20 pour `$rightname`, plus le
+    module Incidents de sécurité : relations d'acteurs, coûts, gabarits, collection de règles)
+    héritent désormais d'une classe intermédiaire (`src/Compatibility/Base/`) déclarée selon la
+    version installée (propriétés typées en 12, non typées en 11) ; chaque classe fournit ses
+    valeurs via des constantes (`RIGHTNAME`, `ITEMTYPE_1`…).
+    Une classe et non un trait : sur PHP 8.2 à 8.4, un trait ne peut pas
+    redéclarer une propriété héritée avec une autre valeur (erreur fatale, ou en PHP 8.2 valeur
+    partagée en silence avec la classe de GLPI). Nouveau job CI `php-compat` qui charge chaque
+    classe concernée sur le vrai cœur GLPI, sous PHP 8.2 à 8.5 × GLPI 11 et PHP 8.3 à 8.5 × GLPI 12.
+  - `$DB->request('table')` (forme chaîne supprimée en GLPI 12) → forme tableau, dans
+    `RiskMatrixConfig`, `SecurityIncidentModuleConfig` et `NvdConfig` — sans ce correctif,
+    GLPI 12 désactivait silencieusement le plugin au démarrage.
+  - `Toolbox::getURLContent()` supprimé en GLPI 12 → `Compatibility\Http` (vérification de version
+    GitHub, enrichissement CVE NVD).
+
+  Résultat : tests unitaires (228) et d'intégration (19) au vert sur GLPI 11.0.9 **et** GLPI
+  12.0.0-rc2, plus un test fonctionnel du module Incidents de sécurité (création avec acteurs,
+  élément lié, coût, tâche, formulaire, onglets, suppression) réussi sur les deux. Nouveau job CI
+  `Installation reelle sur GLPI 12` (cycle d'installation complet + suite d'intégration).
+
+- **`.github/dependabot.yml`** — ce dépôt était le seul des trois plugins jumeaux à n'avoir aucune
+  configuration Dependabot (ni mises à jour automatiques de version, ni alertes de sécurité sur les
+  dépendances) ; trouvé lors d'un audit de dépendances. Deux écosystèmes couverts (`composer`,
+  `github-actions`), même convention (labels, delai de refroidissement de 7 jours, revue/assignation
+  à `parime`) que `Configuration-glpi-auto`/`assetsign-glpi`.
+
+### Changed
+
+- **`phpstan/phpstan` mis à jour (2.2.9 → 2.2.16)**, seule dépendance réellement obsolète repérée par
+  cet audit (`composer outdated`) sur ce que verrouille `composer.lock`. `phpunit/phpunit` a aussi une
+  version majeure disponible (10.5.64 → 13.x) mais volontairement **non appliquée** : PHPUnit 13 exige
+  PHP ≥ 8.4.1, alors que ce plugin déclare officiellement PHP ≥ 8.2 — un changement de politique de
+  version minimale du tooling de dev, pas une simple mise à jour de routine, laissé à une décision
+  explicite plutôt qu'appliqué silencieusement.
+
+### Fixed
+
+- **Lier un actif à un incident de sécurité fatalait** (`CommonITILObject::
+  getRuleCollectionClassInstance()` réclame une classe `Rule{Type}Collection` pour tout objet ITIL,
+  y compris ceux définis par un plugin). `RulePluginGrcmanagerSecurityIncident`/
+  `RulePluginGrcmanagerSecurityIncidentCollection` existaient déjà avec un contenu correct
+  (`inc/rulesecurityincident*.class.php`), mais n'étaient jamais chargées : l'autoloader natif de
+  GLPI pour les classes `inc/{nom}.class.php` (`glpi_autoload()`) n'agit que sur un nom de classe
+  qui commence littéralement par `Plugin` — or la convention `'Rule' . static::getType() .
+  'Collection'` place systématiquement `Plugin...` au milieu du nom, jamais au début, pour n'importe
+  quel objet ITIL défini par un plugin tiers. `require_once` explicite ajouté dans
+  `plugin_init_grcmanager()` (pas au premier niveau de `setup.php`, qui doit rester chargeable sans
+  noyau GLPI pour `SetupMenuRedefinitionTest`).
+- **`tests/integration-bootstrap.php` ne rendait jamais `$kernel` réellement global** — `global
+  $kernel` (code historique de GLPI, ex. les chemins dépendant de `getMainRequest()` déclenchés
+  par certains hooks `CommonDBTM::add()`) n'y trouvait rien, plantant avec "Call to a member
+  function getMainRequest() on null" sur tout test créant un `User`. Même correctif déjà nécessaire
+  sur le plugin jumeau Configuration-glpi-auto, appliqué ici aussi (`$GLOBALS['kernel'] = $kernel;`
+  avant `$kernel->boot()`).
+- **L'onglet "Risques" (issue #25) et l'onglet "Classification C/I/D" (issue #26) n'apparaissaient
+  jamais sur un actif personnalisé créé par un autre plugin** (`Vehicule`/`Serveur`/`Local`... via
+  Configuration-glpi-auto) alors que le lien registre-de-risques/actif restait fonctionnel depuis
+  le formulaire du risque lui-même (issue #88). `setup.php` construisait la liste `addtabon` de ces
+  deux onglets à partir de `LinkableItemtypes::DEFAULT_ITEMTYPES` (liste fixe des seuls itemtypes
+  natifs de GLPI), au lieu du résultat dynamique de `PluginGrcmanagerRisk::getLinkableItemtypes()`
+  (qui, lui, interroge directement la table SQL `glpi_assets_assetdefinitions`, disponible dès la
+  connexion DB). Les deux appels à `Plugin::registerClass()` utilisent désormais
+  `PluginGrcmanagerRisk::getLinkableItemtypes()` — même contournement, déjà éprouvé en production,
+  que `Config::getAllManageableItemtypes()` du plugin jumeau assetsign-glpi.
+
+- **La fiche d'une Politique de sécurité affichait « N/A » comme titre de page**, au lieu du vrai
+  titre de la politique — trouvé en peuplant une instance de test avec de vraies politiques.
+  `front/policy.form.php` est le seul contrôleur de ce plugin à appeler `displayFullPageForItem()`
+  (nécessaire pour que l'onglet natif « Documents » s'affiche, cf. le commentaire déjà présent dans
+  ce fichier) ; ce chemin construit l'en-tête de page à partir de `getNameField()`, jamais surchargé
+  sur `PluginGrcmanagerPolicy` alors que sa colonne d'affichage principale est `title`, pas `name`
+  (cette table n'a même pas de colonne `name`). Chaque classe sœur (Risque, Audit...) utilise un
+  simple `Html::header()`, qui ne consulte jamais de champ nom — aucune n'avait besoin de ce
+  correctif.
+
 ## [2.1.0] - 2026-09-12
 
 ### Added

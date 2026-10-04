@@ -29,7 +29,7 @@ final class RiskMatrixConfig
 
         $matrix = RiskMatrixDefaults::MATRIX;
 
-        foreach ($DB->request(self::TABLE) as $row) {
+        foreach ($DB->request(['FROM' => self::TABLE]) as $row) {
             $decoded = json_decode((string) $row['matrix'], true);
             $matrix  = is_array($decoded) ? $decoded : $matrix;
             break;

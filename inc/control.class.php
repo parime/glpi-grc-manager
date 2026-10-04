@@ -15,6 +15,9 @@
  * -------------------------------------------------------------------------
  */
 
+use GlpiPlugin\Grcmanager\Compatibility\Base\ControlBase;
+use GlpiPlugin\Grcmanager\Services\Control\ControlCrosswalkDefaults;
+
 /**
  * Declaration of Applicability (SoA, ISO 27001:2022 clause 6.1.3): the 93 ISO/IEC 27001:2022
  * Annex A controls, one row per control, seeded once at install (see
@@ -29,9 +32,9 @@
  * control's implementation (many-to-many via glpi_plugin_grcmanager_controls_risks, see
  * getLinkedRiskIds()/syncLinkedRisks() below).
  */
-class PluginGrcmanagerControl extends CommonDBTM
+class PluginGrcmanagerControl extends ControlBase
 {
-    public static $rightname = 'plugin_grcmanager';
+    public const RIGHTNAME = 'plugin_grcmanager';
 
     private const LINK_TABLE = 'glpi_plugin_grcmanager_controls_risks';
 
@@ -610,6 +613,28 @@ class PluginGrcmanagerControl extends CommonDBTM
             'grcmanager'
         ) . '</small>';
         echo '</td></tr>';
+
+        // ROADMAP.md "Version 2.2" (bibliothèque de contrôles étendue) : correspondance publiée
+        // par le NIST vers ce contrôle Annexe A précis, voir ControlCrosswalkDefaults — absente
+        // silencieusement (pas de ligne vide) si le NIST n'en publie aucune pour ce code, jamais
+        // une case "aucune correspondance" trompeuse (voir docblock de ControlCrosswalkDefaults).
+        $nistMatches = ControlCrosswalkDefaults::CROSSWALK[substr((string) $code, 2)]['nist_csf'] ?? [];
+
+        if ($nistMatches !== []) {
+            echo '<tr class="tab_bg_1"><td>' . __('Référentiels équivalents', 'grcmanager') . '</td>';
+            echo '<td colspan="3">';
+            foreach ($nistMatches as $nistCode) {
+                echo '<span class="badge bg-blue-lt me-1">NIST CSF ' . htmlescape($nistCode) . '</span>';
+            }
+            global $CFG_GLPI;
+            $referentialsUrl = $CFG_GLPI['root_doc'] . '/plugins/grcmanager/front/referentiels.php';
+            echo '<small class="form-hint d-block mt-1">';
+            echo __('Correspondance publiée par le NIST — voir', 'grcmanager') . ' ';
+            echo '<a href="' . htmlescape($referentialsUrl) . '">';
+            echo __('l\'écran Référentiels', 'grcmanager') . '</a> ' . __('pour le détail.', 'grcmanager');
+            echo '</small>';
+            echo '</td></tr>';
+        }
 
         // No delete/purge buttons: the 93 controls are a fixed catalog seeded at install (see
         // Installer::seedControls()), removing one would break the SoA's own completeness

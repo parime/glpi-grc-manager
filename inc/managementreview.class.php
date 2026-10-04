@@ -15,6 +15,8 @@
  * -------------------------------------------------------------------------
  */
 
+use GlpiPlugin\Grcmanager\Compatibility\Base\ManagementReviewBase;
+
 /**
  * Management review record (ISO 27001 clause 9.3): evidence that top management periodically
  * reviews the whole ISMS, with attendees, the agenda/topics actually covered, and the decisions
@@ -41,9 +43,9 @@
  * here is a structured reference to a real PluginGrcmanagerObjective row (clickable, filterable),
  * not prose.
  */
-class PluginGrcmanagerManagementReview extends CommonDBTM
+class PluginGrcmanagerManagementReview extends ManagementReviewBase
 {
-    public static $rightname = 'plugin_grcmanager';
+    public const RIGHTNAME = 'plugin_grcmanager';
 
     private const ATTENDEES_TABLE = 'glpi_plugin_grcmanager_managementreviews_users';
 

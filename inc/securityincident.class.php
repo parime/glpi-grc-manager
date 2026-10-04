@@ -16,6 +16,7 @@
  */
 
 use Glpi\ContentTemplates\Parameters\CommonITILObjectParameters;
+use GlpiPlugin\Grcmanager\Compatibility\Base\SecurityIncidentBase;
 use GlpiPlugin\Grcmanager\Services\Incident\SecurityIncidentModuleConfig;
 use GlpiPlugin\Grcmanager\Services\Incident\SecurityIncidentParameters;
 use GlpiPlugin\Grcmanager\Services\Incident\SecurityIncidentRules;
@@ -50,19 +51,12 @@ use GlpiPlugin\Grcmanager\Services\Incident\SecurityIncidentRules;
  *
  * Modeled directly on GLPI core's own `Change` class (the closest native analogue).
  */
-class PluginGrcmanagerSecurityIncident extends CommonITILObject
+class PluginGrcmanagerSecurityIncident extends SecurityIncidentBase
 {
-    // From CommonDBTM
-    public $dohistory = true;
-
-    // From CommonITIL
-    public $userlinkclass = PluginGrcmanagerSecurityIncident_User::class;
-    public $grouplinkclass = PluginGrcmanagerSecurityIncident_Group::class;
-    public $supplierlinkclass = PluginGrcmanagerSecurityIncident_Supplier::class;
-
-    public static $rightname = 'plugin_grcmanager_securityincident';
-
-    protected $usenotepad = true;
+    public const USERLINKCLASS = PluginGrcmanagerSecurityIncident_User::class;
+    public const GROUPLINKCLASS = PluginGrcmanagerSecurityIncident_Group::class;
+    public const SUPPLIERLINKCLASS = PluginGrcmanagerSecurityIncident_Supplier::class;
+    public const RIGHTNAME = 'plugin_grcmanager_securityincident';
 
     public static function getTypeName($nb = 0)
     {

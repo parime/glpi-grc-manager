@@ -15,6 +15,7 @@
  * -------------------------------------------------------------------------
  */
 
+use GlpiPlugin\Grcmanager\Compatibility\Base\RiskTreatmentActionBase;
 use GlpiPlugin\Grcmanager\Services\Risk\OverdueTreatmentActionService;
 use GlpiPlugin\Grcmanager\Services\Risk\TreatmentPlanRules;
 
@@ -45,9 +46,9 @@ use GlpiPlugin\Grcmanager\Services\Risk\TreatmentPlanRules;
  * showTreatmentPlan() for where this itemtype is actually surfaced): `accept` has no treatment plan
  * by definition, `avoid` eliminates the risk source entirely, nothing ongoing to track either.
  */
-class PluginGrcmanagerRiskTreatmentAction extends CommonDBTM
+class PluginGrcmanagerRiskTreatmentAction extends RiskTreatmentActionBase
 {
-    public static $rightname = 'plugin_grcmanager';
+    public const RIGHTNAME = 'plugin_grcmanager';
 
     /**
      * GLPI notification event name (see inc/notificationtargetrisktreatmentaction.class.php and
