@@ -1461,3 +1461,6 @@ msgstr "Cet identifiant CPE est déjà rattaché au produit \"%s / %s\"."
 #, php-format
 msgid "%s est déjà référencée sur cet incident."
 msgstr "%s est déjà référencée sur cet incident."
+
+msgid "Source : CIS Critical Security Controls® v8, © Center for Internet Security, Inc., intitulés reproduits sans modification sous licence CC BY-NC-ND 4.0. Ce projet n'est ni affilié au CIS ni approuvé par lui."
+msgstr "Source : CIS Critical Security Controls® v8, © Center for Internet Security, Inc., intitulés reproduits sans modification sous licence CC BY-NC-ND 4.0. Ce projet n'est ni affilié au CIS ni approuvé par lui."
