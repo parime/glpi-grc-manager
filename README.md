@@ -6,7 +6,7 @@
 > intégrée à GLPI.
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/status-stable%20%E2%80%94%20v2.1.0-brightgreen)](ROADMAP.md)
+[![Status](https://img.shields.io/badge/status-stable%20%E2%80%94%20v2.2.0-brightgreen)](ROADMAP.md)
 [![GLPI](https://img.shields.io/badge/GLPI-11.x-green)](docs/design/DEVELOPMENT_PLAN.md)
 
 🇫🇷 **Français** | [🇬🇧 English](README.en.md)
@@ -44,7 +44,7 @@ archivé), avec ses champs de classification ISO 27001 fusionnés dessus.
 
 ## État du projet
 
-**Version stable v2.1.0**, publiée et installable dès maintenant : registre de risques génériques
+**Version stable v2.2.0**, publiée et installable dès maintenant : registre de risques génériques
 (matrice probabilité x impact administrable, cartographie interactive, filtres, rappels de revue),
 Déclaration d'Applicabilité (93 contrôles Annexe A ISO/IEC 27001:2022), programme d'audit interne
 avec non-conformités et CAPA, registre de risques fournisseurs/tiers, suivi des formations de
