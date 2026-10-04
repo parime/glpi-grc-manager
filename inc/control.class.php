@@ -16,6 +16,7 @@
  */
 
 use GlpiPlugin\Grcmanager\Compatibility\Base\ControlBase;
+use GlpiPlugin\Grcmanager\Services\Control\AnssiHygieneCatalogDefaults;
 use GlpiPlugin\Grcmanager\Services\Control\AssetsignEvidence;
 use GlpiPlugin\Grcmanager\Services\Control\AssetsignEvidenceProvider;
 use GlpiPlugin\Grcmanager\Services\Control\ControlCrosswalkDefaults;
@@ -677,6 +678,28 @@ class PluginGrcmanagerControl extends ControlBase
             foreach ($nis2Matches as $nis2Code) {
                 echo '<span class="badge bg-purple-lt me-1">NIS2 '
                     . htmlescape(Nis2CatalogDefaults::reference($nis2Code)) . '</span>';
+            }
+            global $CFG_GLPI;
+            echo '<small class="form-hint d-block mt-1">';
+            echo __('Correspondance indicative, établie par ce projet — voir', 'grcmanager') . ' ';
+            echo '<a href="' . htmlescape($CFG_GLPI['root_doc'] . '/plugins/grcmanager/front/referentiels.php') . '">';
+            echo __('l\'écran Référentiels', 'grcmanager') . '</a> ' . __('pour le détail.', 'grcmanager');
+            echo '</small>';
+            echo '</td></tr>';
+        }
+
+        // Issue #111 : mesures du guide d'hygiène informatique ANSSI renvoyant à ce contrôle
+        // (correspondance indicative, voir AnssiHygieneCatalogDefaults) — ligne absente si aucune.
+        $anssiMatches = AnssiHygieneCatalogDefaults::measuresForControl((string) $code);
+
+        if ($anssiMatches !== []) {
+            echo '<tr class="tab_bg_1"><td>' . __('Hygiène ANSSI', 'grcmanager') . '</td>';
+            echo '<td colspan="3">';
+            $anssiLang = str_starts_with((string) ($_SESSION['glpilanguage'] ?? 'fr_FR'), 'fr') ? 'fr' : 'en';
+            foreach ($anssiMatches as $measureNumber) {
+                $measureTitle = AnssiHygieneCatalogDefaults::MEASURES[$measureNumber][$anssiLang];
+                echo '<span class="badge bg-teal-lt me-1" title="' . htmlescape($measureTitle) . '">'
+                    . sprintf(__('Mesure %d', 'grcmanager'), $measureNumber) . '</span>';
             }
             global $CFG_GLPI;
             echo '<small class="form-hint d-block mt-1">';

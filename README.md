@@ -134,11 +134,18 @@ du dépôt et dans la documentation indique uniquement le référentiel que le p
   sont résumés. © Union européenne, https://eur-lex.europa.eu/ — réutilisation autorisée
   (décision 2011/833/UE de la Commission). Seule la version publiée au Journal officiel de l'UE
   fait foi. La correspondance avec l'Annexe A ISO 27001 est indicative et établie par ce projet.
+- **Guide d'hygiène informatique de l'ANSSI (42 mesures)** : intitulés des 42 mesures et des
+  10 thèmes reproduits d'après le guide « Renforcer la sécurité de son système d'information en
+  42 mesures », version 2.0 de septembre 2017, publié par l'
+  [ANSSI](https://cyber.gouv.fr/publications/guide-dhygiene-informatique) sous
+  [Licence Ouverte / Open Licence (Etalab)](https://www.etalab.gouv.fr/licence-ouverte-open-licence/).
+  La traduction anglaise et la correspondance avec l'Annexe A sont indicatives et établies par
+  ce projet ; ce projet n'est ni affilié à l'ANSSI ni approuvé par elle.
 
 ## Licence
 
 Distribué sous licence [GNU GPLv3](LICENSE). Projet gratuit, communautaire, sans fonctionnalité
-payante obligatoire. Les extraits de référentiels tiers (CIS Controls, NIST CSF, NIS2) restent sous
+payante obligatoire. Les extraits de référentiels tiers (CIS Controls, NIST CSF, NIS2, guide ANSSI) restent sous
 leur licence d'origine : voir l'avertissement ci-dessus.
 
 ## Contribuer

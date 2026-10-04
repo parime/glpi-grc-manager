@@ -131,11 +131,19 @@ and documentation only identifies the framework the plugin helps you track.
   summarised. © European Union, https://eur-lex.europa.eu/ — reuse authorised (Commission
   Decision 2011/833/EU). Only the version published in the Official Journal of the EU is
   authentic. The mapping to ISO 27001 Annex A is indicative and made by this project.
+- **ANSSI IT hygiene guide (42 measures)**: titles of the 42 measures and 10 themes reproduced
+  from the guide "Renforcer la sécurité de son système d'information en 42 mesures", version 2.0
+  of September 2017, published by
+  [ANSSI](https://cyber.gouv.fr/publications/guide-dhygiene-informatique) (French national
+  cybersecurity agency) under the
+  [Licence Ouverte / Open Licence (Etalab)](https://www.etalab.gouv.fr/licence-ouverte-open-licence/).
+  The English translation and the Annex A mapping are indicative and made by this project; this
+  project is not affiliated with or endorsed by ANSSI.
 
 ## License
 
 Distributed under the [GNU GPLv3](LICENSE) license. Free, community-driven project, with no
-mandatory paid feature. Excerpts of third-party frameworks (CIS Controls, NIST CSF, NIS2) remain under
+mandatory paid feature. Excerpts of third-party frameworks (CIS Controls, NIST CSF, NIS2, ANSSI guide) remain under
 their original license: see the disclaimer above.
 
 ## Contributing
