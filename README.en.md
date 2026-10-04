@@ -6,7 +6,7 @@
 > GLPI.
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/status-stable%20%E2%80%94%20v2.1.0-brightgreen)](ROADMAP.md)
+[![Status](https://img.shields.io/badge/status-stable%20%E2%80%94%20v2.2.0-brightgreen)](ROADMAP.md)
 [![GLPI](https://img.shields.io/badge/GLPI-11.x-green)](docs/design/DEVELOPMENT_PLAN.md)
 
 [🇫🇷 Français](README.md) | 🇬🇧 **English**
@@ -42,7 +42,7 @@ classification fields merged directly onto it.
 
 ## Project status
 
-**Stable v2.1.0**, published and installable right now: generic risk register (administrable
+**Stable v2.2.0**, published and installable right now: generic risk register (administrable
 probability x impact matrix, interactive heatmap, filters, review reminders), Statement of
 Applicability (93 ISO/IEC 27001:2022 Annex A controls), internal audit program with
 non-conformities and CAPA, supplier/third-party risk register, security awareness training
