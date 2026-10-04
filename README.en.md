@@ -125,11 +125,17 @@ and documentation only identifies the framework the plugin helps you track.
 - **NIST Cybersecurity Framework (CSF) 2.0**: published by the
   [National Institute of Standards and Technology](https://www.nist.gov/cyberframework)
   (U.S. federal government), in the public domain.
+- **Directive (EU) 2022/2555 "NIS2"**: articles 20, 21(2) and 23(4). The ten measures of
+  article 21(2) are reproduced from the official French and English language versions published
+  on [EUR-Lex](https://eur-lex.europa.eu/eli/dir/2022/2555/oj); articles 20 and 23 are
+  summarised. © European Union, https://eur-lex.europa.eu/ — reuse authorised (Commission
+  Decision 2011/833/EU). Only the version published in the Official Journal of the EU is
+  authentic. The mapping to ISO 27001 Annex A is indicative and made by this project.
 
 ## License
 
 Distributed under the [GNU GPLv3](LICENSE) license. Free, community-driven project, with no
-mandatory paid feature. Excerpts of third-party frameworks (CIS Controls, NIST CSF) remain under
+mandatory paid feature. Excerpts of third-party frameworks (CIS Controls, NIST CSF, NIS2) remain under
 their original license: see the disclaimer above.
 
 ## Contributing
