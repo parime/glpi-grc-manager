@@ -36,6 +36,8 @@ parameters:
         # RiskMatrixDefaults.php and ReviewReminderResult.php in the same directory stay in scope:
         # both are pure PHP with no GLPI dependency.
         - src/Services/Risk/RiskMatrixConfig.php
+        # Issue #109 : lit la table d'assetsign via le global $DB, Plugin et Session, même raison.
+        - src/Services/Control/AssetsignEvidenceProvider.php
         - src/Services/Risk/ReviewReminderService.php
         # ROADMAP.md "Version 2.2" (cartographie des risques) : depends on GLPI's runtime global
         # $DB, same rationale as RiskMatrixConfig.php above. RiskHeatmapGrid.php in the same

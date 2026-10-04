@@ -31,6 +31,36 @@
   </tr>
 </table>
 
+{# Issue #109 : preuves agrégées issues du plugin assetsign (A.5.9, A.5.10, A.5.11), section
+   absente si assetsign n'est pas installé et actif. Type 0 = remise, 1 = restitution. #}
+{% if assetsign_evidence is not null %}
+<h2>{{ __('Preuves assetsign (A.5.9, A.5.10, A.5.11)', 'grcmanager') }}</h2>
+<table class="grcmanager-pdf-table">
+  <thead>
+    <tr>
+      <th></th>
+      <th>{{ __('Signées', 'grcmanager') }}</th>
+      <th>{{ __('En attente', 'grcmanager') }}</th>
+      <th>{{ __('Expirées', 'grcmanager') }}</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>{{ __('Remises (A.5.9, A.5.10)', 'grcmanager') }}</td>
+      <td>{{ assetsign_evidence[0].signed }}</td>
+      <td>{{ assetsign_evidence[0].pending }}</td>
+      <td>{{ assetsign_evidence[0].expired }}</td>
+    </tr>
+    <tr>
+      <td>{{ __('Restitutions (A.5.11)', 'grcmanager') }}</td>
+      <td>{{ assetsign_evidence[1].signed }}</td>
+      <td>{{ assetsign_evidence[1].pending }}</td>
+      <td>{{ assetsign_evidence[1].expired }}</td>
+    </tr>
+  </tbody>
+</table>
+{% endif %}
+
 <h2>{{ __('Détail des contrôles', 'grcmanager') }}</h2>
 <table class="grcmanager-pdf-table">
   <thead>
