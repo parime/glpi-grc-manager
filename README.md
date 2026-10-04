@@ -128,11 +128,17 @@ du dépôt et dans la documentation indique uniquement le référentiel que le p
 - **NIST Cybersecurity Framework (CSF) 2.0** : publication du
   [National Institute of Standards and Technology](https://www.nist.gov/cyberframework)
   (gouvernement fédéral des États-Unis), dans le domaine public.
+- **Directive (UE) 2022/2555 « NIS2 »** : articles 20, 21 §2 et 23 §4. Les dix mesures de
+  l'article 21 §2 sont reproduites d'après les versions officielles française et anglaise
+  publiées sur [EUR-Lex](https://eur-lex.europa.eu/eli/dir/2022/2555/oj), les articles 20 et 23
+  sont résumés. © Union européenne, https://eur-lex.europa.eu/ — réutilisation autorisée
+  (décision 2011/833/UE de la Commission). Seule la version publiée au Journal officiel de l'UE
+  fait foi. La correspondance avec l'Annexe A ISO 27001 est indicative et établie par ce projet.
 
 ## Licence
 
 Distribué sous licence [GNU GPLv3](LICENSE). Projet gratuit, communautaire, sans fonctionnalité
-payante obligatoire. Les extraits de référentiels tiers (CIS Controls, NIST CSF) restent sous
+payante obligatoire. Les extraits de référentiels tiers (CIS Controls, NIST CSF, NIS2) restent sous
 leur licence d'origine : voir l'avertissement ci-dessus.
 
 ## Contribuer

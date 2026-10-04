@@ -19,6 +19,7 @@ use GlpiPlugin\Grcmanager\Compatibility\Base\ControlBase;
 use GlpiPlugin\Grcmanager\Services\Control\AssetsignEvidence;
 use GlpiPlugin\Grcmanager\Services\Control\AssetsignEvidenceProvider;
 use GlpiPlugin\Grcmanager\Services\Control\ControlCrosswalkDefaults;
+use GlpiPlugin\Grcmanager\Services\Control\Nis2CatalogDefaults;
 
 /**
  * Declaration of Applicability (SoA, ISO 27001:2022 clause 6.1.3): the 93 ISO/IEC 27001:2022
@@ -661,6 +662,26 @@ class PluginGrcmanagerControl extends ControlBase
             echo '<small class="form-hint d-block mt-1">';
             echo __('Correspondance publiée par le NIST — voir', 'grcmanager') . ' ';
             echo '<a href="' . htmlescape($referentialsUrl) . '">';
+            echo __('l\'écran Référentiels', 'grcmanager') . '</a> ' . __('pour le détail.', 'grcmanager');
+            echo '</small>';
+            echo '</td></tr>';
+        }
+
+        // Issue #110 : exigences NIS2 renvoyant à ce contrôle (correspondance indicative, établie
+        // par ce projet, voir Nis2CatalogDefaults) — ligne absente si aucune.
+        $nis2Matches = Nis2CatalogDefaults::requirementsForControl((string) $code);
+
+        if ($nis2Matches !== []) {
+            echo '<tr class="tab_bg_1"><td>' . __('Exigences NIS2', 'grcmanager') . '</td>';
+            echo '<td colspan="3">';
+            foreach ($nis2Matches as $nis2Code) {
+                echo '<span class="badge bg-purple-lt me-1">NIS2 '
+                    . htmlescape(Nis2CatalogDefaults::reference($nis2Code)) . '</span>';
+            }
+            global $CFG_GLPI;
+            echo '<small class="form-hint d-block mt-1">';
+            echo __('Correspondance indicative, établie par ce projet — voir', 'grcmanager') . ' ';
+            echo '<a href="' . htmlescape($CFG_GLPI['root_doc'] . '/plugins/grcmanager/front/referentiels.php') . '">';
             echo __('l\'écran Référentiels', 'grcmanager') . '</a> ' . __('pour le détail.', 'grcmanager');
             echo '</small>';
             echo '</td></tr>';
