@@ -13,7 +13,8 @@ namespace GlpiPlugin\Grcmanager\Services\Control;
  * mention de source est obligatoire : elle est affichée sous la carte CIS de
  * templates/referentiels.html.twig et dans le README (comptes 18/153 vérifiés).
  *
- * Le niveau de groupe de mise en œuvre (`ig`, 1/2/3) de chaque sauvegarde vient du dépôt officiel du Center for Internet Security lui-même
+ * Le niveau de groupe de mise en œuvre (`ig`, 1/2/3) de chaque sauvegarde vient du dépôt
+ * officiel du Center for Internet Security lui-même
  * (github.com/CISecurity/ControlsAssessmentSpecification), pas des résumés tiers largement
  * cités ("56 en IG1, 74 de plus en IG2, 23 de plus en IG3") qui datent de la sortie initiale
  * de v8 en 2021 — CIS a depuis légèrement rééquilibré quelques sauvegardes entre groupes (ex.
