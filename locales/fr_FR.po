@@ -1464,3 +1464,45 @@ msgstr "%s est déjà référencée sur cet incident."
 
 msgid "Source : CIS Critical Security Controls® v8, © Center for Internet Security, Inc., intitulés reproduits sans modification sous licence CC BY-NC-ND 4.0. Ce projet n'est ni affilié au CIS ni approuvé par lui."
 msgstr "Source : CIS Critical Security Controls® v8, © Center for Internet Security, Inc., intitulés reproduits sans modification sous licence CC BY-NC-ND 4.0. Ce projet n'est ni affilié au CIS ni approuvé par lui."
+
+msgid "Preuves assetsign"
+msgstr "Preuves assetsign"
+
+msgid "Compteurs calculés en direct depuis le plugin assetsign, sur vos entités actives."
+msgstr "Compteurs calculés en direct depuis le plugin assetsign, sur vos entités actives."
+
+msgid "Restitutions"
+msgstr "Restitutions"
+
+msgid "Remises"
+msgstr "Remises"
+
+#, php-format
+msgid "%d signée(s)"
+msgstr "%d signée(s)"
+
+#, php-format
+msgid "%d en attente"
+msgstr "%d en attente"
+
+#, php-format
+msgid "%d expirée(s)"
+msgstr "%d expirée(s)"
+
+msgid "Voir les fiches"
+msgstr "Voir les fiches"
+
+msgid "Preuves assetsign (A.5.9, A.5.10, A.5.11)"
+msgstr "Preuves assetsign (A.5.9, A.5.10, A.5.11)"
+
+msgid "Signées"
+msgstr "Signées"
+
+msgid "Expirées"
+msgstr "Expirées"
+
+msgid "Remises (A.5.9, A.5.10)"
+msgstr "Remises (A.5.9, A.5.10)"
+
+msgid "Restitutions (A.5.11)"
+msgstr "Restitutions (A.5.11)"

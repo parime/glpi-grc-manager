@@ -16,6 +16,7 @@
  */
 
 use GlpiPlugin\Grcmanager\Pdf\PdfRenderer;
+use GlpiPlugin\Grcmanager\Services\Control\AssetsignEvidenceProvider;
 use GlpiPlugin\Grcmanager\Services\Dashboard\DashboardCardService;
 
 include('../../../inc/includes.php');
@@ -57,6 +58,8 @@ $html = \Glpi\Application\View\TemplateRenderer::getInstance()->render('@grcmana
     'by_status'            => DashboardCardService::soaByImplementationStatus(),
     'reviewed_count'       => DashboardCardService::soaReviewedCount(),
     'total_count'          => count($controls),
+    // Issue #109 : null si assetsign absent, la section est alors omise du PDF.
+    'assetsign_evidence'   => AssetsignEvidenceProvider::fetchSummary(),
 ]);
 
 $pdf = PdfRenderer::renderHtmlToPdf($html);
