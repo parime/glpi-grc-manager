@@ -86,3 +86,30 @@
     {% endfor %}
   </tbody>
 </table>
+
+{# Issue #113 : exigences du système de management (articles 4 à 10), références et titres courts
+   uniquement. #}
+{% if clauses is not empty %}
+<h2>{{ __('Exigences du SMSI (articles 4 à 10)', 'grcmanager') }}</h2>
+<p>{{ __('Complétude du SMSI : %1$d %% (%2$d / %3$d exigences conformes)', 'grcmanager')|format(clause_completion.percent, clause_completion.compliant, clause_completion.total) }}</p>
+<table class="grcmanager-pdf-table">
+  <thead>
+    <tr>
+      <th>{{ __('Exigence', 'grcmanager') }}</th>
+      <th>{{ __('Intitulé') }}</th>
+      <th>{{ __('Statut') }}</th>
+      <th>{{ __('Responsable', 'grcmanager') }}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for clause in clauses %}
+      <tr>
+        <td>{{ clause.code }}</td>
+        <td>{{ clause.title }}</td>
+        <td>{{ clause.status }}</td>
+        <td>{{ clause.owner }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}

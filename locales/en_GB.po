@@ -1543,3 +1543,151 @@ msgstr "Source: ANSSI, Guide d'hygiène informatique (IT hygiene guide), version
 
 msgid "Traduction anglaise indicative, établie par ce projet."
 msgstr "Indicative English translation made by this project."
+
+msgid "Exigence SMSI (articles 4 à 10)"
+msgid_plural "Exigences SMSI (articles 4 à 10)"
+msgstr[0] "ISMS requirement (clauses 4 to 10)"
+msgstr[1] "ISMS requirements (clauses 4 to 10)"
+
+msgid "Contexte de l'organisation"
+msgstr "Context of the organization"
+
+msgid "Organisation et son contexte"
+msgstr "Organization and its context"
+
+msgid "Parties intéressées"
+msgstr "Interested parties"
+
+msgid "Domaine d'application du SMSI"
+msgstr "ISMS scope"
+
+msgid "Système de management de la sécurité de l'information"
+msgstr "Information security management system"
+
+msgid "Leadership"
+msgstr "Leadership"
+
+msgid "Leadership et engagement"
+msgstr "Leadership and commitment"
+
+msgid "Politique"
+msgstr "Policy"
+
+msgid "Rôles, responsabilités et autorités"
+msgstr "Roles, responsibilities and authorities"
+
+msgid "Planification"
+msgstr "Planning"
+
+msgid "Risques et opportunités : généralités"
+msgstr "Risks and opportunities: general"
+
+msgid "Appréciation des risques"
+msgstr "Risk assessment"
+
+msgid "Traitement des risques"
+msgstr "Risk treatment"
+
+msgid "Objectifs de sécurité de l'information"
+msgstr "Information security objectives"
+
+msgid "Planification des modifications"
+msgstr "Planning of changes"
+
+msgid "Support"
+msgstr "Support"
+
+msgid "Ressources"
+msgstr "Resources"
+
+msgid "Compétences"
+msgstr "Competence"
+
+msgid "Sensibilisation"
+msgstr "Awareness"
+
+msgid "Communication"
+msgstr "Communication"
+
+msgid "Informations documentées : généralités"
+msgstr "Documented information: general"
+
+msgid "Création et mise à jour"
+msgstr "Creating and updating"
+
+msgid "Maîtrise des informations documentées"
+msgstr "Control of documented information"
+
+msgid "Fonctionnement"
+msgstr "Operation"
+
+msgid "Planification et maîtrise opérationnelles"
+msgstr "Operational planning and control"
+
+msgid "Appréciation des risques (réalisation)"
+msgstr "Risk assessment (performing)"
+
+msgid "Traitement des risques (mise en œuvre)"
+msgstr "Risk treatment (implementing)"
+
+msgid "Évaluation des performances"
+msgstr "Performance evaluation"
+
+msgid "Surveillance, mesure, analyse et évaluation"
+msgstr "Monitoring, measurement, analysis and evaluation"
+
+msgid "Audit interne : généralités"
+msgstr "Internal audit: general"
+
+msgid "Programme d'audit interne"
+msgstr "Internal audit programme"
+
+msgid "Revue de direction : généralités"
+msgstr "Management review: general"
+
+msgid "Éléments d'entrée de la revue de direction"
+msgstr "Management review inputs"
+
+msgid "Résultats de la revue de direction"
+msgstr "Management review results"
+
+msgid "Amélioration"
+msgstr "Improvement"
+
+msgid "Amélioration continue"
+msgstr "Continual improvement"
+
+msgid "Non-conformité et action corrective"
+msgstr "Nonconformity and corrective action"
+
+msgid "Non commencé"
+msgstr "Not started"
+
+msgid "Statut invalide."
+msgstr "Invalid status."
+
+msgid "Exigence"
+msgstr "Requirement"
+
+msgid "Comment l'exigence est satisfaite, où trouver les preuves. Joignez les documents dans l'onglet Documents."
+msgstr "How the requirement is met and where to find the evidence. Attach the files in the Documents tab."
+
+msgid "Module lié"
+msgstr "Linked module"
+
+#, php-format
+msgid "%d enregistrement(s)"
+msgstr "%d record(s)"
+
+msgid "Ce module du plugin produit déjà des preuves pour cette exigence."
+msgstr "This plugin module already produces evidence for this requirement."
+
+msgid "Exigences du système de management - articles 4 à 10 ISO/IEC 27001:2022 (références et titres courts uniquement)."
+msgstr "Management system requirements - ISO/IEC 27001:2022 clauses 4 to 10 (references and short titles only)."
+
+#, php-format
+msgid "Complétude du SMSI : %1$d %% (%2$d / %3$d exigences conformes)"
+msgstr "ISMS completeness: %1$d %% (%2$d / %3$d requirements compliant)"
+
+msgid "Exigences du SMSI (articles 4 à 10)"
+msgstr "ISMS requirements (clauses 4 to 10)"

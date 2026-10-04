@@ -33,6 +33,9 @@ archivé), avec ses champs de classification ISO 27001 fusionnés dessus.
   transférer/éviter), propriétaire, justification, date de revue.
 - **Déclaration d'Applicabilité (SoA)** : les 93 contrôles de l'Annexe A ISO 27001:2022 (clause
   6.1.3).
+- **Exigences du SMSI (articles 4 à 10)** : les 30 sous-articles 4.1 à 10.2, avec statut,
+  responsable, preuves (documents GLPI liés), lien vers le module qui les couvre déjà et taux de
+  complétude, inclus dans l'export PDF.
 - **Programme d'audit interne** : non-conformités, actions correctives et préventives (CAPA).
 - **Registre de risques fournisseurs/tiers.**
 - **Suivi des formations de sensibilisation à la sécurité.**
@@ -104,7 +107,8 @@ ni à l'AFNOR, ni approuvé ou certifié par ces organismes.** La mention « ISO
 du dépôt et dans la documentation indique uniquement le référentiel que le plugin aide à suivre.
 
 - **Ce que le plugin contient** : uniquement les **références** des 93 contrôles de l'Annexe A
-  d'ISO/IEC 27001:2022 (A.5.1 à A.8.34), leur thème et un **titre court** par contrôle.
+  d'ISO/IEC 27001:2022 (A.5.1 à A.8.34), leur thème et un **titre court** par contrôle, ainsi
+  que les numéros des sous-articles 4.1 à 10.2 avec un titre court rédigé par ce projet.
 - **Ce qu'il ne contient pas** : le texte des contrôles, les recommandations de mise en œuvre
   d'ISO/IEC 27002, ni le texte des exigences (clauses 4 à 10). Les champs de justification et de
   mise en œuvre sont à rédiger par votre organisation.

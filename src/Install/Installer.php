@@ -6,6 +6,7 @@ namespace GlpiPlugin\Grcmanager\Install;
 
 use CronTask;
 use DBConnection;
+use GlpiPlugin\Grcmanager\Services\Clause\IsmsClauseCatalog;
 use GlpiPlugin\Grcmanager\Services\Control\ControlCatalogDefaults;
 use GlpiPlugin\Grcmanager\Services\Dashboard\DefaultDashboardService;
 use GlpiPlugin\Grcmanager\Services\DefaultSearchColumns;
@@ -64,6 +65,9 @@ final class Installer
 
     // Sprint 3 (Déclaration d'Applicabilité / SoA, clause 6.1.3), same derivation rule.
     private const CONTROLS_TABLE = 'glpi_plugin_grcmanager_controls';
+
+    // Issue #113 (exigences du SMSI, articles 4 à 10), same table-name derivation rule.
+    private const ISMS_REQUIREMENTS_TABLE = 'glpi_plugin_grcmanager_ismsrequirements';
 
     // Many-to-many link table, `<left>_<right>` naming after the `glpi_plugin_grcmanager_` prefix
     // (both sides already lowercased+concatenated class-name suffixes), matching GLPI core's own
@@ -374,6 +378,30 @@ final class Installer
                 KEY `theme` (`theme`),
                 KEY `applicability` (`applicability`),
                 KEY `implementation_status` (`implementation_status`)
+            ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
+
+            $DB->doQuery($query) or die($DB->error());
+        }
+
+        // Issue #113 : une ligne par sous-article des articles 4 à 10 (numéro seul, titres courts
+        // résolus par PluginGrcmanagerIsmsRequirement::getClauseTitles(), jamais stockés), seedée par
+        // seedClauses() ci-dessous ; preuves = Documents GLPI liés (Document_Item).
+        if (!$DB->tableExists(self::ISMS_REQUIREMENTS_TABLE)) {
+            $query = "CREATE TABLE `" . self::ISMS_REQUIREMENTS_TABLE . "` (
+                `id` int {$keySign} NOT NULL AUTO_INCREMENT,
+                `code` varchar(8) NOT NULL COMMENT 'Sous-article ISO/IEC 27001:2022, ex. 6.1.2',
+                `clause` varchar(2) NOT NULL COMMENT 'Article de premier niveau, 4 a 10',
+                `status` varchar(16) NOT NULL DEFAULT 'not_started'
+                    COMMENT 'not_started, in_progress, compliant',
+                `users_id` int {$keySign} NOT NULL DEFAULT 0 COMMENT 'Responsable',
+                `comment` text,
+                `date_creation` timestamp NULL DEFAULT NULL,
+                `date_mod` timestamp NULL DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `unicity_code` (`code`),
+                KEY `clause` (`clause`),
+                KEY `status` (`status`),
+                KEY `users_id` (`users_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET={$charset} COLLATE={$collation}";
 
             $DB->doQuery($query) or die($DB->error());
@@ -1224,6 +1252,7 @@ final class Installer
         }
 
         $this->seedControls();
+        $this->seedClauses();
 
         $this->seedSecurityIncidentNotifications();
 
@@ -1974,6 +2003,34 @@ final class Installer
         }
     }
 
+    /**
+     * Issue #113 : même garde idempotente que seedControls() (recherche par `code` avant
+     * insertion), une mise à jour du plugin n'écrase jamais le statut/responsable/commentaire saisis.
+     */
+    private function seedClauses(): void
+    {
+        global $DB;
+
+        foreach (IsmsClauseCatalog::SUBCLAUSES as $code => $subclause) {
+            $exists = $DB->request([
+                'FROM'  => self::ISMS_REQUIREMENTS_TABLE,
+                'WHERE' => ['code' => (string) $code],
+            ])->count() > 0;
+
+            if ($exists) {
+                continue;
+            }
+
+            $DB->insert(self::ISMS_REQUIREMENTS_TABLE, [
+                'code'          => (string) $code,
+                'clause'        => $subclause['clause'],
+                'status'        => IsmsClauseCatalog::STATUS_NOT_STARTED,
+                'date_creation' => date('Y-m-d H:i:s'),
+                'date_mod'      => date('Y-m-d H:i:s'),
+            ]);
+        }
+    }
+
     private function seedDisplayPreferences(): void
     {
         global $DB;
@@ -2050,6 +2107,7 @@ final class Installer
         $migration->dropTable(self::CANONICAL_PRODUCTS_TABLE);
         $migration->dropTable(self::CONTROLS_RISKS_TABLE);
         $migration->dropTable(self::CONTROLS_TABLE);
+        $migration->dropTable(self::ISMS_REQUIREMENTS_TABLE);
         $migration->dropTable(self::AUDITS_CONTROLS_TABLE);
         $migration->dropTable(self::NONCONFORMITIES_TABLE);
         $migration->dropTable(self::AUDITS_TABLE);
