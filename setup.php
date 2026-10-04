@@ -105,6 +105,8 @@ function plugin_init_grcmanager(): void
             PluginGrcmanagerRisk::class,
             PluginGrcmanagerSupplierRisk::class,
             PluginGrcmanagerControl::class,
+            // Issue #113 : exigences du SMSI (articles 4 à 10), juste après la SoA (Annexe A).
+            PluginGrcmanagerIsmsRequirement::class,
             PluginGrcmanagerComplianceObligation::class,
             PluginGrcmanagerAudit::class,
             PluginGrcmanagerNonconformity::class,
@@ -153,6 +155,8 @@ function plugin_init_grcmanager(): void
     // polymorphe CommonDBTM::cleanDBonPurge()) - ignorerait cette politique.
     global $CFG_GLPI;
     $CFG_GLPI['document_types'][] = PluginGrcmanagerPolicy::class;
+    // Issue #113 : preuves des exigences du SMSI, même mécanisme.
+    $CFG_GLPI['document_types'][] = PluginGrcmanagerIsmsRequirement::class;
 
     // Sprint 2 (matrice de risque administrable, front/config.php) : reachable via
     // Configuration > Plugins > wrench icon on this plugin's row, same minimal-footprint pattern

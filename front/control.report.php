@@ -16,6 +16,7 @@
  */
 
 use GlpiPlugin\Grcmanager\Pdf\PdfRenderer;
+use GlpiPlugin\Grcmanager\Services\Clause\IsmsClauseCatalog;
 use GlpiPlugin\Grcmanager\Services\Control\AssetsignEvidenceProvider;
 use GlpiPlugin\Grcmanager\Services\Dashboard\DashboardCardService;
 
@@ -50,6 +51,19 @@ foreach (
     ];
 }
 
+// Issue #113 : exigences du SMSI (articles 4 à 10) incluses dans le même rapport d'audit.
+$clauseStatuses = PluginGrcmanagerIsmsRequirement::getStatuses();
+$clauses = [];
+foreach ($DB->request(['FROM' => PluginGrcmanagerIsmsRequirement::getTable()]) as $row) {
+    $clauses[] = [
+        'code'   => $row['code'],
+        'title'  => PluginGrcmanagerIsmsRequirement::getClauseTitle((string) $row['code']),
+        'status' => $clauseStatuses[$row['status']] ?? $row['status'],
+        'owner'  => (int) $row['users_id'] > 0 ? getUserName((int) $row['users_id']) : '',
+    ];
+}
+usort($clauses, static fn (array $a, array $b): int => IsmsClauseCatalog::compareCodes($a['code'], $b['code']));
+
 $html = \Glpi\Application\View\TemplateRenderer::getInstance()->render('@grcmanager/pdf/soa_report.html.twig', [
     'report_title'         => __('Déclaration d\'Applicabilité — Annexe A ISO/IEC 27001:2022', 'grcmanager'),
     'generated_at_label'   => sprintf(__('Généré le %s', 'grcmanager'), Html::convDateTime(date('Y-m-d H:i:s'))),
@@ -60,6 +74,8 @@ $html = \Glpi\Application\View\TemplateRenderer::getInstance()->render('@grcmana
     'total_count'          => count($controls),
     // Issue #109 : null si assetsign absent, la section est alors omise du PDF.
     'assetsign_evidence'   => AssetsignEvidenceProvider::fetchSummary(),
+    'clauses'              => $clauses,
+    'clause_completion'    => PluginGrcmanagerIsmsRequirement::getCompletion(),
 ]);
 
 $pdf = PdfRenderer::renderHtmlToPdf($html);

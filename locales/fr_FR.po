@@ -1543,3 +1543,151 @@ msgstr "Source : ANSSI, Guide d'hygiène informatique, version 2.0, septembre 20
 
 msgid "Traduction anglaise indicative, établie par ce projet."
 msgstr "Traduction anglaise indicative, établie par ce projet."
+
+msgid "Exigence SMSI (articles 4 à 10)"
+msgid_plural "Exigences SMSI (articles 4 à 10)"
+msgstr[0] "Exigence SMSI (articles 4 à 10)"
+msgstr[1] "Exigences SMSI (articles 4 à 10)"
+
+msgid "Contexte de l'organisation"
+msgstr "Contexte de l'organisation"
+
+msgid "Organisation et son contexte"
+msgstr "Organisation et son contexte"
+
+msgid "Parties intéressées"
+msgstr "Parties intéressées"
+
+msgid "Domaine d'application du SMSI"
+msgstr "Domaine d'application du SMSI"
+
+msgid "Système de management de la sécurité de l'information"
+msgstr "Système de management de la sécurité de l'information"
+
+msgid "Leadership"
+msgstr "Leadership"
+
+msgid "Leadership et engagement"
+msgstr "Leadership et engagement"
+
+msgid "Politique"
+msgstr "Politique"
+
+msgid "Rôles, responsabilités et autorités"
+msgstr "Rôles, responsabilités et autorités"
+
+msgid "Planification"
+msgstr "Planification"
+
+msgid "Risques et opportunités : généralités"
+msgstr "Risques et opportunités : généralités"
+
+msgid "Appréciation des risques"
+msgstr "Appréciation des risques"
+
+msgid "Traitement des risques"
+msgstr "Traitement des risques"
+
+msgid "Objectifs de sécurité de l'information"
+msgstr "Objectifs de sécurité de l'information"
+
+msgid "Planification des modifications"
+msgstr "Planification des modifications"
+
+msgid "Support"
+msgstr "Support"
+
+msgid "Ressources"
+msgstr "Ressources"
+
+msgid "Compétences"
+msgstr "Compétences"
+
+msgid "Sensibilisation"
+msgstr "Sensibilisation"
+
+msgid "Communication"
+msgstr "Communication"
+
+msgid "Informations documentées : généralités"
+msgstr "Informations documentées : généralités"
+
+msgid "Création et mise à jour"
+msgstr "Création et mise à jour"
+
+msgid "Maîtrise des informations documentées"
+msgstr "Maîtrise des informations documentées"
+
+msgid "Fonctionnement"
+msgstr "Fonctionnement"
+
+msgid "Planification et maîtrise opérationnelles"
+msgstr "Planification et maîtrise opérationnelles"
+
+msgid "Appréciation des risques (réalisation)"
+msgstr "Appréciation des risques (réalisation)"
+
+msgid "Traitement des risques (mise en œuvre)"
+msgstr "Traitement des risques (mise en œuvre)"
+
+msgid "Évaluation des performances"
+msgstr "Évaluation des performances"
+
+msgid "Surveillance, mesure, analyse et évaluation"
+msgstr "Surveillance, mesure, analyse et évaluation"
+
+msgid "Audit interne : généralités"
+msgstr "Audit interne : généralités"
+
+msgid "Programme d'audit interne"
+msgstr "Programme d'audit interne"
+
+msgid "Revue de direction : généralités"
+msgstr "Revue de direction : généralités"
+
+msgid "Éléments d'entrée de la revue de direction"
+msgstr "Éléments d'entrée de la revue de direction"
+
+msgid "Résultats de la revue de direction"
+msgstr "Résultats de la revue de direction"
+
+msgid "Amélioration"
+msgstr "Amélioration"
+
+msgid "Amélioration continue"
+msgstr "Amélioration continue"
+
+msgid "Non-conformité et action corrective"
+msgstr "Non-conformité et action corrective"
+
+msgid "Non commencé"
+msgstr "Non commencé"
+
+msgid "Statut invalide."
+msgstr "Statut invalide."
+
+msgid "Exigence"
+msgstr "Exigence"
+
+msgid "Comment l'exigence est satisfaite, où trouver les preuves. Joignez les documents dans l'onglet Documents."
+msgstr "Comment l'exigence est satisfaite, où trouver les preuves. Joignez les documents dans l'onglet Documents."
+
+msgid "Module lié"
+msgstr "Module lié"
+
+#, php-format
+msgid "%d enregistrement(s)"
+msgstr "%d enregistrement(s)"
+
+msgid "Ce module du plugin produit déjà des preuves pour cette exigence."
+msgstr "Ce module du plugin produit déjà des preuves pour cette exigence."
+
+msgid "Exigences du système de management - articles 4 à 10 ISO/IEC 27001:2022 (références et titres courts uniquement)."
+msgstr "Exigences du système de management - articles 4 à 10 ISO/IEC 27001:2022 (références et titres courts uniquement)."
+
+#, php-format
+msgid "Complétude du SMSI : %1$d %% (%2$d / %3$d exigences conformes)"
+msgstr "Complétude du SMSI : %1$d %% (%2$d / %3$d exigences conformes)"
+
+msgid "Exigences du SMSI (articles 4 à 10)"
+msgstr "Exigences du SMSI (articles 4 à 10)"

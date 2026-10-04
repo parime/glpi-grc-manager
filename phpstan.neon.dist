@@ -10,6 +10,7 @@ parameters:
         - src/Compatibility
         - src/Services/Risk
         - src/Services/Control
+        - src/Services/Clause
         - src/Services/Capa
         - src/Services/Training
         - src/Services/Classification

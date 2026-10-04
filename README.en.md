@@ -31,6 +31,9 @@ classification fields merged directly onto it.
   probability, impact, computed risk level, treatment decision (accept/mitigate/transfer/avoid),
   owner, justification, review date.
 - **Statement of Applicability (SoA)**: the 93 ISO 27001:2022 Annex A controls (clause 6.1.3).
+- **ISMS requirements (clauses 4 to 10)**: the 30 sub-clauses 4.1 to 10.2, with status, owner,
+  evidence (linked GLPI documents), a link to the module that already covers them and a
+  completeness rate, included in the PDF export.
 - **Internal audit program**: non-conformities, corrective and preventive actions (CAPA).
 - **Supplier/third-party risk register.**
 - **Security awareness training tracking.**
@@ -101,7 +104,8 @@ Organization for Standardization), IEC or AFNOR.** The "ISO 27001" wording in th
 and documentation only identifies the framework the plugin helps you track.
 
 - **What the plugin contains**: only the **references** of the 93 ISO/IEC 27001:2022 Annex A
-  controls (A.5.1 to A.8.34), their theme and a **short title** per control.
+  controls (A.5.1 to A.8.34), their theme and a **short title** per control, plus the numbers of
+  sub-clauses 4.1 to 10.2 with a short title written by this project.
 - **What it does not contain**: the control text, the ISO/IEC 27002 implementation guidance, or
   the text of the requirements (clauses 4 to 10). Justification and implementation fields are
   written by your organisation.
