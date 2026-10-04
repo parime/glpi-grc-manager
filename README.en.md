@@ -94,10 +94,43 @@ with a real screenshot for every step (available in French and English).
 - GLPI 11.x and GLPI 12.x (a single package for both versions)
 - PHP per the compatibility matrix of the GLPI version in use (PHP 8.2 minimum)
 
+## Disclaimer: ISO 27001 and third-party frameworks
+
+**This project is not affiliated with, endorsed by or certified by ISO (International
+Organization for Standardization), IEC or AFNOR.** The "ISO 27001" wording in the repository name
+and documentation only identifies the framework the plugin helps you track.
+
+- **What the plugin contains**: only the **references** of the 93 ISO/IEC 27001:2022 Annex A
+  controls (A.5.1 to A.8.34), their theme and a **short title** per control.
+- **What it does not contain**: the control text, the ISO/IEC 27002 implementation guidance, or
+  the text of the requirements (clauses 4 to 10). Justification and implementation fields are
+  written by your organisation.
+- **The standard must be purchased** from [ISO](https://www.iso.org/standard/27001) or your
+  national standards body (e.g. [AFNOR](https://www.boutique.afnor.org/)): the official text of
+  ISO/IEC 27001 (requirements) and ideally ISO/IEC 27002 (implementation guidance) is required to
+  implement an ISMS and seek certification.
+- **The plugin does not grant any certification**: certification is issued by an accredited
+  certification body. The plugin helps you prepare for the audit, nothing more.
+
+**Additional reference frameworks viewable in the plugin:**
+
+- **CIS Critical Security Controls® v8**: the titles of the 18 controls and 153 Safeguards are
+  reproduced unmodified, in English, from the publication of the
+  [Center for Internet Security, Inc.](https://www.cisecurity.org/controls), licensed under
+  [Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0)](https://creativecommons.org/licenses/by-nc-nd/4.0/).
+  © Center for Internet Security, Inc. CIS Controls® and CIS Critical Security Controls® are
+  trademarks of the Center for Internet Security, Inc. This project is not affiliated with or
+  endorsed by CIS. This excerpt is not covered by the plugin's GPLv3 license and may not be reused
+  for commercial purposes.
+- **NIST Cybersecurity Framework (CSF) 2.0**: published by the
+  [National Institute of Standards and Technology](https://www.nist.gov/cyberframework)
+  (U.S. federal government), in the public domain.
+
 ## License
 
 Distributed under the [GNU GPLv3](LICENSE) license. Free, community-driven project, with no
-mandatory paid feature.
+mandatory paid feature. Excerpts of third-party frameworks (CIS Controls, NIST CSF) remain under
+their original license: see the disclaimer above.
 
 ## Contributing
 

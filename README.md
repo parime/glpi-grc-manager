@@ -97,10 +97,43 @@ les audits/CAPA, avec une capture d'écran réelle par étape (disponible en fra
 - GLPI 11.x et GLPI 12.x (un seul paquet pour les deux versions)
 - PHP selon la matrice de compatibilité de la version de GLPI utilisée (PHP 8.2 minimum)
 
+## Avertissement : ISO 27001 et référentiels tiers
+
+**Ce projet n'est ni affilié à l'ISO (Organisation internationale de normalisation), ni à l'IEC,
+ni à l'AFNOR, ni approuvé ou certifié par ces organismes.** La mention « ISO 27001 » dans le nom
+du dépôt et dans la documentation indique uniquement le référentiel que le plugin aide à suivre.
+
+- **Ce que le plugin contient** : uniquement les **références** des 93 contrôles de l'Annexe A
+  d'ISO/IEC 27001:2022 (A.5.1 à A.8.34), leur thème et un **titre court** par contrôle.
+- **Ce qu'il ne contient pas** : le texte des contrôles, les recommandations de mise en œuvre
+  d'ISO/IEC 27002, ni le texte des exigences (clauses 4 à 10). Les champs de justification et de
+  mise en œuvre sont à rédiger par votre organisation.
+- **La norme doit être acquise** auprès de l'[ISO](https://www.iso.org/standard/27001) ou de
+  l'[AFNOR](https://www.boutique.afnor.org/) : le texte officiel d'ISO/IEC 27001 (exigences) et,
+  idéalement, d'ISO/IEC 27002 (guide de mise en œuvre) est indispensable pour mettre en œuvre un
+  SMSI et viser la certification.
+- **Le plugin ne délivre aucune certification** : celle-ci est délivrée par un organisme de
+  certification accrédité. Le plugin aide à préparer l'audit, rien de plus.
+
+**Référentiels complémentaires consultables dans le plugin :**
+
+- **CIS Critical Security Controls® v8** : les intitulés des 18 contrôles et 153 mesures
+  (*Safeguards*) sont reproduits sans modification, en anglais, d'après la publication du
+  [Center for Internet Security, Inc.](https://www.cisecurity.org/controls), sous licence
+  [Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0)](https://creativecommons.org/licenses/by-nc-nd/4.0/).
+  © Center for Internet Security, Inc. CIS Controls® et CIS Critical Security Controls® sont des
+  marques du Center for Internet Security, Inc. Ce projet n'est ni affilié ni approuvé par le CIS.
+  Cet extrait n'est pas couvert par la licence GPLv3 du plugin et ne peut pas être réutilisé à
+  des fins commerciales.
+- **NIST Cybersecurity Framework (CSF) 2.0** : publication du
+  [National Institute of Standards and Technology](https://www.nist.gov/cyberframework)
+  (gouvernement fédéral des États-Unis), dans le domaine public.
+
 ## Licence
 
 Distribué sous licence [GNU GPLv3](LICENSE). Projet gratuit, communautaire, sans fonctionnalité
-payante obligatoire.
+payante obligatoire. Les extraits de référentiels tiers (CIS Controls, NIST CSF) restent sous
+leur licence d'origine : voir l'avertissement ci-dessus.
 
 ## Contribuer
 
