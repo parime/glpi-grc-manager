@@ -1691,3 +1691,164 @@ msgstr "ISMS completeness: %1$d %% (%2$d / %3$d requirements compliant)"
 
 msgid "Exigences du SMSI (articles 4 à 10)"
 msgstr "ISMS requirements (clauses 4 to 10)"
+
+msgid "Version approuvée de la SoA"
+msgid_plural "Versions approuvées de la SoA"
+msgstr[0] "Approved SoA version"
+msgstr[1] "Approved SoA versions"
+
+msgid "En attente d'approbation"
+msgstr "Awaiting approval"
+
+msgid "Refusée"
+msgstr "Rejected"
+
+msgid "Obsolète"
+msgstr "Obsolete"
+
+msgid "Approuvé"
+msgstr "Approved"
+
+msgid "Refusé"
+msgstr "Rejected"
+
+msgid "Choisissez au moins un approbateur."
+msgstr "Choose at least one approver."
+
+#, php-format
+msgid "Déclaration d'Applicabilité - version %d"
+msgstr "Statement of Applicability - version %d"
+
+msgid "Approbation de la SoA demandée"
+msgstr "SoA approval requested"
+
+msgid "Approbateurs désignés"
+msgstr "Designated approvers"
+
+msgid "Demandeur"
+msgstr "Requester"
+
+msgid "Date de la demande"
+msgstr "Request date"
+
+msgid "Empreinte du contenu (SHA-256)"
+msgstr "Content fingerprint (SHA-256)"
+
+msgid "Version figée et envoyée aux approbateurs."
+msgstr "Version frozen and sent to the approvers."
+
+msgid "Indiquez la raison du refus."
+msgstr "Please give the reason for the rejection."
+
+msgid "Approbation enregistrée."
+msgstr "Approval recorded."
+
+msgid "Refus enregistré."
+msgstr "Rejection recorded."
+
+msgid "Cette version n'attend pas votre réponse."
+msgstr "This version is not awaiting your answer."
+
+msgid "Approbation de la SoA"
+msgstr "SoA approval"
+
+msgid "Approbation par la direction"
+msgstr "Management approval"
+
+#, php-format
+msgid "La version %d de la SoA attend votre approbation."
+msgstr "Version %d of the SoA is awaiting your approval."
+
+msgid "Répondre"
+msgstr "Answer"
+
+#, php-format
+msgid "La SoA a changé depuis la version %d approuvée : une nouvelle approbation est nécessaire."
+msgstr "The SoA has changed since approved version %d: a new approval is required."
+
+msgid "SoA approuvée"
+msgstr "SoA approved"
+
+#, php-format
+msgid "Version %1$d approuvée le %2$s ; la SoA n'a pas changé depuis."
+msgstr "Version %1$d approved on %2$s; the SoA has not changed since."
+
+msgid "SoA modifiée"
+msgstr "SoA changed"
+
+msgid "Jamais approuvée"
+msgstr "Never approved"
+
+msgid "Aucune version de la SoA n'a encore été approuvée par la direction."
+msgstr "No version of the SoA has been approved by management yet."
+
+#, php-format
+msgid "Version %d en attente d'approbation"
+msgstr "Version %d awaiting approval"
+
+#, php-format
+msgid "Version %d attend votre approbation"
+msgstr "Version %d is awaiting your approval"
+
+#, php-format
+msgid "Demandée par %s."
+msgstr "Requested by %s."
+
+msgid "Lire la version figée (PDF)"
+msgstr "Read the frozen version (PDF)"
+
+msgid "Commentaire (obligatoire en cas de refus)"
+msgstr "Comment (required to reject)"
+
+msgid "J'approuve cette version"
+msgstr "I approve this version"
+
+msgid "Refuser"
+msgstr "Reject"
+
+msgid "Faire approuver la SoA par la direction"
+msgstr "Have the SoA approved by management"
+
+msgid "Fige la SoA actuelle dans un PDF daté (conservé dans les documents GLPI avec son empreinte SHA-256), puis l'envoie aux approbateurs choisis. Chacun approuve depuis sa session GLPI ; le PDF comporte aussi un bloc de signature manuscrite. Toute modification ultérieure de la SoA demandera une nouvelle version."
+msgstr "Freezes the current SoA into a dated PDF (kept in GLPI documents with its SHA-256 fingerprint), then sends it to the chosen approvers. Each approves from their own GLPI session; the PDF also includes a handwritten signature block. Any later change to the SoA will require a new version."
+
+msgid "Approbateurs"
+msgstr "Approvers"
+
+msgid "Message aux approbateurs (facultatif)"
+msgstr "Message to the approvers (optional)"
+
+msgid "Figer et envoyer pour approbation"
+msgstr "Freeze and send for approval"
+
+msgid "Revoir la SoA avant"
+msgstr "Review the SoA first"
+
+msgid "Historique des versions"
+msgstr "Version history"
+
+msgid "Aucune version pour l'instant."
+msgstr "No version yet."
+
+msgid "Demandée"
+msgstr "Requested"
+
+msgid "PDF figé"
+msgstr "Frozen PDF"
+
+msgid "Version soumise à approbation"
+msgstr "Version submitted for approval"
+
+#, php-format
+msgid "Version %d"
+msgstr "Version %d"
+
+#, php-format
+msgid "Demandée le %1$s par %2$s"
+msgstr "Requested on %1$s by %2$s"
+
+msgid "Approbateur"
+msgstr "Approver"
+
+msgid "Signature"
+msgstr "Signature"

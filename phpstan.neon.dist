@@ -39,6 +39,8 @@ parameters:
         - src/Services/Risk/RiskMatrixConfig.php
         # Issue #109 : lit la table d'assetsign via le global $DB, Plugin et Session, même raison.
         - src/Services/Control/AssetsignEvidenceProvider.php
+        # Issue #112 : rend le rapport via TemplateRenderer et le $DB global, même raison.
+        - src/Services/Control/SoaReportBuilder.php
         - src/Services/Risk/ReviewReminderService.php
         # ROADMAP.md "Version 2.2" (cartographie des risques) : depends on GLPI's runtime global
         # $DB, same rationale as RiskMatrixConfig.php above. RiskHeatmapGrid.php in the same
