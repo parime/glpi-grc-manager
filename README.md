@@ -7,7 +7,7 @@
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/status-stable%20%E2%80%94%20v2.2.0-brightgreen)](ROADMAP.md)
-[![GLPI](https://img.shields.io/badge/GLPI-11.x-green)](docs/design/DEVELOPMENT_PLAN.md)
+[![GLPI](https://img.shields.io/badge/GLPI-11%20%7C%2012-green)](docs/design/DEVELOPMENT_PLAN.md)
 
 🇫🇷 **Français** | [🇬🇧 English](README.en.md)
 
