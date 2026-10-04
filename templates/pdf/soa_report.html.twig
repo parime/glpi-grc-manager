@@ -1,5 +1,19 @@
 {% include '@grcmanager/pdf/_pdf_style.html.twig' %}
 
+{# Issue #112 : version figée soumise à l'approbation de la direction. #}
+{% if approval is not null %}
+<table class="grcmanager-pdf-summary">
+  <tr>
+    <td><strong>{{ __('Version soumise à approbation', 'grcmanager') }}</strong></td>
+    <td class="grcmanager-pdf-summary-number">{{ __('Version %d', 'grcmanager')|format(approval.version) }}</td>
+  </tr>
+  <tr>
+    <td>{{ __('Demandée le %1$s par %2$s', 'grcmanager')|format(approval.requested_at, approval.requested_by) }}</td>
+    <td>{{ __('Empreinte du contenu (SHA-256)', 'grcmanager') }} : {{ approval.fingerprint|slice(0, 16) }}…</td>
+  </tr>
+</table>
+{% endif %}
+
 <h2>{{ __('Résumé', 'grcmanager') }}</h2>
 <table class="grcmanager-pdf-summary">
   <tr>
@@ -108,6 +122,29 @@
         <td>{{ clause.title }}</td>
         <td>{{ clause.status }}</td>
         <td>{{ clause.owner }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+{# Issue #112 : bloc de signature manuscrite (approbation hors ligne ou en complément). #}
+{% if approval is not null %}
+<h2>{{ __('Approbation par la direction', 'grcmanager') }}</h2>
+<table class="grcmanager-pdf-table">
+  <thead>
+    <tr>
+      <th>{{ __('Approbateur', 'grcmanager') }}</th>
+      <th>{{ __('Date') }}</th>
+      <th>{{ __('Signature', 'grcmanager') }}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for approver in approval.approvers %}
+      <tr>
+        <td>{{ approver }}</td>
+        <td style="height: 40px"></td>
+        <td></td>
       </tr>
     {% endfor %}
   </tbody>

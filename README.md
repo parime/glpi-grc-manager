@@ -33,6 +33,9 @@ archivé), avec ses champs de classification ISO 27001 fusionnés dessus.
   transférer/éviter), propriétaire, justification, date de revue.
 - **Déclaration d'Applicabilité (SoA)** : les 93 contrôles de l'Annexe A ISO 27001:2022 (clause
   6.1.3).
+- **Approbation de la SoA par la direction** : version figée et datée (PDF conservé dans les
+  documents GLPI avec son empreinte SHA-256), approbateurs désignés qui approuvent depuis GLPI,
+  historique des versions ; toute modification ultérieure de la SoA demande une nouvelle version.
 - **Exigences du SMSI (articles 4 à 10)** : les 30 sous-articles 4.1 à 10.2, avec statut,
   responsable, preuves (documents GLPI liés), lien vers le module qui les couvre déjà et taux de
   complétude, inclus dans l'export PDF.

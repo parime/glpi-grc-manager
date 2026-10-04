@@ -1691,3 +1691,164 @@ msgstr "Complétude du SMSI : %1$d %% (%2$d / %3$d exigences conformes)"
 
 msgid "Exigences du SMSI (articles 4 à 10)"
 msgstr "Exigences du SMSI (articles 4 à 10)"
+
+msgid "Version approuvée de la SoA"
+msgid_plural "Versions approuvées de la SoA"
+msgstr[0] "Version approuvée de la SoA"
+msgstr[1] "Versions approuvées de la SoA"
+
+msgid "En attente d'approbation"
+msgstr "En attente d'approbation"
+
+msgid "Refusée"
+msgstr "Refusée"
+
+msgid "Obsolète"
+msgstr "Obsolète"
+
+msgid "Approuvé"
+msgstr "Approuvé"
+
+msgid "Refusé"
+msgstr "Refusé"
+
+msgid "Choisissez au moins un approbateur."
+msgstr "Choisissez au moins un approbateur."
+
+#, php-format
+msgid "Déclaration d'Applicabilité - version %d"
+msgstr "Déclaration d'Applicabilité - version %d"
+
+msgid "Approbation de la SoA demandée"
+msgstr "Approbation de la SoA demandée"
+
+msgid "Approbateurs désignés"
+msgstr "Approbateurs désignés"
+
+msgid "Demandeur"
+msgstr "Demandeur"
+
+msgid "Date de la demande"
+msgstr "Date de la demande"
+
+msgid "Empreinte du contenu (SHA-256)"
+msgstr "Empreinte du contenu (SHA-256)"
+
+msgid "Version figée et envoyée aux approbateurs."
+msgstr "Version figée et envoyée aux approbateurs."
+
+msgid "Indiquez la raison du refus."
+msgstr "Indiquez la raison du refus."
+
+msgid "Approbation enregistrée."
+msgstr "Approbation enregistrée."
+
+msgid "Refus enregistré."
+msgstr "Refus enregistré."
+
+msgid "Cette version n'attend pas votre réponse."
+msgstr "Cette version n'attend pas votre réponse."
+
+msgid "Approbation de la SoA"
+msgstr "Approbation de la SoA"
+
+msgid "Approbation par la direction"
+msgstr "Approbation par la direction"
+
+#, php-format
+msgid "La version %d de la SoA attend votre approbation."
+msgstr "La version %d de la SoA attend votre approbation."
+
+msgid "Répondre"
+msgstr "Répondre"
+
+#, php-format
+msgid "La SoA a changé depuis la version %d approuvée : une nouvelle approbation est nécessaire."
+msgstr "La SoA a changé depuis la version %d approuvée : une nouvelle approbation est nécessaire."
+
+msgid "SoA approuvée"
+msgstr "SoA approuvée"
+
+#, php-format
+msgid "Version %1$d approuvée le %2$s ; la SoA n'a pas changé depuis."
+msgstr "Version %1$d approuvée le %2$s ; la SoA n'a pas changé depuis."
+
+msgid "SoA modifiée"
+msgstr "SoA modifiée"
+
+msgid "Jamais approuvée"
+msgstr "Jamais approuvée"
+
+msgid "Aucune version de la SoA n'a encore été approuvée par la direction."
+msgstr "Aucune version de la SoA n'a encore été approuvée par la direction."
+
+#, php-format
+msgid "Version %d en attente d'approbation"
+msgstr "Version %d en attente d'approbation"
+
+#, php-format
+msgid "Version %d attend votre approbation"
+msgstr "Version %d attend votre approbation"
+
+#, php-format
+msgid "Demandée par %s."
+msgstr "Demandée par %s."
+
+msgid "Lire la version figée (PDF)"
+msgstr "Lire la version figée (PDF)"
+
+msgid "Commentaire (obligatoire en cas de refus)"
+msgstr "Commentaire (obligatoire en cas de refus)"
+
+msgid "J'approuve cette version"
+msgstr "J'approuve cette version"
+
+msgid "Refuser"
+msgstr "Refuser"
+
+msgid "Faire approuver la SoA par la direction"
+msgstr "Faire approuver la SoA par la direction"
+
+msgid "Fige la SoA actuelle dans un PDF daté (conservé dans les documents GLPI avec son empreinte SHA-256), puis l'envoie aux approbateurs choisis. Chacun approuve depuis sa session GLPI ; le PDF comporte aussi un bloc de signature manuscrite. Toute modification ultérieure de la SoA demandera une nouvelle version."
+msgstr "Fige la SoA actuelle dans un PDF daté (conservé dans les documents GLPI avec son empreinte SHA-256), puis l'envoie aux approbateurs choisis. Chacun approuve depuis sa session GLPI ; le PDF comporte aussi un bloc de signature manuscrite. Toute modification ultérieure de la SoA demandera une nouvelle version."
+
+msgid "Approbateurs"
+msgstr "Approbateurs"
+
+msgid "Message aux approbateurs (facultatif)"
+msgstr "Message aux approbateurs (facultatif)"
+
+msgid "Figer et envoyer pour approbation"
+msgstr "Figer et envoyer pour approbation"
+
+msgid "Revoir la SoA avant"
+msgstr "Revoir la SoA avant"
+
+msgid "Historique des versions"
+msgstr "Historique des versions"
+
+msgid "Aucune version pour l'instant."
+msgstr "Aucune version pour l'instant."
+
+msgid "Demandée"
+msgstr "Demandée"
+
+msgid "PDF figé"
+msgstr "PDF figé"
+
+msgid "Version soumise à approbation"
+msgstr "Version soumise à approbation"
+
+#, php-format
+msgid "Version %d"
+msgstr "Version %d"
+
+#, php-format
+msgid "Demandée le %1$s par %2$s"
+msgstr "Demandée le %1$s par %2$s"
+
+msgid "Approbateur"
+msgstr "Approbateur"
+
+msgid "Signature"
+msgstr "Signature"

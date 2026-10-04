@@ -31,6 +31,9 @@ classification fields merged directly onto it.
   probability, impact, computed risk level, treatment decision (accept/mitigate/transfer/avoid),
   owner, justification, review date.
 - **Statement of Applicability (SoA)**: the 93 ISO 27001:2022 Annex A controls (clause 6.1.3).
+- **Management approval of the SoA**: frozen, dated version (PDF kept in GLPI documents with its
+  SHA-256 fingerprint), designated approvers who approve from GLPI, version history; any later
+  change to the SoA requires a new version.
 - **ISMS requirements (clauses 4 to 10)**: the 30 sub-clauses 4.1 to 10.2, with status, owner,
   evidence (linked GLPI documents), a link to the module that already covers them and a
   completeness rate, included in the PDF export.
