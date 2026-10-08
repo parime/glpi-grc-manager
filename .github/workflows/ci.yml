@@ -10,6 +10,12 @@ on:
   # le GITHUB_TOKEN par defaut ne declenche pas ces triggers (garde-fou anti-boucle GitHub
   # Actions), seul un declenchement explicite via workflow_dispatch les contourne.
   workflow_dispatch:
+  # Filet de securite quotidien (meme choix qu'assetsign-glpi) : detecte une regression qui ne vient
+  # pas de ce depot - nouvelle image GLPI, avis de securite publie apres coup sur une dependance - sans
+  # attendre le prochain push. Ecart constate le 8 octobre 2026 sur Configuration-glpi-auto, casse par
+  # une mise a jour de l'image GLPI 11 sans qu'aucun push ne l'ait revele.
+  schedule:
+    - cron: '29 3 * * *'
 
 permissions:
   contents: read
@@ -204,12 +210,12 @@ jobs:
     # Ne remplace pas les tests unitaires (job "tests" ci-dessus) : verifie ce qu'eux ne peuvent
     # pas couvrir, a savoir que setup.php/hook.php/l'installeur fonctionnent reellement contre un
     # GLPI qui boot pour de vrai. Approche et commandes reprises du plugin jumeau
-    # glpi-vulnerability-manager (meme auteur), deja validees manuellement contre glpi/glpi:11.0.8.
+    # glpi-vulnerability-manager (meme auteur), deja validees manuellement contre glpi/glpi:11.0.11.
     needs: detect
     if: needs.detect.outputs.has_composer == 'true'
     runs-on: ubuntu-latest
     env:
-      GLPI_IMAGE: glpi/glpi:11.0.8
+      GLPI_IMAGE: glpi/glpi:11.0.11
     steps:
       - uses: actions/checkout@v7
 
@@ -315,7 +321,7 @@ jobs:
 
       - name: Extrait le code de GLPI 11 et GLPI 12 des images officielles
         run: |
-          for v in 11.0.9 12.0.0-rc2; do
+          for v in 11.0.11 12.0.0-rc3; do
             docker create --name "glpi-$v" "glpi/glpi:$v"
             mkdir -p "/tmp/glpi-$v"
             docker cp "glpi-$v:/var/www/glpi/src" "/tmp/glpi-$v/src"
@@ -326,8 +332,8 @@ jobs:
         # GLPI 11 : PHP 8.2 a 8.5 ; GLPI 12 : PHP 8.3 a 8.5.
         run: |
           status=0
-          for combo in "8.2 11.0.9" "8.3 11.0.9" "8.4 11.0.9" "8.5 11.0.9" \
-                       "8.3 12.0.0-rc2" "8.4 12.0.0-rc2" "8.5 12.0.0-rc2"; do
+          for combo in "8.2 11.0.11" "8.3 11.0.11" "8.4 11.0.11" "8.5 11.0.11" \
+                       "8.3 12.0.0-rc3" "8.4 12.0.0-rc3" "8.5 12.0.0-rc3"; do
             set -- $combo
             docker run --rm -v "$PWD:/p" -v "/tmp/glpi-$2:/g" "php:$1-cli" \
               php /p/.github/scripts/compat-smoke.php /g /p || status=1
@@ -343,7 +349,7 @@ jobs:
     if: needs.detect.outputs.has_composer == 'true'
     runs-on: ubuntu-latest
     env:
-      GLPI12_IMAGE: glpi/glpi:12.0.0-rc2
+      GLPI12_IMAGE: glpi/glpi:12.0.0-rc3
     steps:
       - uses: actions/checkout@v7
 
