@@ -295,13 +295,28 @@ jobs:
             exit 1
           fi
 
-      - name: Installe, active puis desinstalle le plugin (cycle complet)
+      - name: Installe, active puis desinstalle le plugin (cycle complet), puis le reinstalle
         run: |
           docker exec glpi php bin/console plugin:install grcmanager --force --no-interaction
           docker exec glpi php bin/console plugin:activate grcmanager --no-interaction
           docker exec glpi php bin/console plugin:list --no-interaction
           docker exec glpi php bin/console plugin:deactivate grcmanager --no-interaction
           docker exec glpi php bin/console plugin:uninstall grcmanager --no-interaction
+          docker exec glpi php bin/console plugin:install grcmanager --force --no-interaction
+          docker exec glpi php bin/console plugin:activate grcmanager --no-interaction
+
+      - name: Suite d'integration sur GLPI 11
+        # Jusqu'au 8 octobre 2026, la suite d'integration ne tournait que sur GLPI 12 : la version
+        # principale du plugin n'etait verifiee que par le cycle installation/desinstallation
+        # ci-dessus. Dependances de dev installees APRES les commandes console, meme precaution que
+        # le job GLPI 12 (collision possible avec la symfony/console de GLPI).
+        run: |
+          docker exec glpi sh -c '
+            export COMPOSER_HOME=/tmp/composer-home
+            cd /var/www/glpi/plugins/grcmanager
+            php /tmp/composer.phar install --no-interaction --prefer-dist
+            php vendor/bin/phpunit -c phpunit-integration.xml.dist
+          '
 
       - name: Logs GLPI (en cas d'echec)
         if: failure()
