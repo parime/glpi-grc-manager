@@ -28,7 +28,12 @@ final class IsmsRequirementTest extends GrcmanagerIntegrationTestCase
             'FROM'   => PluginGrcmanagerIsmsRequirement::getTable(),
         ]), false), 'code');
 
-        $this->assertEqualsCanonicalizing(array_map('strval', array_keys(IsmsClauseCatalog::SUBCLAUSES)), $codes);
+        // Tri explicite en chaînes : le tri par défaut de PHP (et donc assertEqualsCanonicalizing())
+        // compare « 6.2 » comme un nombre et « 6.1.1 » comme un texte, ordre incohérent.
+        $expected = array_map('strval', array_keys(IsmsClauseCatalog::SUBCLAUSES));
+        sort($expected, SORT_STRING);
+        sort($codes, SORT_STRING);
+        $this->assertSame($expected, $codes);
     }
 
     public function testUpdateKeepsTheCodeAndRejectsAnUnknownStatus(): void
